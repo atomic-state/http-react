@@ -1,0 +1,19 @@
+{
+  "name": "http-react-fetcher",
+  "version": "1.0",
+  "description": "React fetch wrapper component for React and React Native.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danybeltran/aesthetic-state"
+  },
+  "keywords": [
+    "http",
+    "api",
+    "react http",
+    "http request"
+  ],
+  "author": "Dany Beltran",
+  "license": "MIT",
+  "homepage": "https://github.com/danybeltran/http-react-fetcher#readme"
+}
