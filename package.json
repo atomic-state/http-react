@@ -5,7 +5,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/danybeltran/aesthetic-state"
+    "url": "https://github.com/danybeltran/http-react-fetcher"
   },
   "keywords": [
     "http",
