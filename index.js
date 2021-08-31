@@ -53,6 +53,7 @@ var Fetcher = function (_a) {
                         case 0:
                             _b.trys.push([0, 3, , 4]);
                             return [4 /*yield*/, fetch(url, {
+                                    method: config.method,
                                     headers: config.headers,
                                     body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE)/))
                                         ? JSON.stringify(config.body)
@@ -64,6 +65,7 @@ var Fetcher = function (_a) {
                         case 2:
                             _data = _b.sent();
                             setData(_data);
+                            setError(null);
                             setLoading(false);
                             onResolve(_data);
                             return [3 /*break*/, 4];

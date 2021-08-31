@@ -66,6 +66,7 @@ const Fetcher = <FetchDataType extends unknown>({
     async function fetchData() {
       try {
         const json = await fetch(url, {
+          method: config.method,
           headers: config.headers as Headers,
           body: config.method?.match(/(POST|PUT|DELETE)/)
             ? JSON.stringify(config.body)
@@ -73,6 +74,7 @@ const Fetcher = <FetchDataType extends unknown>({
         });
         const _data = await json.json();
         setData(_data);
+        setError(null);
         setLoading(false);
         onResolve(_data);
       } catch (err) {
