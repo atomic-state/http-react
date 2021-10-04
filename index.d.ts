@@ -1,5 +1,5 @@
 import * as React from "react";
-interface FetcherType<FetchDataType> {
+declare type FetcherType<FetchDataType> = {
     /**
      * url of the resource to fetch
      */
@@ -11,7 +11,7 @@ interface FetcherType<FetchDataType> {
     /**
      * Refresh interval (in seconds) to re-fetch the resource
      */
-    refresh: number;
+    refresh?: number;
     /**
      * Function to run when request is resolved succesfuly
      */
@@ -36,6 +36,6 @@ interface FetcherType<FetchDataType> {
         error: Error | null;
         loading: boolean;
     }>;
-}
-declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => JSX.Element | null;
+};
+declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => any;
 export default Fetcher;
