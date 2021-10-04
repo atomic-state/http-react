@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -40,46 +51,48 @@ var React = require("react");
 var react_1 = require("react");
 var Fetcher = function (_a) {
     var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, Children = _a.children, _d = _a.onError, onError = _d === void 0 ? function () { } : _d, _e = _a.onResolve, onResolve = _e === void 0 ? function () { } : _e, _f = _a.refresh, refresh = _f === void 0 ? 0 : _f;
-    var _g = react_1.useState(def), data = _g[0], setData = _g[1];
-    var _h = react_1.useState(null), error = _h[0], setError = _h[1];
-    var _j = react_1.useState(true), loading = _j[0], setLoading = _j[1];
-    react_1.useEffect(function () {
-        function fetchData() {
-            var _a;
-            return __awaiter(this, void 0, void 0, function () {
-                var json, _data, err_1;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0:
-                            _b.trys.push([0, 3, , 4]);
-                            return [4 /*yield*/, fetch(url, {
-                                    method: config.method,
-                                    headers: config.headers,
-                                    body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE)/))
-                                        ? JSON.stringify(config.body)
-                                        : undefined,
-                                })];
-                        case 1:
-                            json = _b.sent();
-                            return [4 /*yield*/, json.json()];
-                        case 2:
-                            _data = _b.sent();
-                            setData(_data);
-                            setError(null);
-                            setLoading(false);
-                            onResolve(_data);
-                            return [3 /*break*/, 4];
-                        case 3:
-                            err_1 = _b.sent();
-                            setError(new Error(err_1));
-                            setLoading(false);
-                            onError(err_1);
-                            return [3 /*break*/, 4];
-                        case 4: return [2 /*return*/];
-                    }
-                });
+    var _g = (0, react_1.useState)(def), data = _g[0], setData = _g[1];
+    var _h = (0, react_1.useState)(null), error = _h[0], setError = _h[1];
+    var _j = (0, react_1.useState)(true), loading = _j[0], setLoading = _j[1];
+    function fetchData() {
+        var _a;
+        return __awaiter(this, void 0, void 0, function () {
+            var json, _data, err_1;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, fetch(url, {
+                                method: config.method,
+                                headers: __assign({ "Content-Type": "application/json" }, config.headers),
+                                body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE)/))
+                                    ? JSON.stringify(config.body)
+                                    : undefined,
+                            })];
+                    case 1:
+                        json = _b.sent();
+                        return [4 /*yield*/, json.json()];
+                    case 2:
+                        _data = _b.sent();
+                        setData(_data);
+                        setError(null);
+                        setLoading(false);
+                        onResolve(_data);
+                        return [3 /*break*/, 4];
+                    case 3:
+                        err_1 = _b.sent();
+                        setData(undefined);
+                        setError(new Error(err_1));
+                        setLoading(false);
+                        onError(err_1);
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
+                }
             });
-        }
+        });
+    }
+    (0, react_1.useEffect)(function () {
+        setLoading(true);
         fetchData();
         var refreshInterval = refresh > 0
             ? setInterval(function () {
@@ -88,7 +101,7 @@ var Fetcher = function (_a) {
             : null;
         return function () { return clearInterval(refreshInterval); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [url, refresh]);
+    }, [url, refresh, config]);
     if (typeof Children !== "undefined") {
         return React.createElement(Children, { data: data, error: error, loading: loading });
     }

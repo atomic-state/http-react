@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 
-interface FetcherType<FetchDataType> {
+type FetcherType<FetchDataType> = {
   /**
    * url of the resource to fetch
    */
@@ -13,7 +13,7 @@ interface FetcherType<FetchDataType> {
   /**
    * Refresh interval (in seconds) to re-fetch the resource
    */
-  refresh: number;
+  refresh?: number;
   /**
    * Function to run when request is resolved succesfuly
    */
@@ -48,7 +48,7 @@ interface FetcherType<FetchDataType> {
     error: Error | null;
     loading: boolean;
   }>;
-}
+};
 
 const Fetcher = <FetchDataType extends unknown>({
   url = "/",
@@ -62,27 +62,34 @@ const Fetcher = <FetchDataType extends unknown>({
   const [data, setData] = useState<FetchDataType | undefined>(def);
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const json = await fetch(url, {
-          method: config.method,
-          headers: config.headers as Headers,
-          body: config.method?.match(/(POST|PUT|DELETE)/)
-            ? JSON.stringify(config.body)
-            : undefined,
-        });
-        const _data = await json.json();
-        setData(_data);
-        setError(null);
-        setLoading(false);
-        onResolve(_data);
-      } catch (err) {
-        setError(new Error(err));
-        setLoading(false);
-        onError(err);
-      }
+
+  async function fetchData() {
+    try {
+      const json = await fetch(url, {
+        method: config.method,
+        headers: {
+          "Content-Type": "application/json",
+          ...config.headers,
+        } as Headers,
+        body: config.method?.match(/(POST|PUT|DELETE)/)
+          ? JSON.stringify(config.body)
+          : undefined,
+      });
+      const _data = await json.json();
+      setData(_data);
+      setError(null);
+      setLoading(false);
+      onResolve(_data);
+    } catch (err) {
+      setData(undefined);
+      setError(new Error(err));
+      setLoading(false);
+      onError(err);
     }
+  }
+
+  useEffect(() => {
+    setLoading(true);
     fetchData();
 
     const refreshInterval: NodeJS.Timer | null =
@@ -94,7 +101,7 @@ const Fetcher = <FetchDataType extends unknown>({
 
     return () => clearInterval(refreshInterval as NodeJS.Timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, refresh]);
+  }, [url, refresh, config]);
   if (typeof Children !== "undefined") {
     return <Children data={data} error={error} loading={loading} />;
   } else {
