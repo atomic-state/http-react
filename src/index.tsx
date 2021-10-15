@@ -60,10 +60,11 @@ const Fetcher = <FetchDataType extends unknown>({
   refresh = 0,
 }: FetcherType<FetchDataType>) => {
   const [data, setData] = useState<FetchDataType | undefined>(def);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   async function fetchData() {
+    console.log("Making request");
     try {
       const json = await fetch(url, {
         method: config.method,
@@ -76,30 +77,44 @@ const Fetcher = <FetchDataType extends unknown>({
           : undefined,
       });
       const _data = await json.json();
-      setData(_data);
-      setError(null);
-      setLoading(false);
-      onResolve(_data);
+      const code = json.status;
+      if (code >= 200 && code < 300) {
+        setData(_data);
+        setError(null);
+        onResolve(_data);
+      } else {
+        if (def) {
+          setData(def);
+        }
+        setError(true);
+        onError(_data);
+      }
     } catch (err) {
       setData(undefined);
       setError(new Error(err));
-      setLoading(false);
       onError(err);
+    } finally {
+      setLoading(false);
     }
   }
 
   useEffect(() => {
+    async function reValidate() {
+      if ((data || error) && !loading) {
+        setLoading(true);
+        fetchData();
+      }
+    }
+    if (refresh > 0) {
+      const interval = setTimeout(reValidate, refresh * 1000);
+      return () => clearTimeout(interval);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refresh, loading, error, data, config]);
+
+  useEffect(() => {
     setLoading(true);
     fetchData();
-
-    const refreshInterval: NodeJS.Timer | null =
-      refresh > 0
-        ? setInterval(() => {
-            fetchData();
-          }, refresh * 1000)
-        : null;
-
-    return () => clearInterval(refreshInterval as NodeJS.Timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, refresh, config]);
   if (typeof Children !== "undefined") {
