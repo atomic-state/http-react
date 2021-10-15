@@ -57,11 +57,14 @@ var Fetcher = function (_a) {
     function fetchData() {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var json, _data, err_1;
+            var json, _data, code, err_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        _b.trys.push([0, 3, , 4]);
+                        console.log("Making request");
+                        _b.label = 1;
+                    case 1:
+                        _b.trys.push([1, 4, 5, 6]);
                         return [4 /*yield*/, fetch(url, {
                                 method: config.method,
                                 headers: __assign({ "Content-Type": "application/json" }, config.headers),
@@ -69,37 +72,60 @@ var Fetcher = function (_a) {
                                     ? JSON.stringify(config.body)
                                     : undefined,
                             })];
-                    case 1:
+                    case 2:
                         json = _b.sent();
                         return [4 /*yield*/, json.json()];
-                    case 2:
-                        _data = _b.sent();
-                        setData(_data);
-                        setError(null);
-                        setLoading(false);
-                        onResolve(_data);
-                        return [3 /*break*/, 4];
                     case 3:
+                        _data = _b.sent();
+                        code = json.status;
+                        if (code >= 200 && code < 300) {
+                            setData(_data);
+                            setError(null);
+                            onResolve(_data);
+                        }
+                        else {
+                            if (def) {
+                                setData(def);
+                            }
+                            setError(true);
+                            onError(_data);
+                        }
+                        return [3 /*break*/, 6];
+                    case 4:
                         err_1 = _b.sent();
                         setData(undefined);
                         setError(new Error(err_1));
-                        setLoading(false);
                         onError(err_1);
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
+                        return [3 /*break*/, 6];
+                    case 5:
+                        setLoading(false);
+                        return [7 /*endfinally*/];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
     }
     (0, react_1.useEffect)(function () {
+        function reValidate() {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    if ((data || error) && !loading) {
+                        setLoading(true);
+                        fetchData();
+                    }
+                    return [2 /*return*/];
+                });
+            });
+        }
+        if (refresh > 0) {
+            var interval_1 = setTimeout(reValidate, refresh * 1000);
+            return function () { return clearTimeout(interval_1); };
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [refresh, loading, error, data, config]);
+    (0, react_1.useEffect)(function () {
         setLoading(true);
         fetchData();
-        var refreshInterval = refresh > 0
-            ? setInterval(function () {
-                fetchData();
-            }, refresh * 1000)
-            : null;
-        return function () { return clearInterval(refreshInterval); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url, refresh, config]);
     if (typeof Children !== "undefined") {
