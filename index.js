@@ -61,10 +61,7 @@ var Fetcher = function (_a) {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        console.log("Making request");
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 4, 5, 6]);
+                        _b.trys.push([0, 3, 4, 5]);
                         return [4 /*yield*/, fetch(url, {
                                 method: config.method,
                                 headers: __assign({ "Content-Type": "application/json" }, config.headers),
@@ -72,10 +69,10 @@ var Fetcher = function (_a) {
                                     ? JSON.stringify(config.body)
                                     : undefined,
                             })];
-                    case 2:
+                    case 1:
                         json = _b.sent();
                         return [4 /*yield*/, json.json()];
-                    case 3:
+                    case 2:
                         _data = _b.sent();
                         code = json.status;
                         if (code >= 200 && code < 300) {
@@ -90,17 +87,17 @@ var Fetcher = function (_a) {
                             setError(true);
                             onError(_data);
                         }
-                        return [3 /*break*/, 6];
-                    case 4:
+                        return [3 /*break*/, 5];
+                    case 3:
                         err_1 = _b.sent();
                         setData(undefined);
                         setError(new Error(err_1));
                         onError(err_1);
-                        return [3 /*break*/, 6];
-                    case 5:
+                        return [3 /*break*/, 5];
+                    case 4:
                         setLoading(false);
                         return [7 /*endfinally*/];
-                    case 6: return [2 /*return*/];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
