@@ -64,7 +64,6 @@ const Fetcher = <FetchDataType extends unknown>({
   const [loading, setLoading] = useState(true);
 
   async function fetchData() {
-    console.log("Making request");
     try {
       const json = await fetch(url, {
         method: config.method,
