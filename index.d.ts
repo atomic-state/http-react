@@ -39,3 +39,7 @@ declare type FetcherType<FetchDataType> = {
 };
 declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => any;
 export default Fetcher;
+/**
+ * Fetcher available as a hook
+ */
+export declare const useFetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => any;
