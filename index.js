@@ -47,6 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.useFetcher = void 0;
 var React = require("react");
 var react_1 = require("react");
 var Fetcher = function (_a) {
@@ -133,4 +134,91 @@ var Fetcher = function (_a) {
     }
 };
 exports.default = Fetcher;
+/**
+ * Fetcher available as a hook
+ */
+var useFetcher = function (_a) {
+    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, Children = _a.children, _d = _a.onError, onError = _d === void 0 ? function () { } : _d, _e = _a.onResolve, onResolve = _e === void 0 ? function () { } : _e, _f = _a.refresh, refresh = _f === void 0 ? 0 : _f;
+    var _g = (0, react_1.useState)(def), data = _g[0], setData = _g[1];
+    var _h = (0, react_1.useState)(null), error = _h[0], setError = _h[1];
+    var _j = (0, react_1.useState)(true), loading = _j[0], setLoading = _j[1];
+    function fetchData() {
+        var _a;
+        return __awaiter(this, void 0, void 0, function () {
+            var json, _data, code, err_2;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 3, 4, 5]);
+                        return [4 /*yield*/, fetch(url, {
+                                method: config.method,
+                                headers: __assign({ "Content-Type": "application/json" }, config.headers),
+                                body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE)/))
+                                    ? JSON.stringify(config.body)
+                                    : undefined,
+                            })];
+                    case 1:
+                        json = _b.sent();
+                        return [4 /*yield*/, json.json()];
+                    case 2:
+                        _data = _b.sent();
+                        code = json.status;
+                        if (code >= 200 && code < 300) {
+                            setData(_data);
+                            setError(null);
+                            onResolve(_data);
+                        }
+                        else {
+                            if (def) {
+                                setData(def);
+                            }
+                            setError(true);
+                            onError(_data);
+                        }
+                        return [3 /*break*/, 5];
+                    case 3:
+                        err_2 = _b.sent();
+                        setData(undefined);
+                        setError(new Error(err_2));
+                        onError(err_2);
+                        return [3 /*break*/, 5];
+                    case 4:
+                        setLoading(false);
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    }
+    (0, react_1.useEffect)(function () {
+        function reValidate() {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    if ((data || error) && !loading) {
+                        setLoading(true);
+                        fetchData();
+                    }
+                    return [2 /*return*/];
+                });
+            });
+        }
+        if (refresh > 0) {
+            var interval_2 = setTimeout(reValidate, refresh * 1000);
+            return function () { return clearTimeout(interval_2); };
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [refresh, loading, error, data, config]);
+    (0, react_1.useEffect)(function () {
+        setLoading(true);
+        fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [url, refresh, JSON.stringify(config)]);
+    if (typeof Children !== "undefined") {
+        return React.createElement(Children, { data: data, error: error, loading: loading });
+    }
+    else {
+        return { data: data, loading: loading, error: error };
+    }
+};
+exports.useFetcher = useFetcher;
 //# sourceMappingURL=index.js.map
