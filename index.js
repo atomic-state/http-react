@@ -213,12 +213,7 @@ var useFetcher = function (_a) {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url, refresh, JSON.stringify(config)]);
-    if (typeof Children !== "undefined") {
-        return React.createElement(Children, { data: data, error: error, loading: loading });
-    }
-    else {
-        return { data: data, loading: loading, error: error };
-    }
+    return { data: data, loading: loading, error: error };
 };
 exports.useFetcher = useFetcher;
 //# sourceMappingURL=index.js.map
