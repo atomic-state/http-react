@@ -128,6 +128,7 @@ export default Fetcher;
 /**
  * Fetcher available as a hook
  */
+
 export const useFetcher = <FetchDataType extends unknown>({
   url = "/",
   default: def,
@@ -194,9 +195,10 @@ export const useFetcher = <FetchDataType extends unknown>({
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, refresh, JSON.stringify(config)]);
-  if (typeof Children !== "undefined") {
-    return <Children data={data} error={error} loading={loading} />;
-  } else {
-    return { data, loading, error };
-  }
+
+  return { data, loading, error } as {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+  };
 };
