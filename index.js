@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.useFetcher = void 0;
+exports.createHttpClient = exports.useFetcher = void 0;
 var React = require("react");
 var react_1 = require("react");
 var Fetcher = function (_a) {
@@ -216,4 +216,84 @@ var useFetcher = function (_a) {
     return { data: data, loading: loading, error: error };
 };
 exports.useFetcher = useFetcher;
+var defaultConfig = { headers: {}, body: undefined };
+/**
+ * Basic HttpClient
+ */
+var HttpClient = /** @class */ (function () {
+    function HttpClient(url) {
+        this.baseUrl = "";
+        this.baseUrl = url;
+    }
+    HttpClient.prototype.get = function (path, _a, method) {
+        var _b = _a === void 0 ? defaultConfig : _a, headers = _b.headers, body = _b.body;
+        if (method === void 0) { method = "GET"; }
+        return __awaiter(this, void 0, void 0, function () {
+            var requestUrl, responseBody, responseData;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        requestUrl = "" + this.baseUrl + path;
+                        return [4 /*yield*/, fetch(requestUrl, __assign({ method: method, headers: __assign({ "Content-Type": "application/json", Accept: "application/json" }, headers) }, (body ? { body: JSON.stringify(body) } : {})))];
+                    case 1:
+                        responseBody = _c.sent();
+                        return [4 /*yield*/, responseBody.json()];
+                    case 2:
+                        responseData = _c.sent();
+                        return [2 /*return*/, responseData];
+                }
+            });
+        });
+    };
+    HttpClient.prototype.post = function (path, props) {
+        if (props === void 0) { props = defaultConfig; }
+        return __awaiter(this, void 0, void 0, function () {
+            var response;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.get(path, props, "POST")];
+                    case 1:
+                        response = _a.sent();
+                        return [2 /*return*/, response];
+                }
+            });
+        });
+    };
+    HttpClient.prototype.put = function (path, props) {
+        if (props === void 0) { props = defaultConfig; }
+        return __awaiter(this, void 0, void 0, function () {
+            var response;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.get(path, props, "PUT")];
+                    case 1:
+                        response = _a.sent();
+                        return [2 /*return*/, response];
+                }
+            });
+        });
+    };
+    HttpClient.prototype.delete = function (path, props) {
+        if (props === void 0) { props = defaultConfig; }
+        return __awaiter(this, void 0, void 0, function () {
+            var response;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.get(path, props, "DELETE")];
+                    case 1:
+                        response = _a.sent();
+                        return [2 /*return*/, response];
+                }
+            });
+        });
+    };
+    return HttpClient;
+}());
+/**
+ * Creates a new HTTP client
+ */
+function createHttpClient(url) {
+    return new HttpClient(url);
+}
+exports.createHttpClient = createHttpClient;
 //# sourceMappingURL=index.js.map

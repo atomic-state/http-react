@@ -47,3 +47,30 @@ export declare const useFetcher: <FetchDataType extends unknown>({ url, default:
     loading: boolean;
     error: Error | null;
 };
+interface IRequestParam {
+    headers?: any;
+    body?: any;
+}
+declare type requestType = <T>(path: string, data: IRequestParam) => Promise<T>;
+interface IHttpClient {
+    baseUrl: string;
+    get: requestType;
+    post: requestType;
+    put: requestType;
+    delete: requestType;
+}
+/**
+ * Basic HttpClient
+ */
+declare class HttpClient implements IHttpClient {
+    baseUrl: string;
+    get<T>(path: string, { headers, body }?: IRequestParam, method?: string): Promise<T>;
+    post<T>(path: string, props?: IRequestParam): Promise<T>;
+    put<T>(path: string, props?: IRequestParam): Promise<T>;
+    delete<T>(path: string, props?: IRequestParam): Promise<T>;
+    constructor(url: string);
+}
+/**
+ * Creates a new HTTP client
+ */
+export declare function createHttpClient(url: string): HttpClient;
