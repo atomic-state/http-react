@@ -190,18 +190,18 @@ var useFetcher = function (_a) {
             });
         });
     }
-    (0, react_1.useEffect)(function () {
-        function reValidate() {
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    if ((data || error) && !loading) {
-                        setLoading(true);
-                        fetchData();
-                    }
-                    return [2 /*return*/];
-                });
+    function reValidate() {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                if ((data || error) && !loading) {
+                    setLoading(true);
+                    fetchData();
+                }
+                return [2 /*return*/];
             });
-        }
+        });
+    }
+    (0, react_1.useEffect)(function () {
         if (refresh > 0) {
             var interval_2 = setTimeout(reValidate, refresh * 1000);
             return function () { return clearTimeout(interval_2); };
@@ -213,7 +213,7 @@ var useFetcher = function (_a) {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url, refresh, JSON.stringify(config)]);
-    return { data: data, loading: loading, error: error };
+    return { data: data, loading: loading, error: error, reFetch: reValidate };
 };
 exports.useFetcher = useFetcher;
 var defaultConfig = { headers: {}, body: undefined };

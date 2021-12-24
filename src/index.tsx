@@ -176,13 +176,13 @@ export const useFetcher = <FetchDataType extends unknown>({
     }
   }
 
-  useEffect(() => {
-    async function reValidate() {
-      if ((data || error) && !loading) {
-        setLoading(true)
-        fetchData()
-      }
+  async function reValidate() {
+    if ((data || error) && !loading) {
+      setLoading(true)
+      fetchData()
     }
+  }
+  useEffect(() => {
     if (refresh > 0) {
       const interval = setTimeout(reValidate, refresh * 1000)
       return () => clearTimeout(interval)
@@ -196,10 +196,11 @@ export const useFetcher = <FetchDataType extends unknown>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, refresh, JSON.stringify(config)])
 
-  return { data, loading, error } as {
+  return { data, loading, error, reFetch: reValidate } as unknown as {
     data: FetchDataType
     loading: boolean
     error: Error | null
+    reFetch: () => Promise<void>
   }
 }
 

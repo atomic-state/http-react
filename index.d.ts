@@ -46,6 +46,7 @@ export declare const useFetcher: <FetchDataType extends unknown>({ url, default:
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
+    reFetch: () => Promise<void>;
 };
 interface IRequestParam {
     headers?: any;
