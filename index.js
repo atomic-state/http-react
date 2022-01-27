@@ -50,6 +50,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createHttpClient = exports.useFetcher = void 0;
 var React = require("react");
 var react_1 = require("react");
+/**
+ * @deprecated Use the `useFetcher` hook instead
+ */
 var Fetcher = function (_a) {
     var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, Children = _a.children, _d = _a.onError, onError = _d === void 0 ? function () { } : _d, _e = _a.onResolve, onResolve = _e === void 0 ? function () { } : _e, _f = _a.refresh, refresh = _f === void 0 ? 0 : _f;
     var _g = (0, react_1.useState)(def), data = _g[0], setData = _g[1];
@@ -233,7 +236,7 @@ var HttpClient = /** @class */ (function () {
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
-                        requestUrl = "" + this.baseUrl + path;
+                        requestUrl = "".concat(this.baseUrl).concat(path);
                         return [4 /*yield*/, fetch(requestUrl, __assign({ method: method, headers: __assign({ "Content-Type": "application/json", Accept: "application/json" }, headers) }, (body ? { body: JSON.stringify(body) } : {})))];
                     case 1:
                         responseBody = _c.sent();
