@@ -50,6 +50,9 @@ type FetcherType<FetchDataType> = {
   }>
 }
 
+/**
+ * @deprecated Use the `useFetcher` hook instead
+ */
 const Fetcher = <FetchDataType extends unknown>({
   url = "/",
   default: def,

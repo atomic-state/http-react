@@ -37,6 +37,9 @@ declare type FetcherType<FetchDataType> = {
         loading: boolean;
     }>;
 };
+/**
+ * @deprecated Use the `useFetcher` hook instead
+ */
 declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => any;
 export default Fetcher;
 /**
