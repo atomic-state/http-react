@@ -1,4 +1,4 @@
-### React HTTP Fetcher (JSON)
+### HTTP React Fetcher
 
 Hook for data fetching in React
 
@@ -251,7 +251,9 @@ const { data, loading, error } = useFetcher<PostsResponse>({
 
 #### Non-json data
 
-You can pass a `resolver` prop to handle the response object.
+By default, the response body is parsed as JSON, but it's also possible to customize how that data is parsed.
+
+You can pass a `resolver` prop to the hook call.
 
 In this example, an image is fetch and converted to a blob url:
 
@@ -262,6 +264,7 @@ export default function ImageExample() {
 
   const { data } = useFetcher<string>({
     url: "/cat.png",
+    // 'd' type is 'Response'
     resolver: async (d) => {
       
       // Converting to a blob
@@ -280,4 +283,4 @@ export default function ImageExample() {
 
 ```
 
-If you don't pass a resolver, the `useFetcher` hook will try to read the response data as JSON
+If you don't pass a resolver, the `useFetcher` hook will try to read the response data as JSON.
