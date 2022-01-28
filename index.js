@@ -1,4 +1,11 @@
 "use strict";
+/**
+ * @license http-react-fetcher
+ * Copyright (c) Dany Beltran
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -141,10 +148,10 @@ exports.default = Fetcher;
  * Fetcher available as a hook
  */
 var useFetcher = function (_a) {
-    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, Children = _a.children, _d = _a.onError, onError = _d === void 0 ? function () { } : _d, _e = _a.onResolve, onResolve = _e === void 0 ? function () { } : _e, _f = _a.refresh, refresh = _f === void 0 ? 0 : _f;
-    var _g = (0, react_1.useState)(def), data = _g[0], setData = _g[1];
-    var _h = (0, react_1.useState)(null), error = _h[0], setError = _h[1];
-    var _j = (0, react_1.useState)(true), loading = _j[0], setLoading = _j[1];
+    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, Children = _a.children, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.onResolve, onResolve = _f === void 0 ? function () { } : _f, _g = _a.refresh, refresh = _g === void 0 ? 0 : _g;
+    var _h = (0, react_1.useState)(def), data = _h[0], setData = _h[1];
+    var _j = (0, react_1.useState)(null), error = _j[0], setError = _j[1];
+    var _k = (0, react_1.useState)(true), loading = _k[0], setLoading = _k[1];
     function fetchData() {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
@@ -162,7 +169,7 @@ var useFetcher = function (_a) {
                             })];
                     case 1:
                         json = _b.sent();
-                        return [4 /*yield*/, json.json()];
+                        return [4 /*yield*/, resolver(json)];
                     case 2:
                         _data = _b.sent();
                         code = json.status;

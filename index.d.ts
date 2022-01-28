@@ -1,3 +1,10 @@
+/**
+ * @license http-react-fetcher
+ * Copyright (c) Dany Beltran
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
 import * as React from "react";
 declare type FetcherType<FetchDataType> = {
     /**
@@ -20,6 +27,11 @@ declare type FetcherType<FetchDataType> = {
      * Function to run when the request fails
      */
     onError?: (error: Error) => void;
+    /**
+     * Function that reads the Response object and parses it.
+     * By default, it attempts to read the response as JSON.
+     */
+    resolver?: (d: Response) => any;
     /**
      * Request configuration
      */
@@ -45,7 +57,7 @@ export default Fetcher;
 /**
  * Fetcher available as a hook
  */
-export declare const useFetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => {
+export declare const useFetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, resolver, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
