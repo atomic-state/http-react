@@ -1,19 +1,22 @@
 {
   "name": "http-react-fetcher",
   "version": "1.1.6",
-  "description": "React fetch wrapper component for React and React Native.",
+  "description": "Data fetching hook for React apps",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/danybeltran/http-react-fetcher"
+    "url": "https://github.com/atomic-state/http-react-fetcher"
   },
   "keywords": [
     "http",
     "api",
     "react http",
-    "http request"
+    "fetching hook",
+    "use fetch",
+    "http request",
+    "fetching utilities"
   ],
   "author": "Dany Beltran",
   "license": "MIT",
-  "homepage": "https://github.com/danybeltran/http-react-fetcher#readme"
+  "homepage": "https://github.com/atomic-state/http-react-fetcher#readme"
 }
