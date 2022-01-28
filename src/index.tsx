@@ -1,3 +1,11 @@
+/**
+ * @license http-react-fetcher
+ * Copyright (c) Dany Beltran
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import * as React from "react"
 import { useState, useEffect } from "react"
 
@@ -22,6 +30,10 @@ type FetcherType<FetchDataType> = {
    * Function to run when the request fails
    */
   onError?: (error: Error) => void
+  /**
+   * Parse as json by default
+   */
+  resolver?: (d: Response) => any
   /**
    * Request configuration
    */
@@ -137,6 +149,7 @@ export const useFetcher = <FetchDataType extends unknown>({
   default: def,
   config = { method: "GET", headers: {} as Headers, body: {} as Body },
   children: Children,
+  resolver = (d) => d.json(),
   onError = () => {},
   onResolve = () => {},
   refresh = 0,
@@ -157,7 +170,7 @@ export const useFetcher = <FetchDataType extends unknown>({
           ? JSON.stringify(config.body)
           : undefined,
       })
-      const _data = await json.json()
+      const _data = await resolver(json)
       const code = json.status
       if (code >= 200 && code < 300) {
         setData(_data)
