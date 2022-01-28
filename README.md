@@ -248,3 +248,36 @@ const { data, loading, error } = useFetcher<PostsResponse>({
 ...
 
 ```
+
+#### Non-json data
+
+You can pass a `resolver` prop to handle the response object.
+
+In this example, an image is fetch and converted to a blob url:
+
+```tsx
+import { useFetcher } from "http-react-fetcher"
+
+export default function ImageExample() {
+
+  const { data } = useFetcher<string>({
+    url: "/cat.png",
+    resolver: async (d) => {
+      
+      // Converting to a blob
+      const data = await d.blob()
+
+      // Return the needed format
+      return URL.createObjectURL(data)
+    },
+  })
+  return (
+    <main>
+      <img src={data} alt="" />
+    </main>
+  )
+}
+
+```
+
+If you don't pass a resolver, the `useFetcher` hook will try to read the response data as JSON

@@ -28,7 +28,8 @@ declare type FetcherType<FetchDataType> = {
      */
     onError?: (error: Error) => void;
     /**
-     * Parse as json by default
+     * Function that reads the Response object and parses it.
+     * By default, it attempts to read the response as JSON.
      */
     resolver?: (d: Response) => any;
     /**
