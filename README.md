@@ -151,8 +151,42 @@ function App(){
 
 ```
 
+#### Loading from memory
 
-##### Request configuration
+By default, responses are saved in memory using the `url` as key.
+
+The initial data value will be loaded from memory. This means that a full page reload will delete all saved requests. In browsers, this only works if navigating between pages doesn't trigger a full page refresh.
+
+You can remove this feature by passing `memory: false` in `useFetcher`
+
+
+```tsx
+function App(){
+
+  const { data, loading, error } = useFetcher({
+    url: "api-url",
+    /* `data` initial value will not be taken from memory but `default` */
+    memory: false,
+    default: {}
+  })
+
+  return (
+    <div>
+      {
+        loading ?
+        <p>Loading data...</p > :
+          error ?
+        <p>Error=(</p> :
+        JSON.stringify(data)
+      }
+    </div>
+  )
+}
+
+```
+
+
+#### Request configuration
 
 You can pass a `config` prop that has the following type
 

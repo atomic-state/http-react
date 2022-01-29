@@ -29,6 +29,11 @@ type FetcherType<FetchDataType> = {
    */
   auto?: boolean
   /**
+   * Default is true. Responses are saved in memory and used as default data.
+   * If `false`, the `default` prop will be used instead.
+   */
+  memory?: boolean
+  /**
    * Function to run when request is resolved succesfuly
    */
   onResolve?: (data: FetchDataType) => void
@@ -146,6 +151,8 @@ const Fetcher = <FetchDataType extends unknown>({
 
 export default Fetcher
 
+const resolvedRequests: any = {}
+
 /**
  * Fetcher available as a hook
  */
@@ -157,10 +164,13 @@ export const useFetcher = <FetchDataType extends unknown>({
   resolver = (d) => d.json(),
   onError = () => {},
   auto = true,
+  memory = true,
   onResolve = () => {},
   refresh = 0,
 }: FetcherType<FetchDataType>) => {
-  const [data, setData] = useState<FetchDataType | undefined>(def)
+  const [data, setData] = useState<FetchDataType | undefined>(
+    memory ? resolvedRequests[url] || def : def
+  )
   const [error, setError] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -179,6 +189,9 @@ export const useFetcher = <FetchDataType extends unknown>({
       const _data = await resolver(json)
       const code = json.status
       if (code >= 200 && code < 300) {
+        if (memory) {
+          resolvedRequests[url] = _data
+        }
         setData(_data)
         setError(null)
         onResolve(_data)

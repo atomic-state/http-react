@@ -26,6 +26,11 @@ declare type FetcherType<FetchDataType> = {
      */
     auto?: boolean;
     /**
+     * Default is true. Responses are saved in memory and used as default data.
+     * If `false`, the `default` prop will be used instead.
+     */
+    memory?: boolean;
+    /**
      * Function to run when request is resolved succesfuly
      */
     onResolve?: (data: FetchDataType) => void;
@@ -63,7 +68,7 @@ export default Fetcher;
  * Fetcher available as a hook
  */
 export declare const useFetcher: {
-    <FetchDataType extends unknown>({ url, default: def, config, resolver, onError, auto, onResolve, refresh, }: FetcherType<FetchDataType>): {
+    <FetchDataType extends unknown>({ url, default: def, config, resolver, onError, auto, memory, onResolve, refresh, }: FetcherType<FetchDataType>): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
@@ -98,7 +103,7 @@ declare type FetcherExtendConfig = {
     resolver?: (d: Response) => any;
 };
 export declare const fetcher: {
-    <FetchDataType extends unknown>({ url, default: def, config, resolver, onError, auto, onResolve, refresh, }: FetcherType<FetchDataType>): {
+    <FetchDataType extends unknown>({ url, default: def, config, resolver, onError, auto, memory, onResolve, refresh, }: FetcherType<FetchDataType>): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;

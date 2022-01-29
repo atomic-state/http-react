@@ -155,14 +155,15 @@ var Fetcher = function (_a) {
     }
 };
 exports.default = Fetcher;
+var resolvedRequests = {};
 /**
  * Fetcher available as a hook
  */
 var useFetcher = function (_a) {
-    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? true : _f, _g = _a.onResolve, onResolve = _g === void 0 ? function () { } : _g, _h = _a.refresh, refresh = _h === void 0 ? 0 : _h;
-    var _j = (0, react_1.useState)(def), data = _j[0], setData = _j[1];
-    var _k = (0, react_1.useState)(null), error = _k[0], setError = _k[1];
-    var _l = (0, react_1.useState)(true), loading = _l[0], setLoading = _l[1];
+    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? true : _f, _g = _a.memory, memory = _g === void 0 ? true : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.refresh, refresh = _j === void 0 ? 0 : _j;
+    var _k = (0, react_1.useState)(memory ? resolvedRequests[url] || def : def), data = _k[0], setData = _k[1];
+    var _l = (0, react_1.useState)(null), error = _l[0], setError = _l[1];
+    var _m = (0, react_1.useState)(true), loading = _m[0], setLoading = _m[1];
     function fetchData() {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
@@ -185,6 +186,9 @@ var useFetcher = function (_a) {
                         _data = _b.sent();
                         code = json.status;
                         if (code >= 200 && code < 300) {
+                            if (memory) {
+                                resolvedRequests[url] = _data;
+                            }
                             setData(_data);
                             setError(null);
                             onResolve(_data);
