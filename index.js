@@ -53,8 +53,19 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.useFetcher = void 0;
+exports.createHttpClient = exports.fetcher = exports.useFetcher = void 0;
 var React = require("react");
 var react_1 = require("react");
 /**
@@ -226,6 +237,27 @@ var useFetcher = function (_a) {
     return { data: data, loading: loading, error: error, reFetch: reValidate };
 };
 exports.useFetcher = useFetcher;
+/**
+ * Extend the useFetcher hook
+ */
+exports.useFetcher.extend = function extendFetcher(_a) {
+    var _b = _a === void 0 ? {} : _a, _c = _b.baseUrl, baseUrl = _c === void 0 ? "" : _c, _d = _b.headers, headers = _d === void 0 ? {} : _d, _e = _b.body, body = _e === void 0 ? {} : _e, 
+    // json by default
+    _f = _b.resolver, 
+    // json by default
+    resolver = _f === void 0 ? function (d) { return d.json(); } : _f;
+    return function customFetcher(_a) {
+        var _b = _a.url, url = _b === void 0 ? "" : _b, _c = _a.config, config = _c === void 0 ? {} : _c, otherProps = __rest(_a, ["url", "config"]);
+        return (0, exports.useFetcher)(__assign(__assign({}, otherProps), { url: "".concat(baseUrl).concat(url), 
+            // If resolver is present is hook call, use that instead
+            resolver: otherProps.resolver || resolver, config: {
+                method: config.method,
+                headers: __assign(__assign({}, headers), config.headers),
+                body: __assign(__assign({}, body), config.body),
+            } }));
+    };
+};
+exports.fetcher = exports.useFetcher;
 var defaultConfig = { headers: {}, body: undefined };
 /**
  * Basic HttpClient

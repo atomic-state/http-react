@@ -31,8 +31,7 @@ type FetcherType<FetchDataType> = {
    */
   onError?: (error: Error) => void
   /**
-   * Function that reads the Response object and parses it.
-   * By default, it attempts to read the response as JSON.
+   * Parse as json by default
    */
   resolver?: (d: Response) => any
   /**
@@ -220,6 +219,62 @@ export const useFetcher = <FetchDataType extends unknown>({
     reFetch: () => Promise<void>
   }
 }
+
+type FetcherExtendConfig = {
+  /**
+   * Request base url
+   */
+  baseUrl?: string
+  /**
+   * Headers to include in each request
+   */
+  headers?: Headers | object
+  /**
+   * Body to include in each request (if aplicable)
+   */
+  body?: any
+  /**
+   * Custom resolver
+   */
+  resolver?: (d: Response) => any
+}
+
+/**
+ * Extend the useFetcher hook
+ */
+useFetcher.extend = function extendFetcher({
+  baseUrl = "",
+  headers = {} as Headers,
+  body = {},
+  // json by default
+  resolver = (d) => d.json(),
+}: FetcherExtendConfig = {}) {
+  return function customFetcher<T>({
+    url = "",
+    config = {},
+    ...otherProps
+  }: FetcherType<T>) {
+    return useFetcher<T>({
+      ...otherProps,
+      url: `${baseUrl}${url}`,
+      // If resolver is present is hook call, use that instead
+      resolver: otherProps.resolver || resolver,
+      config: {
+        method: config.method,
+        headers: {
+          ...headers,
+          ...config.headers,
+        },
+        body: {
+          ...body,
+          ...config.body,
+        },
+      },
+    })
+  }
+}
+
+export const fetcher = useFetcher
 
 // Http client
 

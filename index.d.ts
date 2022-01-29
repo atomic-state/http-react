@@ -28,8 +28,7 @@ declare type FetcherType<FetchDataType> = {
      */
     onError?: (error: Error) => void;
     /**
-     * Function that reads the Response object and parses it.
-     * By default, it attempts to read the response as JSON.
+     * Parse as json by default
      */
     resolver?: (d: Response) => any;
     /**
@@ -57,11 +56,57 @@ export default Fetcher;
 /**
  * Fetcher available as a hook
  */
-export declare const useFetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, resolver, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => {
-    data: FetchDataType;
-    loading: boolean;
-    error: Error | null;
-    reFetch: () => Promise<void>;
+export declare const useFetcher: {
+    <FetchDataType extends unknown>({ url, default: def, config, children: Children, resolver, onError, onResolve, refresh, }: FetcherType<FetchDataType>): {
+        data: FetchDataType;
+        loading: boolean;
+        error: Error | null;
+        reFetch: () => Promise<void>;
+    };
+    /**
+     * Extend the useFetcher hook
+     */
+    extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): <T>({ url, config, ...otherProps }: FetcherType<T>) => {
+        data: T;
+        loading: boolean;
+        error: Error | null;
+        reFetch: () => Promise<void>;
+    };
+};
+declare type FetcherExtendConfig = {
+    /**
+     * Request base url
+     */
+    baseUrl?: string;
+    /**
+     * Headers to include in each request
+     */
+    headers?: Headers | object;
+    /**
+     * Body to include in each request (if aplicable)
+     */
+    body?: any;
+    /**
+     * Custom resolver
+     */
+    resolver?: (d: Response) => any;
+};
+export declare const fetcher: {
+    <FetchDataType extends unknown>({ url, default: def, config, children: Children, resolver, onError, onResolve, refresh, }: FetcherType<FetchDataType>): {
+        data: FetchDataType;
+        loading: boolean;
+        error: Error | null;
+        reFetch: () => Promise<void>;
+    };
+    /**
+     * Extend the useFetcher hook
+     */
+    extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): <T>({ url, config, ...otherProps }: FetcherType<T>) => {
+        data: T;
+        loading: boolean;
+        error: Error | null;
+        reFetch: () => Promise<void>;
+    };
 };
 interface IRequestParam {
     headers?: any;

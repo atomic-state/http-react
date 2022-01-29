@@ -284,3 +284,43 @@ export default function ImageExample() {
 ```
 
 If you don't pass a resolver, the `useFetcher` hook will try to read the response data as JSON.
+
+
+#### Extending `useFetcher`
+
+It may be tedious to write, for example, the same authorization header in each `useFetcher` call.
+
+You can extend the base hook and configure the following props: `baseUrl`, `headers`, `body`,`resolver`, which will get applied to each hook call of the returned hook.
+
+Example with jsonplaceholder:
+
+
+```tsx
+
+import { useFetcher } from "http-react-fetcher"
+
+const useTodoFetcher = useFetcher.extend({
+  baseUrl: "https://jsonplaceholder.typicode.com",
+  headers: {},
+  // If `resolver` is not present, data will be parsed as JSON
+})
+
+type TodoType = {
+  userId: number
+}
+
+export default function ImageExample() {
+  // Typing works the same
+  const { data } = useTodoFetcher<TodoType[]>({
+    url: "/todos",
+  })
+
+  return (
+    <main>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </main>
+  )
+}
+
+
+```
