@@ -23,6 +23,12 @@ type FetcherType<FetchDataType> = {
    */
   refresh?: number
   /**
+   * This will prevent automatic requests.
+   * By setting this to `false`, requests will
+   * only be made by calling `reFetch()`
+   */
+  auto?: boolean
+  /**
    * Function to run when request is resolved succesfuly
    */
   onResolve?: (data: FetchDataType) => void
@@ -148,9 +154,9 @@ export const useFetcher = <FetchDataType extends unknown>({
   url = "/",
   default: def,
   config = { method: "GET", headers: {} as Headers, body: {} as Body },
-  children: Children,
   resolver = (d) => d.json(),
   onError = () => {},
+  auto = true,
   onResolve = () => {},
   refresh = 0,
 }: FetcherType<FetchDataType>) => {
@@ -193,13 +199,14 @@ export const useFetcher = <FetchDataType extends unknown>({
   }
 
   async function reValidate() {
-    if ((data || error) && !loading) {
+    // Only revalidate if request was already completed
+    if (!loading) {
       setLoading(true)
       fetchData()
     }
   }
   useEffect(() => {
-    if (refresh > 0) {
+    if (refresh > 0 && auto) {
       const interval = setTimeout(reValidate, refresh * 1000)
       return () => clearTimeout(interval)
     }
@@ -207,8 +214,14 @@ export const useFetcher = <FetchDataType extends unknown>({
   }, [refresh, loading, error, data, config])
 
   useEffect(() => {
-    setLoading(true)
-    fetchData()
+    if (auto) {
+      setLoading(true)
+      fetchData()
+    } else {
+      setData(def)
+      setError(null)
+      setLoading(false)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, refresh, JSON.stringify(config)])
 
