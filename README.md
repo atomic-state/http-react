@@ -118,6 +118,40 @@ function App(){
 
 ```
 
+You can also prevent automatic refresh by setting `auto` to `false` when you call the `useFetcher` hook.
+This means a request will only be made when you call `reFetch()`.
+There will not be an initial request, but the `default` prop will still be assigned to the data if there is no error and `loading` is `false`.
+
+
+```tsx
+import { useFetcher } from "http-react-fetcher"
+
+
+function App(){
+
+  const { data, loading, error, reFetch } = useFetcher({
+    url: "api-url",
+    default: {},
+    auto: false
+  })
+
+  return (
+    <div>
+    <button onClick={reFetch}>Click to load information</button>
+      {
+        loading ?
+        <p>Loading data...</p > :
+          error ?
+        <p>Error=(</p> :
+        JSON.stringify(data)
+      }
+    </div>
+  )
+}
+
+```
+
+
 ##### Request configuration
 
 You can pass a `config` prop that has the following type

@@ -159,10 +159,10 @@ exports.default = Fetcher;
  * Fetcher available as a hook
  */
 var useFetcher = function (_a) {
-    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, Children = _a.children, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.onResolve, onResolve = _f === void 0 ? function () { } : _f, _g = _a.refresh, refresh = _g === void 0 ? 0 : _g;
-    var _h = (0, react_1.useState)(def), data = _h[0], setData = _h[1];
-    var _j = (0, react_1.useState)(null), error = _j[0], setError = _j[1];
-    var _k = (0, react_1.useState)(true), loading = _k[0], setLoading = _k[1];
+    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? true : _f, _g = _a.onResolve, onResolve = _g === void 0 ? function () { } : _g, _h = _a.refresh, refresh = _h === void 0 ? 0 : _h;
+    var _j = (0, react_1.useState)(def), data = _j[0], setData = _j[1];
+    var _k = (0, react_1.useState)(null), error = _k[0], setError = _k[1];
+    var _l = (0, react_1.useState)(true), loading = _l[0], setLoading = _l[1];
     function fetchData() {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
@@ -214,7 +214,8 @@ var useFetcher = function (_a) {
     function reValidate() {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                if ((data || error) && !loading) {
+                // Only revalidate if request was already completed
+                if (!loading) {
                     setLoading(true);
                     fetchData();
                 }
@@ -223,15 +224,22 @@ var useFetcher = function (_a) {
         });
     }
     (0, react_1.useEffect)(function () {
-        if (refresh > 0) {
+        if (refresh > 0 && auto) {
             var interval_2 = setTimeout(reValidate, refresh * 1000);
             return function () { return clearTimeout(interval_2); };
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, loading, error, data, config]);
     (0, react_1.useEffect)(function () {
-        setLoading(true);
-        fetchData();
+        if (auto) {
+            setLoading(true);
+            fetchData();
+        }
+        else {
+            setData(def);
+            setError(null);
+            setLoading(false);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url, refresh, JSON.stringify(config)]);
     return { data: data, loading: loading, error: error, reFetch: reValidate };
