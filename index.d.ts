@@ -62,7 +62,7 @@ declare type FetcherType<FetchDataType> = {
 /**
  * @deprecated Use the `useFetcher` hook instead
  */
-declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => JSX.Element | null;
+declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => any;
 export default Fetcher;
 /**
  * Fetcher available as a hook
