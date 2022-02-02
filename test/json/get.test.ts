@@ -1,23 +1,30 @@
-import { renderHook } from "@testing-library/react-hooks";
-import { useFetcher } from "../../fetcher";
+import { renderHook } from "@testing-library/react-hooks"
+import { useFetcher } from "../../"
+import mocks from "../mocks"
 
 test("GET data in JSON", async () => {
+  global.fetch = jest.fn().mockImplementation((url, config) =>
+    Promise.resolve({
+      json: () => mocks[config.method],
+    })
+  )
+
   const { result, waitForNextUpdate } = renderHook(() =>
     useFetcher({
-      url: "https://express-backend-atomic.herokuapp.com/api/json/works",
+      url: "",
     })
-  );
-  await waitForNextUpdate();
+  )
 
-  expect(result.current.loading).toBe(false);
+  await waitForNextUpdate()
 
-  expect(result.current.data).toEqual({
-    careers: [
-      "Backend Developer",
-      "Cloud Enginner",
-      "DB Administrator",
-      "Designer UI/UX",
-      "Security Analist",
-    ],
-  });
-});
+  if (result.current.loading)
+    expect(result.current.data).toEqual({
+      careers: [
+        "Backend Developer",
+        "Cloud Enginner",
+        "DB Administrator",
+        "Designer UI/UX",
+        "Security Analist",
+      ],
+    })
+})
