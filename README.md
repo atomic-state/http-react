@@ -2,6 +2,12 @@
 
 Hook for data fetching in React
 
+<p align="center">
+<a href="https://www.npmjs.com/package/http-react-fetcher" target="_blank"><img src="https://badge.fury.io/js/http-react-fetcher.svg"></a>
+<img src="https://img.shields.io/badge/License-MIT-yellow.svg" />
+<img src="https://github.com//atomic-state/http-react-fetcher/actions/workflows/test.yml/badge.svg?event=push" />
+</p>
+
 Installation:
 
 ```bash
@@ -14,39 +20,33 @@ Or
 yarn add http-react-fetcher
 ```
 
-
-
 #### Basic usage
 
 ```tsx
-import { useFetcher } from "http-react-fetcher"
+import { useFetcher } from "http-react-fetcher";
 
-
-function App(){
-
+function App() {
   const { data, loading, error } = useFetcher({
     url: "api-url",
-  })
+  });
 
   return (
     <div>
-      {
-        loading ?
-        <p>Loading data...</p > :
-          error ?
-        <p>Error=(</p> :
+      {loading ? (
+        <p>Loading data...</p>
+      ) : error ? (
+        <p>Error=(</p>
+      ) : (
         JSON.stringify(data)
-      }
+      )}
     </div>
-  )
+  );
 }
-
 ```
 
 #### Default data value
 
 You can set a default value to return as data while the request is completing. If the request fails, however, the `data` prop will be `undefined`
-
 
 ```jsx
   ...
@@ -55,17 +55,15 @@ You can set a default value to return as data while the request is completing. I
     url: "api-url/posts",
     default: []
   })
-  
+
   ...
 ```
-
 
 #### Automatically re-fetch
 
 A new request will always be made if any of the props passed to `useFetcher` changes.
 
 If props won't change but you need refreshing, you can pass a `refresh` prop in the `useFetcher` hook. This is the ammount of seconds to wait until making a new request.
-
 
 ```jsx
   ...
@@ -74,13 +72,14 @@ If props won't change but you need refreshing, you can pass a `refresh` prop in 
     url: "api-url",
     refresh: 10 // 10 seconds
   })
-  
+
   ...
 ```
 
 When `refresh` is present, `useFetcher` will do the following:
 
 Example with a refresh of 5 seconds:
+
 - Make an initial request
 - After that request is complete, count 5 seconds
 - Make another request
@@ -93,62 +92,55 @@ Example with a refresh of 5 seconds:
 > Note: this will not work if a previous request hasn't been completed yet.
 
 ```tsx
-import { useFetcher } from "http-react-fetcher"
+import { useFetcher } from "http-react-fetcher";
 
-
-function App(){
-
+function App() {
   const { data, loading, error, reFetch } = useFetcher({
     url: "api-url",
-  })
+  });
 
   return (
     <div>
-    <button onClick={reFetch}>Refresh</button>
-      {
-        loading ?
-        <p>Loading data...</p > :
-          error ?
-        <p>Error=(</p> :
+      <button onClick={reFetch}>Refresh</button>
+      {loading ? (
+        <p>Loading data...</p>
+      ) : error ? (
+        <p>Error=(</p>
+      ) : (
         JSON.stringify(data)
-      }
+      )}
     </div>
-  )
+  );
 }
-
 ```
 
 You can also prevent automatic refresh by setting `auto` to `false` when you call the `useFetcher` hook.
 This means a request will only be made when you call `reFetch()`.
 There will not be an initial request, but the `default` prop will still be assigned to the data if there is no error and `loading` is `false`.
 
-
 ```tsx
-import { useFetcher } from "http-react-fetcher"
+import { useFetcher } from "http-react-fetcher";
 
-
-function App(){
-
+function App() {
   const { data, loading, error, reFetch } = useFetcher({
     url: "api-url",
     default: {},
-    auto: false
-  })
+    auto: false,
+  });
 
   return (
     <div>
-    <button onClick={reFetch}>Click to load information</button>
-      {
-        loading ?
-        <p>Loading data...</p > :
-          error ?
-        <p>Error=(</p> :
+      <button onClick={reFetch}>Click to load information</button>
+      {loading ? (
+        <p>Loading data...</p>
+      ) : error ? (
+        <p>Error=(</p>
+      ) : (
         JSON.stringify(data)
-      }
+      )}
     </div>
-  )
+  );
 }
-
 ```
 
 #### Loading from memory
@@ -159,32 +151,28 @@ The initial data value will be loaded from memory. This means that a full page r
 
 You can remove this feature by passing `memory: false` in `useFetcher`
 
-
 ```tsx
-function App(){
-
+function App() {
   const { data, loading, error } = useFetcher({
     url: "api-url",
     /* `data` initial value will not be taken from memory but `default` */
     memory: false,
-    default: {}
-  })
+    default: {},
+  });
 
   return (
     <div>
-      {
-        loading ?
-        <p>Loading data...</p > :
-          error ?
-        <p>Error=(</p> :
+      {loading ? (
+        <p>Loading data...</p>
+      ) : error ? (
+        <p>Error=(</p>
+      ) : (
         JSON.stringify(data)
-      }
+      )}
     </div>
-  )
+  );
 }
-
 ```
-
 
 #### Request configuration
 
@@ -225,7 +213,6 @@ const { data, loading, error } = useFetcher({
 
 ```
 
-
 #### Handling error / success
 
 You can pass other props:
@@ -233,7 +220,6 @@ You can pass other props:
 `onSuccess(data) { }`: Will run when a request completes succesfuly
 
 `onError(error) { }`: Will run when a request fails
-
 
 Example:
 
@@ -267,7 +253,6 @@ const { data, loading, error } = useFetcher({
 #### TypeScript support
 
 It has full TypeScript support. You can pass a type indicating the data type of the response:
-
 
 Full example:
 
@@ -326,33 +311,29 @@ You can pass a `resolver` prop to the hook call.
 In this example, an image is fetch and converted to a blob url:
 
 ```tsx
-import { useFetcher } from "http-react-fetcher"
+import { useFetcher } from "http-react-fetcher";
 
 export default function ImageExample() {
-
   const { data } = useFetcher<string>({
     url: "/cat.png",
     // 'd' type is 'Response'
     resolver: async (d) => {
-      
       // Converting to a blob
-      const data = await d.blob()
+      const data = await d.blob();
 
       // Return the needed format
-      return URL.createObjectURL(data)
+      return URL.createObjectURL(data);
     },
-  })
+  });
   return (
     <main>
       <img src={data} alt="" />
     </main>
-  )
+  );
 }
-
 ```
 
 If you don't pass a resolver, the `useFetcher` hook will try to read the response data as JSON.
-
 
 #### Extending `useFetcher`
 
@@ -362,33 +343,29 @@ You can extend the base hook and configure the following props: `baseUrl`, `head
 
 Example with jsonplaceholder:
 
-
 ```tsx
-
-import { useFetcher } from "http-react-fetcher"
+import { useFetcher } from "http-react-fetcher";
 
 const useTodoFetcher = useFetcher.extend({
   baseUrl: "https://jsonplaceholder.typicode.com",
   headers: {},
   // If `resolver` is not present, data will be parsed as JSON
-})
+});
 
 type TodoType = {
-  userId: number
-}
+  userId: number;
+};
 
 export default function ImageExample() {
   // Typing works the same
   const { data } = useTodoFetcher<TodoType[]>({
     url: "/todos",
-  })
+  });
 
   return (
     <main>
       <pre>{JSON.stringify(data, null, 2)}</pre>
     </main>
-  )
+  );
 }
-
-
 ```
