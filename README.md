@@ -369,3 +369,46 @@ export default function ImageExample() {
   );
 }
 ```
+
+#### Aborting requests
+
+You can prevent requests from completing. `useFetcher` exposes an `abort` function which will cancel the current request. You can have a callback for when a request is cancelled.
+
+You can also pass a `cancelOnChange` prop which will cancel a pending request to make a new one with the last props.
+
+The last one is useful if for example, props change (which will always make a new request even if a request has not completed yet) and you don't want a previous request to finish, but only do it with the last props passed
+
+
+```js
+import { useFetcher } from "fetchings"
+import { useState } from "react"
+
+export default function App() {
+  const [searchQuery, setSearchQuery] = useState("")
+  const { data, loading, error, abort } = useFetcher({
+    url: "http://my-api/?search=" + searchQuery,
+    onAbort() {
+      console.log("Request aborted")
+    },
+    // Whenever props change, cancel pending request to make a new one
+    cancelOnChange: true,
+  })
+
+  return (
+    <div>
+      <button onClick={abort}>Cancel search</button>
+      <br />
+      <input
+        value={searchQuery}
+        onChange={(e) => {
+          setSearchQuery(e.target.value)
+        }}
+      />
+      {loading && <p>Loading results...</p>}
+      <pre>{JSON.stringify({ data, error }, null, 2)}</pre>
+    </div>
+  )
+}
+
+
+```

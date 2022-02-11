@@ -39,6 +39,14 @@ declare type FetcherType<FetchDataType> = {
      */
     onError?: (error: Error) => void;
     /**
+     * Function to run when a request is aborted
+     */
+    onAbort?: () => void;
+    /**
+     * Whether a change in deps will cancel a queued request and make a new one
+     */
+    cancelOnChange?: boolean;
+    /**
      * Parse as json by default
      */
     resolver?: (d: Response) => any;
@@ -68,11 +76,20 @@ export default Fetcher;
  * Fetcher available as a hook
  */
 export declare const useFetcher: {
-    <FetchDataType extends unknown>({ url, default: def, config, resolver, onError, auto, memory, onResolve, refresh, }: FetcherType<FetchDataType>): {
+    <FetchDataType extends unknown>({ url, default: def, config, resolver, onError, auto, memory, onResolve, onAbort, refresh, cancelOnChange, }: FetcherType<FetchDataType>): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
         reFetch: () => Promise<void>;
+        abort: () => void;
+        config: {
+            /**
+             * Request method
+             */
+            method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+            headers?: object | Headers | undefined;
+            body?: object | Body | undefined;
+        } | undefined;
     };
     /**
      * Extend the useFetcher hook
@@ -82,6 +99,15 @@ export declare const useFetcher: {
         loading: boolean;
         error: Error | null;
         reFetch: () => Promise<void>;
+        abort: () => void;
+        config: {
+            /**
+             * Request method
+             */
+            method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+            headers?: object | Headers | undefined;
+            body?: object | Body | undefined;
+        } | undefined;
     };
 };
 declare type FetcherExtendConfig = {
@@ -103,11 +129,20 @@ declare type FetcherExtendConfig = {
     resolver?: (d: Response) => any;
 };
 export declare const fetcher: {
-    <FetchDataType extends unknown>({ url, default: def, config, resolver, onError, auto, memory, onResolve, refresh, }: FetcherType<FetchDataType>): {
+    <FetchDataType extends unknown>({ url, default: def, config, resolver, onError, auto, memory, onResolve, onAbort, refresh, cancelOnChange, }: FetcherType<FetchDataType>): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
         reFetch: () => Promise<void>;
+        abort: () => void;
+        config: {
+            /**
+             * Request method
+             */
+            method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+            headers?: object | Headers | undefined;
+            body?: object | Body | undefined;
+        } | undefined;
     };
     /**
      * Extend the useFetcher hook
@@ -117,6 +152,15 @@ export declare const fetcher: {
         loading: boolean;
         error: Error | null;
         reFetch: () => Promise<void>;
+        abort: () => void;
+        config: {
+            /**
+             * Request method
+             */
+            method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+            headers?: object | Headers | undefined;
+            body?: object | Body | undefined;
+        } | undefined;
     };
 };
 interface IRequestParam {

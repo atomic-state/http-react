@@ -42,6 +42,14 @@ type FetcherType<FetchDataType> = {
    */
   onError?: (error: Error) => void
   /**
+   * Function to run when a request is aborted
+   */
+  onAbort?: () => void
+  /**
+   * Whether a change in deps will cancel a queued request and make a new one
+   */
+  cancelOnChange?: boolean
+  /**
    * Parse as json by default
    */
   resolver?: (d: Response) => any
@@ -166,17 +174,31 @@ export const useFetcher = <FetchDataType extends unknown>({
   auto = true,
   memory = true,
   onResolve = () => {},
+  onAbort = () => {},
   refresh = 0,
+  cancelOnChange = false,
 }: FetcherType<FetchDataType>) => {
+  const resolvedKey = url.split("?")[0]
+
   const [data, setData] = useState<FetchDataType | undefined>(
-    memory ? resolvedRequests[url] || def : def
+    // Saved to base url of request without query params
+    memory ? resolvedRequests[resolvedKey] || def : def
   )
   const [error, setError] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [requestAbortController, setRequestAbortController] =
+    useState<AbortController>(new AbortController())
 
   async function fetchData() {
+    if (cancelOnChange) {
+      requestAbortController?.abort()
+    }
+    let newAbortController = new AbortController()
+    setRequestAbortController(newAbortController)
+    setError(null)
     try {
       const json = await fetch(url, {
+        signal: newAbortController.signal,
         method: config.method,
         headers: {
           "Content-Type": "application/json",
@@ -190,7 +212,7 @@ export const useFetcher = <FetchDataType extends unknown>({
       const code = json.status
       if (code >= 200 && code < 300) {
         if (memory) {
-          resolvedRequests[url] = _data
+          resolvedRequests[resolvedKey] = _data
         }
         setData(_data)
         setError(null)
@@ -203,13 +225,49 @@ export const useFetcher = <FetchDataType extends unknown>({
         onError(_data)
       }
     } catch (err) {
-      setData(undefined)
-      setError(new Error(err))
-      onError(err)
+      const errorString = err?.toString()
+      // Only set error if no abort
+      if (!errorString.match(/abort/i)) {
+        setData(undefined)
+        setError(new Error(err))
+        onError(err)
+      } else {
+        if (!resolvedRequests[resolvedKey]) {
+          setData(def)
+        }
+      }
     } finally {
       setLoading(false)
     }
   }
+
+  const cancelCurrentRequest = React.useMemo(
+    () =>
+      function cancelCurrentRequest() {
+        if (loading) {
+          requestAbortController.abort()
+          setError(false)
+          setLoading(false)
+          setData(resolvedRequests[resolvedKey])
+        }
+      },
+    [requestAbortController, loading, resolvedKey]
+  )
+
+  useEffect(() => {
+    const { signal } = requestAbortController || {}
+    // Run onAbort callback
+    const abortCallback = () => {
+      const timeout = setTimeout(() => {
+        onAbort()
+        clearTimeout(timeout)
+      })
+    }
+    signal?.addEventListener("abort", abortCallback)
+    return () => {
+      signal?.removeEventListener("abort", abortCallback)
+    }
+  }, [requestAbortController, onAbort])
 
   async function reValidate() {
     // Only revalidate if request was already completed
@@ -238,11 +296,27 @@ export const useFetcher = <FetchDataType extends unknown>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, refresh, JSON.stringify(config)])
 
-  return { data, loading, error, reFetch: reValidate } as unknown as {
+  return {
+    data,
+    loading,
+    error,
+    reFetch: reValidate,
+    abort: () => {
+      requestAbortController.abort()
+      if (loading) {
+        setError(false)
+        setLoading(false)
+        setData(resolvedRequests[resolvedKey])
+      }
+    },
+    config,
+  } as unknown as {
     data: FetchDataType
     loading: boolean
     error: Error | null
     reFetch: () => Promise<void>
+    abort: () => void
+    config: FetcherType<FetchDataType>["config"]
   }
 }
 
@@ -275,7 +349,7 @@ useFetcher.extend = function extendFetcher({
   // json by default
   resolver = (d) => d.json(),
 }: FetcherExtendConfig = {}) {
-  return function customFetcher<T>({
+  return function useCustomFetcher<T>({
     url = "",
     config = {},
     ...otherProps

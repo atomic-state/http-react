@@ -160,34 +160,47 @@ var resolvedRequests = {};
  * Fetcher available as a hook
  */
 var useFetcher = function (_a) {
-    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? true : _f, _g = _a.memory, memory = _g === void 0 ? true : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.refresh, refresh = _j === void 0 ? 0 : _j;
-    var _k = (0, react_1.useState)(memory ? resolvedRequests[url] || def : def), data = _k[0], setData = _k[1];
-    var _l = (0, react_1.useState)(null), error = _l[0], setError = _l[1];
-    var _m = (0, react_1.useState)(true), loading = _m[0], setLoading = _m[1];
+    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? true : _f, _g = _a.memory, memory = _g === void 0 ? true : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.onAbort, onAbort = _j === void 0 ? function () { } : _j, _k = _a.refresh, refresh = _k === void 0 ? 0 : _k, _l = _a.cancelOnChange, cancelOnChange = _l === void 0 ? false : _l;
+    var resolvedKey = url.split("?")[0];
+    var _m = (0, react_1.useState)(
+    // Saved to base url of request without query params
+    memory ? resolvedRequests[resolvedKey] || def : def), data = _m[0], setData = _m[1];
+    var _o = (0, react_1.useState)(null), error = _o[0], setError = _o[1];
+    var _p = (0, react_1.useState)(true), loading = _p[0], setLoading = _p[1];
+    var _q = (0, react_1.useState)(new AbortController()), requestAbortController = _q[0], setRequestAbortController = _q[1];
     function fetchData() {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var json, _data, code, err_2;
+            var newAbortController, json, _data, code, err_2, errorString;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        _b.trys.push([0, 3, 4, 5]);
+                        if (cancelOnChange) {
+                            requestAbortController === null || requestAbortController === void 0 ? void 0 : requestAbortController.abort();
+                        }
+                        newAbortController = new AbortController();
+                        setRequestAbortController(newAbortController);
+                        setError(null);
+                        _b.label = 1;
+                    case 1:
+                        _b.trys.push([1, 4, 5, 6]);
                         return [4 /*yield*/, fetch(url, {
+                                signal: newAbortController.signal,
                                 method: config.method,
                                 headers: __assign({ "Content-Type": "application/json" }, config.headers),
                                 body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE)/))
                                     ? JSON.stringify(config.body)
                                     : undefined,
                             })];
-                    case 1:
+                    case 2:
                         json = _b.sent();
                         return [4 /*yield*/, resolver(json)];
-                    case 2:
+                    case 3:
                         _data = _b.sent();
                         code = json.status;
                         if (code >= 200 && code < 300) {
                             if (memory) {
-                                resolvedRequests[url] = _data;
+                                resolvedRequests[resolvedKey] = _data;
                             }
                             setData(_data);
                             setError(null);
@@ -200,21 +213,54 @@ var useFetcher = function (_a) {
                             setError(true);
                             onError(_data);
                         }
-                        return [3 /*break*/, 5];
-                    case 3:
-                        err_2 = _b.sent();
-                        setData(undefined);
-                        setError(new Error(err_2));
-                        onError(err_2);
-                        return [3 /*break*/, 5];
+                        return [3 /*break*/, 6];
                     case 4:
+                        err_2 = _b.sent();
+                        errorString = err_2 === null || err_2 === void 0 ? void 0 : err_2.toString();
+                        // Only set error if no abort
+                        if (!errorString.match(/abort/i)) {
+                            setData(undefined);
+                            setError(new Error(err_2));
+                            onError(err_2);
+                        }
+                        else {
+                            if (!resolvedRequests[resolvedKey]) {
+                                setData(def);
+                            }
+                        }
+                        return [3 /*break*/, 6];
+                    case 5:
                         setLoading(false);
                         return [7 /*endfinally*/];
-                    case 5: return [2 /*return*/];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
     }
+    var cancelCurrentRequest = React.useMemo(function () {
+        return function cancelCurrentRequest() {
+            if (loading) {
+                requestAbortController.abort();
+                setError(false);
+                setLoading(false);
+                setData(resolvedRequests[resolvedKey]);
+            }
+        };
+    }, [requestAbortController, loading, resolvedKey]);
+    (0, react_1.useEffect)(function () {
+        var signal = (requestAbortController || {}).signal;
+        // Run onAbort callback
+        var abortCallback = function () {
+            var timeout = setTimeout(function () {
+                onAbort();
+                clearTimeout(timeout);
+            });
+        };
+        signal === null || signal === void 0 ? void 0 : signal.addEventListener("abort", abortCallback);
+        return function () {
+            signal === null || signal === void 0 ? void 0 : signal.removeEventListener("abort", abortCallback);
+        };
+    }, [requestAbortController, onAbort]);
     function reValidate() {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -246,7 +292,21 @@ var useFetcher = function (_a) {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url, refresh, JSON.stringify(config)]);
-    return { data: data, loading: loading, error: error, reFetch: reValidate };
+    return {
+        data: data,
+        loading: loading,
+        error: error,
+        reFetch: reValidate,
+        abort: function () {
+            requestAbortController.abort();
+            if (loading) {
+                setError(false);
+                setLoading(false);
+                setData(resolvedRequests[resolvedKey]);
+            }
+        },
+        config: config,
+    };
 };
 exports.useFetcher = useFetcher;
 /**
@@ -258,7 +318,7 @@ exports.useFetcher.extend = function extendFetcher(_a) {
     _f = _b.resolver, 
     // json by default
     resolver = _f === void 0 ? function (d) { return d.json(); } : _f;
-    return function customFetcher(_a) {
+    return function useCustomFetcher(_a) {
         var _b = _a.url, url = _b === void 0 ? "" : _b, _c = _a.config, config = _c === void 0 ? {} : _c, otherProps = __rest(_a, ["url", "config"]);
         return (0, exports.useFetcher)(__assign(__assign({}, otherProps), { url: "".concat(baseUrl).concat(url), 
             // If resolver is present is hook call, use that instead
