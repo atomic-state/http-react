@@ -4,15 +4,8 @@ on:
     types: [created]
 jobs:
   test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Use Node.js 14
-        uses: actions/setup-node@v2
-        with:
-          node-version: 16
-      - run: npm i
-      - run: npm test
+    uses: atomic-state/http-react-fetcher/.github/workflows/test.yml@master
+
   pulish:
     needs: test
     runs-on: ubuntu-latest
