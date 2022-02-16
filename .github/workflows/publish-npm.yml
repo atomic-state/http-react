@@ -6,7 +6,7 @@ jobs:
   test:
     uses: atomic-state/http-react-fetcher/.github/workflows/test.yml@master
 
-  pulish:
+  publish:
     needs: test
     runs-on: ubuntu-latest
     steps:
