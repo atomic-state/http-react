@@ -184,6 +184,7 @@ export const useFetcher = <FetchDataType extends unknown>({
     // Saved to base url of request without query params
     memory ? resolvedRequests[resolvedKey] || def : def
   );
+  const [statusCode, setStatusCode] = useState<number>();
   const [error, setError] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [requestAbortController, setRequestAbortController] =
@@ -208,9 +209,10 @@ export const useFetcher = <FetchDataType extends unknown>({
           ? JSON.stringify(config.body)
           : undefined,
       });
-      const _data = await resolver(json);
       const code = json.status;
-      if (code >= 200 && code < 300) {
+      setStatusCode(code);
+      const _data = await resolver(json);
+      if (code >= 200 && code < 400) {
         if (memory) {
           resolvedRequests[resolvedKey] = _data;
         }
@@ -241,18 +243,18 @@ export const useFetcher = <FetchDataType extends unknown>({
     }
   }
 
-  const cancelCurrentRequest = React.useMemo(
-    () =>
-      function cancelCurrentRequest() {
-        if (loading) {
-          requestAbortController.abort();
-          setError(false);
-          setLoading(false);
-          setData(resolvedRequests[resolvedKey]);
-        }
-      },
-    [requestAbortController, loading, resolvedKey]
-  );
+  // const cancelCurrentRequest = React.useMemo(
+  //   () =>
+  //     function cancelCurrentRequest() {
+  //       if (loading) {
+  //         requestAbortController.abort();
+  //         setError(false);
+  //         setLoading(false);
+  //         setData(resolvedRequests[resolvedKey]);
+  //       }
+  //     },
+  //   [requestAbortController, loading, resolvedKey]
+  // );
 
   useEffect(() => {
     const { signal } = requestAbortController || {};
@@ -300,6 +302,7 @@ export const useFetcher = <FetchDataType extends unknown>({
     data,
     loading,
     error,
+    code: statusCode,
     reFetch: reValidate,
     abort: () => {
       requestAbortController.abort();
@@ -309,14 +312,18 @@ export const useFetcher = <FetchDataType extends unknown>({
         setData(resolvedRequests[resolvedKey]);
       }
     },
-    config,
+    config: {
+      ...config,
+      url,
+    },
   } as unknown as {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
+    code: number;
     reFetch: () => Promise<void>;
     abort: () => void;
-    config: FetcherType<FetchDataType>["config"];
+    config: FetcherType<FetchDataType>["config"] & { url: string };
   };
 };
 
@@ -349,7 +356,7 @@ useFetcher.extend = function extendFetcher({
   // json by default
   resolver = (d) => d.json(),
 }: FetcherExtendConfig = {}) {
-  return function useCustomFetcher<T>({
+  function useCustomFetcher<T>({
     url = "",
     config = {},
     ...otherProps
@@ -371,7 +378,14 @@ useFetcher.extend = function extendFetcher({
         },
       },
     });
+  }
+  useCustomFetcher.config = {
+    baseUrl,
+    headers,
+    body,
   };
+
+  return useCustomFetcher;
 };
 
 export const fetcher = useFetcher;
