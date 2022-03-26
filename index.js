@@ -165,13 +165,14 @@ var useFetcher = function (_a) {
     var _m = (0, react_1.useState)(
     // Saved to base url of request without query params
     memory ? resolvedRequests[resolvedKey] || def : def), data = _m[0], setData = _m[1];
-    var _o = (0, react_1.useState)(null), error = _o[0], setError = _o[1];
-    var _p = (0, react_1.useState)(true), loading = _p[0], setLoading = _p[1];
-    var _q = (0, react_1.useState)(new AbortController()), requestAbortController = _q[0], setRequestAbortController = _q[1];
+    var _o = (0, react_1.useState)(), statusCode = _o[0], setStatusCode = _o[1];
+    var _p = (0, react_1.useState)(null), error = _p[0], setError = _p[1];
+    var _q = (0, react_1.useState)(true), loading = _q[0], setLoading = _q[1];
+    var _r = (0, react_1.useState)(new AbortController()), requestAbortController = _r[0], setRequestAbortController = _r[1];
     function fetchData() {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var newAbortController, json, _data, code, err_2, errorString;
+            var newAbortController, json, code, _data, err_2, errorString;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -194,11 +195,12 @@ var useFetcher = function (_a) {
                             })];
                     case 2:
                         json = _b.sent();
+                        code = json.status;
+                        setStatusCode(code);
                         return [4 /*yield*/, resolver(json)];
                     case 3:
                         _data = _b.sent();
-                        code = json.status;
-                        if (code >= 200 && code < 300) {
+                        if (code >= 200 && code < 400) {
                             if (memory) {
                                 resolvedRequests[resolvedKey] = _data;
                             }
@@ -237,16 +239,18 @@ var useFetcher = function (_a) {
             });
         });
     }
-    var cancelCurrentRequest = React.useMemo(function () {
-        return function cancelCurrentRequest() {
-            if (loading) {
-                requestAbortController.abort();
-                setError(false);
-                setLoading(false);
-                setData(resolvedRequests[resolvedKey]);
-            }
-        };
-    }, [requestAbortController, loading, resolvedKey]);
+    // const cancelCurrentRequest = React.useMemo(
+    //   () =>
+    //     function cancelCurrentRequest() {
+    //       if (loading) {
+    //         requestAbortController.abort();
+    //         setError(false);
+    //         setLoading(false);
+    //         setData(resolvedRequests[resolvedKey]);
+    //       }
+    //     },
+    //   [requestAbortController, loading, resolvedKey]
+    // );
     (0, react_1.useEffect)(function () {
         var signal = (requestAbortController || {}).signal;
         // Run onAbort callback
@@ -296,6 +300,7 @@ var useFetcher = function (_a) {
         data: data,
         loading: loading,
         error: error,
+        code: statusCode,
         reFetch: reValidate,
         abort: function () {
             requestAbortController.abort();
@@ -305,7 +310,7 @@ var useFetcher = function (_a) {
                 setData(resolvedRequests[resolvedKey]);
             }
         },
-        config: config,
+        config: __assign(__assign({}, config), { url: url }),
     };
 };
 exports.useFetcher = useFetcher;
@@ -318,7 +323,7 @@ exports.useFetcher.extend = function extendFetcher(_a) {
     _f = _b.resolver, 
     // json by default
     resolver = _f === void 0 ? function (d) { return d.json(); } : _f;
-    return function useCustomFetcher(_a) {
+    function useCustomFetcher(_a) {
         var _b = _a.url, url = _b === void 0 ? "" : _b, _c = _a.config, config = _c === void 0 ? {} : _c, otherProps = __rest(_a, ["url", "config"]);
         return (0, exports.useFetcher)(__assign(__assign({}, otherProps), { url: "".concat(baseUrl).concat(url), 
             // If resolver is present is hook call, use that instead
@@ -327,7 +332,13 @@ exports.useFetcher.extend = function extendFetcher(_a) {
                 headers: __assign(__assign({}, headers), config.headers),
                 body: __assign(__assign({}, body), config.body),
             } }));
+    }
+    useCustomFetcher.config = {
+        baseUrl: baseUrl,
+        headers: headers,
+        body: body,
     };
+    return useCustomFetcher;
 };
 exports.fetcher = exports.useFetcher;
 var defaultConfig = { headers: {}, body: undefined };
@@ -362,13 +373,10 @@ var HttpClient = /** @class */ (function () {
     HttpClient.prototype.post = function (path, props) {
         if (props === void 0) { props = defaultConfig; }
         return __awaiter(this, void 0, void 0, function () {
-            var response;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.get(path, props, "POST")];
-                    case 1:
-                        response = _a.sent();
-                        return [2 /*return*/, response];
+                    case 1: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -376,13 +384,10 @@ var HttpClient = /** @class */ (function () {
     HttpClient.prototype.put = function (path, props) {
         if (props === void 0) { props = defaultConfig; }
         return __awaiter(this, void 0, void 0, function () {
-            var response;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.get(path, props, "PUT")];
-                    case 1:
-                        response = _a.sent();
-                        return [2 /*return*/, response];
+                    case 1: return [2 /*return*/, _a.sent()];
                 }
             });
         });
@@ -390,13 +395,10 @@ var HttpClient = /** @class */ (function () {
     HttpClient.prototype.delete = function (path, props) {
         if (props === void 0) { props = defaultConfig; }
         return __awaiter(this, void 0, void 0, function () {
-            var response;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.get(path, props, "DELETE")];
-                    case 1:
-                        response = _a.sent();
-                        return [2 /*return*/, response];
+                    case 1: return [2 /*return*/, _a.sent()];
                 }
             });
         });

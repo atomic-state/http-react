@@ -80,6 +80,7 @@ export declare const useFetcher: {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
+        code: number;
         reFetch: () => Promise<void>;
         abort: () => void;
         config: {
@@ -89,25 +90,37 @@ export declare const useFetcher: {
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
             headers?: object | Headers | undefined;
             body?: object | Body | undefined;
-        } | undefined;
+        } & {
+            url: string;
+        };
     };
     /**
      * Extend the useFetcher hook
      */
-    extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): <T>({ url, config, ...otherProps }: FetcherType<T>) => {
-        data: T;
-        loading: boolean;
-        error: Error | null;
-        reFetch: () => Promise<void>;
-        abort: () => void;
+    extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): {
+        <T>({ url, config, ...otherProps }: FetcherType<T>): {
+            data: T;
+            loading: boolean;
+            error: Error | null;
+            code: number;
+            reFetch: () => Promise<void>;
+            abort: () => void;
+            config: {
+                /**
+                 * Request method
+                 */
+                method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+                headers?: object | Headers | undefined;
+                body?: object | Body | undefined;
+            } & {
+                url: string;
+            };
+        };
         config: {
-            /**
-             * Request method
-             */
-            method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
-            headers?: object | Headers | undefined;
-            body?: object | Body | undefined;
-        } | undefined;
+            baseUrl: string;
+            headers: object | Headers;
+            body: any;
+        };
     };
 };
 declare type FetcherExtendConfig = {
@@ -133,6 +146,7 @@ export declare const fetcher: {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
+        code: number;
         reFetch: () => Promise<void>;
         abort: () => void;
         config: {
@@ -142,25 +156,37 @@ export declare const fetcher: {
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
             headers?: object | Headers | undefined;
             body?: object | Body | undefined;
-        } | undefined;
+        } & {
+            url: string;
+        };
     };
     /**
      * Extend the useFetcher hook
      */
-    extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): <T>({ url, config, ...otherProps }: FetcherType<T>) => {
-        data: T;
-        loading: boolean;
-        error: Error | null;
-        reFetch: () => Promise<void>;
-        abort: () => void;
+    extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): {
+        <T>({ url, config, ...otherProps }: FetcherType<T>): {
+            data: T;
+            loading: boolean;
+            error: Error | null;
+            code: number;
+            reFetch: () => Promise<void>;
+            abort: () => void;
+            config: {
+                /**
+                 * Request method
+                 */
+                method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+                headers?: object | Headers | undefined;
+                body?: object | Body | undefined;
+            } & {
+                url: string;
+            };
+        };
         config: {
-            /**
-             * Request method
-             */
-            method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
-            headers?: object | Headers | undefined;
-            body?: object | Body | undefined;
-        } | undefined;
+            baseUrl: string;
+            headers: object | Headers;
+            body: any;
+        };
     };
 };
 interface IRequestParam {
