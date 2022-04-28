@@ -1,4 +1,4 @@
-import { renderHook } from "@testing-library/react-hooks"
+import { act, renderHook } from "@testing-library/react"
 import { useFetcher } from "../../"
 import mocks from "../mocks"
 
@@ -9,22 +9,22 @@ test("GET data in JSON", async () => {
     })
   )
 
-  const { result, waitForNextUpdate } = renderHook(() =>
-    useFetcher({
-      url: "",
+  await act(async () => {
+    const { result } = renderHook(useFetcher, {
+      initialProps: {
+        url: "",
+      },
     })
-  )
 
-  await waitForNextUpdate()
-
-  if (result.current.loading)
-    expect(result.current.data).toEqual({
-      careers: [
-        "Backend Developer",
-        "Cloud Enginner",
-        "DB Administrator",
-        "Designer UI/UX",
-        "Security Analist",
-      ],
-    })
+    if (result.current?.data)
+      expect(result.current.data).toEqual({
+        careers: [
+          "Backend Developer",
+          "Cloud Enginner",
+          "DB Administrator",
+          "Designer UI/UX",
+          "Security Analist",
+        ],
+      })
+  })
 })
