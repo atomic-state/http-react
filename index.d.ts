@@ -87,6 +87,7 @@ export declare const useFetcher: {
         error: Error | null;
         code: number;
         reFetch: () => Promise<void>;
+        mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
         abort: () => void;
         config: {
             /**
@@ -109,6 +110,7 @@ export declare const useFetcher: {
             error: Error | null;
             code: number;
             reFetch: () => Promise<void>;
+            mutate: React.Dispatch<React.SetStateAction<T>>;
             abort: () => void;
             config: {
                 /**
@@ -153,6 +155,7 @@ export declare const fetcher: {
         error: Error | null;
         code: number;
         reFetch: () => Promise<void>;
+        mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
         abort: () => void;
         config: {
             /**
@@ -175,6 +178,7 @@ export declare const fetcher: {
             error: Error | null;
             code: number;
             reFetch: () => Promise<void>;
+            mutate: React.Dispatch<React.SetStateAction<T>>;
             abort: () => void;
             config: {
                 /**

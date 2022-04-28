@@ -321,6 +321,7 @@ export const useFetcher = <FetchDataType extends unknown>({
     error,
     code: statusCode,
     reFetch: reValidate,
+    mutate: setData,
     abort: () => {
       requestAbortController.abort();
       if (loading) {
@@ -339,6 +340,7 @@ export const useFetcher = <FetchDataType extends unknown>({
     error: Error | null;
     code: number;
     reFetch: () => Promise<void>;
+    mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
     abort: () => void;
     config: FetcherType<FetchDataType>["config"] & { url: string };
   };

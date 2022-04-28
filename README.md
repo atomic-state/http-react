@@ -458,3 +458,55 @@ export async function getServerSideProps() {
 }
 
 ```
+
+### Mutating response
+
+You can mutate the returned data using the `mutate` property
+
+
+```tsx
+import { FetcherConfig, useFetcher } from "http-react-fetcher";
+
+function SomeDataFetch() {
+  const { data, mutate } = useFetcher<{ user: string }>({
+    url: "/api/test",
+  });
+  return (
+    <div>
+      <button
+        onClick={() => {
+          mutate({
+            user: "another-user",
+          });
+        }}
+      >
+        Change username
+      </button>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
+}
+
+export default function Home({ user }) {
+  return (
+    <FetcherConfig
+      defaults={{
+        "/api/test": {
+          user,
+        },
+      }}
+    >
+      <SomeDataFetch />
+    </FetcherConfig>
+  );
+}
+
+export async function getServerSideProps() {
+  return {
+    props: {
+      user: "dany",
+    },
+  };
+}
+
+```
