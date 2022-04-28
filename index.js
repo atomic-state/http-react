@@ -312,6 +312,7 @@ var useFetcher = function (_a) {
         error: error,
         code: statusCode,
         reFetch: reValidate,
+        mutate: setData,
         abort: function () {
             requestAbortController.abort();
             if (loading) {
