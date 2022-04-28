@@ -217,7 +217,7 @@ const { data, loading, error } = useFetcher({
 
 You can pass other props:
 
-`onSuccess(data) { }`: Will run when a request completes succesfuly
+`onResolve(data) { }`: Will run when a request completes succesfuly
 
 `onError(error) { }`: Will run when a request fails
 
@@ -241,7 +241,7 @@ const { data, loading, error } = useFetcher({
     alert("No matches")
     console.error(err.toString())
   },
-  onSuccess(posts){
+  onResolve(posts){
     // Do something with the data
   }
 })
@@ -265,7 +265,7 @@ interface PostsResponse {
   posts?: {
     title?: string
     content?: string
-  }
+  } []
 }
 
 const { data, loading, error } = useFetcher<PostsResponse>({
