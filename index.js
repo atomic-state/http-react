@@ -65,7 +65,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.fetcher = exports.useFetcher = void 0;
+exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.FetcherConfig = void 0;
 var React = require("react");
 var react_1 = require("react");
 /**
@@ -156,6 +156,16 @@ var Fetcher = function (_a) {
 };
 exports.default = Fetcher;
 var resolvedRequests = {};
+function FetcherConfig(_a) {
+    var children = _a.children, _b = _a.defaults, defaults = _b === void 0 ? {} : _b;
+    if (defaults) {
+        for (var defaultKey in defaults) {
+            resolvedRequests[defaultKey] = defaults[defaultKey];
+        }
+    }
+    return children;
+}
+exports.FetcherConfig = FetcherConfig;
 /**
  * Fetcher available as a hook
  */

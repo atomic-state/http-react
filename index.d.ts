@@ -72,6 +72,11 @@ declare type FetcherType<FetchDataType> = {
  */
 declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => JSX.Element | null;
 export default Fetcher;
+declare type fetcherConfigComponentType = {
+    children: any;
+    defaults: any;
+};
+export declare function FetcherConfig({ children, defaults, }: fetcherConfigComponentType): any;
 /**
  * Fetcher available as a hook
  */
