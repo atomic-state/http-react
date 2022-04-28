@@ -161,6 +161,23 @@ export default Fetcher;
 
 const resolvedRequests: any = {};
 
+type fetcherConfigComponentType = {
+  children: any;
+  defaults: any;
+};
+
+export function FetcherConfig({
+  children,
+  defaults = {},
+}: fetcherConfigComponentType) {
+  if (defaults) {
+    for (let defaultKey in defaults) {
+      resolvedRequests[defaultKey] = defaults[defaultKey];
+    }
+  }
+  return children;
+}
+
 /**
  * Fetcher available as a hook
  */

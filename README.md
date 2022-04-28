@@ -213,6 +213,13 @@ const { data, loading, error } = useFetcher({
 
 ```
 
+You can also access some useful properties like the config used in the request and the request status code
+
+```tsx
+const { config, code, data, loading, error } = useFetcher({
+  ...
+```
+
 #### Handling error / success
 
 You can pass other props:
@@ -410,5 +417,44 @@ export default function App() {
   )
 }
 
+
+```
+
+### SSR
+
+A simple SSR API is supported. This is an example using Next.js:
+
+```tsx
+import { useFetcher, FetcherConfig } from "http-react-fetcher";
+
+function SomeDataFetch() {
+  const { data } = useFetcher({
+    url: "/api/test",
+  });
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+}
+
+export default function Home({ user }) {
+  return (
+    <FetcherConfig
+      defaults={{
+        "/api/test": {
+          user,
+        },
+      }}
+    >
+      {/* Will be rendered in the server */}
+      <SomeDataFetch />
+    </FetcherConfig>
+  );
+}
+
+export async function getServerSideProps() {
+  return {
+    props: {
+      user: "danybeltran",
+    },
+  };
+}
 
 ```
