@@ -387,7 +387,7 @@ The last one is useful if for example, props change (which will always make a ne
 
 
 ```js
-import { useFetcher } from "fetchings"
+import { useFetcher } from "http-react-fetcher"
 import { useState } from "react"
 
 export default function App() {
@@ -458,6 +458,49 @@ export async function getServerSideProps() {
 }
 
 ```
+
+### SSR if you are using `fetcher.extend`
+
+
+```tsx
+import { useFetcher, FetcherConfig } from "http-react-fetcher";
+
+const useApi = useFetcher.extend({
+  baseUrl: "https://my-url"
+})
+
+function SomeDataFetch() {
+  const { data } = useApi({
+    url: "/api/test",
+  });
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+}
+
+export default function Home({ user }) {
+  return (
+    <useApi.Config
+      defaults={{
+        "/api/test": {
+          user,
+        },
+      }}
+    >
+      {/* Will be rendered in the server */}
+      <SomeDataFetch />
+    </useApi.Config>
+  );
+}
+
+export async function getServerSideProps() {
+  return {
+    props: {
+      user: "danybeltran",
+    },
+  };
+}
+
+```
+
 
 ### Mutating response
 

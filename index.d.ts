@@ -128,6 +128,7 @@ export declare const useFetcher: {
             headers: object | Headers;
             body: any;
         };
+        Config({ children, defaults, }: fetcherConfigComponentType): any;
     };
 };
 declare type FetcherExtendConfig = {
@@ -196,6 +197,7 @@ export declare const fetcher: {
             headers: object | Headers;
             body: any;
         };
+        Config({ children, defaults, }: fetcherConfigComponentType): any;
     };
 };
 interface IRequestParam {
