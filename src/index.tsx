@@ -404,6 +404,19 @@ useFetcher.extend = function extendFetcher({
     body,
   };
 
+  useCustomFetcher.Config = function FetcherConfig({
+    children,
+    defaults = {},
+  }: fetcherConfigComponentType) {
+    if (defaults) {
+      for (let defaultKey in defaults) {
+        const url = `${baseUrl}${defaultKey}`;
+        resolvedRequests[url] = defaults[defaultKey];
+      }
+    }
+    return children;
+  };
+
   return useCustomFetcher;
 };
 

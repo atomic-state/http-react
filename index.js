@@ -349,6 +349,16 @@ exports.useFetcher.extend = function extendFetcher(_a) {
         headers: headers,
         body: body,
     };
+    useCustomFetcher.Config = function FetcherConfig(_a) {
+        var children = _a.children, _b = _a.defaults, defaults = _b === void 0 ? {} : _b;
+        if (defaults) {
+            for (var defaultKey in defaults) {
+                var url = "".concat(baseUrl).concat(defaultKey);
+                resolvedRequests[url] = defaults[defaultKey];
+            }
+        }
+        return children;
+    };
     return useCustomFetcher;
 };
 exports.fetcher = exports.useFetcher;
