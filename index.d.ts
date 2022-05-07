@@ -67,6 +67,63 @@ declare type FetcherType<FetchDataType> = {
         loading: boolean;
     }>;
 };
+declare type FetcherConfigOptions<FetchDataType> = {
+    /**
+     * Default data value
+     */
+    default?: FetchDataType;
+    /**
+     * Refresh interval (in seconds) to re-fetch the resource
+     */
+    refresh?: number;
+    /**
+     * This will prevent automatic requests.
+     * By setting this to `false`, requests will
+     * only be made by calling `reFetch()`
+     */
+    auto?: boolean;
+    /**
+     * Default is true. Responses are saved in memory and used as default data.
+     * If `false`, the `default` prop will be used instead.
+     */
+    memory?: boolean;
+    /**
+     * Function to run when request is resolved succesfuly
+     */
+    onResolve?: (data: FetchDataType) => void;
+    /**
+     * Function to run when the request fails
+     */
+    onError?: (error: Error) => void;
+    /**
+     * Function to run when a request is aborted
+     */
+    onAbort?: () => void;
+    /**
+     * Whether a change in deps will cancel a queued request and make a new one
+     */
+    cancelOnChange?: boolean;
+    /**
+     * Parse as json by default
+     */
+    resolver?: (d: Response) => any;
+    /**
+     * Request configuration
+     */
+    config?: {
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
+        headers?: Headers | object;
+        body?: Body | object;
+    };
+    children?: React.FC<{
+        data: FetchDataType | undefined;
+        error: Error | null;
+        loading: boolean;
+    }>;
+};
 /**
  * @deprecated Use the `useFetcher` hook instead
  */
@@ -81,7 +138,7 @@ export declare function FetcherConfig({ children, defaults, }: fetcherConfigComp
  * Fetcher available as a hook
  */
 export declare const useFetcher: {
-    <FetchDataType extends unknown>({ url, default: def, config, resolver, onError, auto, memory, onResolve, onAbort, refresh, cancelOnChange, }: FetcherType<FetchDataType>): {
+    <FetchDataType extends unknown>(init: string | FetcherType<FetchDataType>, options?: FetcherConfigOptions<FetchDataType> | undefined): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
@@ -104,7 +161,7 @@ export declare const useFetcher: {
      * Extend the useFetcher hook
      */
     extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): {
-        <T>({ url, config, ...otherProps }: FetcherType<T>): {
+        <T>(init: string | FetcherType<T>, options?: FetcherConfigOptions<T> | undefined): {
             data: T;
             loading: boolean;
             error: Error | null;
@@ -150,7 +207,7 @@ declare type FetcherExtendConfig = {
     resolver?: (d: Response) => any;
 };
 export declare const fetcher: {
-    <FetchDataType extends unknown>({ url, default: def, config, resolver, onError, auto, memory, onResolve, onAbort, refresh, cancelOnChange, }: FetcherType<FetchDataType>): {
+    <FetchDataType extends unknown>(init: string | FetcherType<FetchDataType>, options?: FetcherConfigOptions<FetchDataType> | undefined): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
@@ -173,7 +230,7 @@ export declare const fetcher: {
      * Extend the useFetcher hook
      */
     extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): {
-        <T>({ url, config, ...otherProps }: FetcherType<T>): {
+        <T>(init: string | FetcherType<T>, options?: FetcherConfigOptions<T> | undefined): {
             data: T;
             loading: boolean;
             error: Error | null;

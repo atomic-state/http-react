@@ -44,6 +44,31 @@ function App() {
 }
 ```
 
+**(New):** You can pass a string to `useFetcher` or a configuration object. If you pass a string as the first argument, that will be used as the url to fetch and the config will be taken from the second argument (optional)
+
+```tsx
+import { useFetcher } from "http-react-fetcher";
+
+function App() {
+  const { data, loading, error } = useFetcher("api-url", { /* optional config */ });
+
+  return (
+    <div>
+      {loading ? (
+        <p>Loading data...</p>
+      ) : error ? (
+        <p>Error=(</p>
+      ) : (
+        JSON.stringify(data)
+      )}ON.stringify(data)
+      )}
+    </div>
+  );
+}
+```
+
+
+
 #### Default data value
 
 You can set a default value to return as data while the request is completing. If the request fails, however, the `data` prop will be `undefined`
