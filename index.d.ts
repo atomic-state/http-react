@@ -177,6 +177,7 @@ export declare const useFetcher: {
         } & {
             url: string;
         };
+        response: Response;
     };
     /**
      * Extend the useFetcher hook
@@ -207,6 +208,7 @@ export declare const useFetcher: {
             } & {
                 url: string;
             };
+            response: Response;
         };
         config: {
             baseUrl: string;
@@ -266,6 +268,7 @@ export declare const fetcher: {
         } & {
             url: string;
         };
+        response: Response;
     };
     /**
      * Extend the useFetcher hook
@@ -296,6 +299,7 @@ export declare const fetcher: {
             } & {
                 url: string;
             };
+            response: Response;
         };
         config: {
             baseUrl: string;

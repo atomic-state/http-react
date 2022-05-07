@@ -296,6 +296,9 @@ export const useFetcher = <FetchDataType extends unknown>(
     // Saved to base url of request without query params
     memory ? resolvedRequests[resolvedKey] || def : def
   );
+
+  const [response, setResponse] = useState<Response>();
+
   const [statusCode, setStatusCode] = useState<number>();
   const [error, setError] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -331,6 +334,7 @@ export const useFetcher = <FetchDataType extends unknown>(
             : JSON.stringify(config.body)
           : undefined,
       });
+      setResponse(json);
       const code = json.status;
       setStatusCode(code);
       const _data = await resolver(json);
@@ -439,6 +443,7 @@ export const useFetcher = <FetchDataType extends unknown>(
       ...config,
       url,
     },
+    response,
   } as unknown as {
     data: FetchDataType;
     loading: boolean;
@@ -448,6 +453,7 @@ export const useFetcher = <FetchDataType extends unknown>(
     mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
     abort: () => void;
     config: FetcherType<FetchDataType>["config"] & { url: string };
+    response: Response;
   };
 };
 
