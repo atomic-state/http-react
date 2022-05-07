@@ -169,8 +169,12 @@ exports.FetcherConfig = FetcherConfig;
 /**
  * Fetcher available as a hook
  */
-var useFetcher = function (_a) {
-    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? true : _f, _g = _a.memory, memory = _g === void 0 ? true : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.onAbort, onAbort = _j === void 0 ? function () { } : _j, _k = _a.refresh, refresh = _k === void 0 ? 0 : _k, _l = _a.cancelOnChange, cancelOnChange = _l === void 0 ? false : _l;
+var useFetcher = function (init, options) {
+    var _a = typeof init === "string"
+        ? __assign({ 
+            // Pass init as the url if init is a string
+            url: init }, options) : // `url` will be required in init if it is an object
+        init, _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? true : _f, _g = _a.memory, memory = _g === void 0 ? true : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.onAbort, onAbort = _j === void 0 ? function () { } : _j, _k = _a.refresh, refresh = _k === void 0 ? 0 : _k, _l = _a.cancelOnChange, cancelOnChange = _l === void 0 ? false : _l;
     var resolvedKey = url.split("?")[0];
     var _m = (0, react_1.useState)(
     // Saved to base url of request without query params
@@ -334,8 +338,12 @@ exports.useFetcher.extend = function extendFetcher(_a) {
     _f = _b.resolver, 
     // json by default
     resolver = _f === void 0 ? function (d) { return d.json(); } : _f;
-    function useCustomFetcher(_a) {
-        var _b = _a.url, url = _b === void 0 ? "" : _b, _c = _a.config, config = _c === void 0 ? {} : _c, otherProps = __rest(_a, ["url", "config"]);
+    function useCustomFetcher(init, options) {
+        var _a = typeof init === "string"
+            ? __assign({ 
+                // set url if init is a stringss
+                url: init }, options) : // `url` will be required in init if it is an object
+            init, _b = _a.url, url = _b === void 0 ? "" : _b, _c = _a.config, config = _c === void 0 ? {} : _c, otherProps = __rest(_a, ["url", "config"]);
         return (0, exports.useFetcher)(__assign(__assign({}, otherProps), { url: "".concat(baseUrl).concat(url), 
             // If resolver is present is hook call, use that instead
             resolver: otherProps.resolver || resolver, config: {

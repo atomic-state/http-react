@@ -81,6 +81,75 @@ type FetcherType<FetchDataType> = {
   }>;
 };
 
+// If first argument is a string
+type FetcherConfigOptions<FetchDataType> = {
+  /**
+   * Default data value
+   */
+  default?: FetchDataType;
+  /**
+   * Refresh interval (in seconds) to re-fetch the resource
+   */
+  refresh?: number;
+  /**
+   * This will prevent automatic requests.
+   * By setting this to `false`, requests will
+   * only be made by calling `reFetch()`
+   */
+  auto?: boolean;
+  /**
+   * Default is true. Responses are saved in memory and used as default data.
+   * If `false`, the `default` prop will be used instead.
+   */
+  memory?: boolean;
+  /**
+   * Function to run when request is resolved succesfuly
+   */
+  onResolve?: (data: FetchDataType) => void;
+  /**
+   * Function to run when the request fails
+   */
+  onError?: (error: Error) => void;
+  /**
+   * Function to run when a request is aborted
+   */
+  onAbort?: () => void;
+  /**
+   * Whether a change in deps will cancel a queued request and make a new one
+   */
+  cancelOnChange?: boolean;
+  /**
+   * Parse as json by default
+   */
+  resolver?: (d: Response) => any;
+  /**
+   * Request configuration
+   */
+  config?: {
+    /**
+     * Request method
+     */
+    method?:
+      | "GET"
+      | "DELETE"
+      | "HEAD"
+      | "OPTIONS"
+      | "POST"
+      | "PUT"
+      | "PATCH"
+      | "PURGE"
+      | "LINK"
+      | "UNLINK";
+    headers?: Headers | object;
+    body?: Body | object;
+  };
+  children?: React.FC<{
+    data: FetchDataType | undefined;
+    error: Error | null;
+    loading: boolean;
+  }>;
+};
+
 /**
  * @deprecated Use the `useFetcher` hook instead
  */
@@ -182,19 +251,31 @@ export function FetcherConfig({
  * Fetcher available as a hook
  */
 
-export const useFetcher = <FetchDataType extends unknown>({
-  url = "/",
-  default: def,
-  config = { method: "GET", headers: {} as Headers, body: {} as Body },
-  resolver = (d) => d.json(),
-  onError = () => {},
-  auto = true,
-  memory = true,
-  onResolve = () => {},
-  onAbort = () => {},
-  refresh = 0,
-  cancelOnChange = false,
-}: FetcherType<FetchDataType>) => {
+export const useFetcher = <FetchDataType extends unknown>(
+  init: FetcherType<FetchDataType> | string,
+  options?: FetcherConfigOptions<FetchDataType>
+) => {
+  const {
+    url = "/",
+    default: def,
+    config = { method: "GET", headers: {} as Headers, body: {} as Body },
+    resolver = (d) => d.json(),
+    onError = () => {},
+    auto = true,
+    memory = true,
+    onResolve = () => {},
+    onAbort = () => {},
+    refresh = 0,
+    cancelOnChange = false,
+  } = typeof init === "string"
+    ? {
+        // Pass init as the url if init is a string
+        url: init,
+        ...options,
+      }
+    : // `url` will be required in init if it is an object
+      init;
+
   const resolvedKey = url.split("?")[0];
 
   const [data, setData] = useState<FetchDataType | undefined>(
@@ -375,11 +456,23 @@ useFetcher.extend = function extendFetcher({
   // json by default
   resolver = (d) => d.json(),
 }: FetcherExtendConfig = {}) {
-  function useCustomFetcher<T>({
-    url = "",
-    config = {},
-    ...otherProps
-  }: FetcherType<T>) {
+  function useCustomFetcher<T>(
+    init: FetcherType<T> | string,
+    options?: FetcherConfigOptions<T>
+  ) {
+    const {
+      url = "",
+      config = {},
+      ...otherProps
+    } = typeof init === "string"
+      ? {
+          // set url if init is a stringss
+          url: init,
+          ...options,
+        }
+      : // `url` will be required in init if it is an object
+        init;
+
     return useFetcher<T>({
       ...otherProps,
       url: `${baseUrl}${url}`,
