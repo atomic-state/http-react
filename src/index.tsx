@@ -73,6 +73,13 @@ type FetcherType<FetchDataType> = {
       | "UNLINK";
     headers?: Headers | object;
     body?: Body | object;
+    /**
+     * Customize how body is formated for the request. By default it will be sent in JSON format
+     * but you can set it to false if for example, you are sending a `FormData`
+     * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+     * (the last one is the default behaviour so in that case you can ignore it)
+     */
+    formatBody?: boolean | ((b: any) => any);
   };
   children?: React.FC<{
     data: FetchDataType | undefined;
@@ -142,6 +149,13 @@ type FetcherConfigOptions<FetchDataType> = {
       | "UNLINK";
     headers?: Headers | object;
     body?: Body | object;
+    /**
+     * Customize how body is formated for the request. By default it will be sent in JSON format
+     * but you can set it to false if for example, you are sending a `FormData`
+     * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+     * (the last one is the default behaviour so in that case you can ignore it)
+     */
+    formatBody?: boolean | ((b: any) => any);
   };
   children?: React.FC<{
     data: FetchDataType | undefined;
@@ -282,6 +296,9 @@ export const useFetcher = <FetchDataType extends unknown>(
     // Saved to base url of request without query params
     memory ? resolvedRequests[resolvedKey] || def : def
   );
+
+  const [response, setResponse] = useState<Response>();
+
   const [statusCode, setStatusCode] = useState<number>();
   const [error, setError] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -300,13 +317,24 @@ export const useFetcher = <FetchDataType extends unknown>(
         signal: newAbortController.signal,
         method: config.method,
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type":
+            // If body is form-data, set Content-Type header to 'multipart/form-data'
+            typeof FormData !== "undefined" && config.body instanceof FormData
+              ? "multipart/form-data"
+              : "application/json",
           ...config.headers,
         } as Headers,
         body: config.method?.match(/(POST|PUT|DELETE)/)
-          ? JSON.stringify(config.body)
+          ? typeof config.formatBody === "function"
+            ? config.formatBody(config.body)
+            : config.formatBody === false ||
+              (typeof FormData !== "undefined" &&
+                config.body instanceof FormData)
+            ? config.body
+            : JSON.stringify(config.body)
           : undefined,
       });
+      setResponse(json);
       const code = json.status;
       setStatusCode(code);
       const _data = await resolver(json);
@@ -415,6 +443,7 @@ export const useFetcher = <FetchDataType extends unknown>(
       ...config,
       url,
     },
+    response,
   } as unknown as {
     data: FetchDataType;
     loading: boolean;
@@ -424,6 +453,7 @@ export const useFetcher = <FetchDataType extends unknown>(
     mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
     abort: () => void;
     config: FetcherType<FetchDataType>["config"] & { url: string };
+    response: Response;
   };
 };
 
@@ -440,6 +470,12 @@ type FetcherExtendConfig = {
    * Body to include in each request (if aplicable)
    */
   body?: any;
+  /**
+   * Customize how body is formated for the next requests. By default it will be sent in JSON format but you can set it to false if for example, you are sending a `FormData`
+   * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+   * (the last one is the default behaviour so in that case you can ignore it)
+   */
+  formatBody?: boolean | ((b: any) => any);
   /**
    * Custom resolver
    */
@@ -520,6 +556,13 @@ export const fetcher = useFetcher;
 interface IRequestParam {
   headers?: any;
   body?: any;
+  /**
+   * Customize how body is formated for the request. By default it will be sent in JSON format
+   * but you can set it to false if for example, you are sending a `FormData`
+   * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+   * (the last one is the default behaviour so in that case you can ignore it)
+   */
+  formatBody?: boolean | ((b: any) => any);
 }
 
 type requestType = <T>(path: string, data: IRequestParam) => Promise<T>;

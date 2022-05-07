@@ -179,10 +179,11 @@ var useFetcher = function (init, options) {
     var _m = (0, react_1.useState)(
     // Saved to base url of request without query params
     memory ? resolvedRequests[resolvedKey] || def : def), data = _m[0], setData = _m[1];
-    var _o = (0, react_1.useState)(), statusCode = _o[0], setStatusCode = _o[1];
-    var _p = (0, react_1.useState)(null), error = _p[0], setError = _p[1];
-    var _q = (0, react_1.useState)(true), loading = _q[0], setLoading = _q[1];
-    var _r = (0, react_1.useState)(new AbortController()), requestAbortController = _r[0], setRequestAbortController = _r[1];
+    var _o = (0, react_1.useState)(), response = _o[0], setResponse = _o[1];
+    var _p = (0, react_1.useState)(), statusCode = _p[0], setStatusCode = _p[1];
+    var _q = (0, react_1.useState)(null), error = _q[0], setError = _q[1];
+    var _r = (0, react_1.useState)(true), loading = _r[0], setLoading = _r[1];
+    var _s = (0, react_1.useState)(new AbortController()), requestAbortController = _s[0], setRequestAbortController = _s[1];
     function fetchData() {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
@@ -202,13 +203,24 @@ var useFetcher = function (init, options) {
                         return [4 /*yield*/, fetch(url, {
                                 signal: newAbortController.signal,
                                 method: config.method,
-                                headers: __assign({ "Content-Type": "application/json" }, config.headers),
+                                headers: __assign({ "Content-Type": 
+                                    // If body is form-data, set Content-Type header to 'multipart/form-data'
+                                    typeof FormData !== "undefined" && config.body instanceof FormData
+                                        ? "multipart/form-data"
+                                        : "application/json" }, config.headers),
                                 body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE)/))
-                                    ? JSON.stringify(config.body)
+                                    ? typeof config.formatBody === "function"
+                                        ? config.formatBody(config.body)
+                                        : config.formatBody === false ||
+                                            (typeof FormData !== "undefined" &&
+                                                config.body instanceof FormData)
+                                            ? config.body
+                                            : JSON.stringify(config.body)
                                     : undefined,
                             })];
                     case 2:
                         json = _b.sent();
+                        setResponse(json);
                         code = json.status;
                         setStatusCode(code);
                         return [4 /*yield*/, resolver(json)];
@@ -326,6 +338,7 @@ var useFetcher = function (init, options) {
             }
         },
         config: __assign(__assign({}, config), { url: url }),
+        response: response,
     };
 };
 exports.useFetcher = useFetcher;

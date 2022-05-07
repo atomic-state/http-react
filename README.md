@@ -60,7 +60,6 @@ function App() {
         <p>Error=(</p>
       ) : (
         JSON.stringify(data)
-      )}ON.stringify(data)
       )}
     </div>
   );
@@ -216,6 +215,7 @@ type config = {
 
 ```
 
+
 Example
 
 ```tsx
@@ -228,7 +228,7 @@ const { data, loading, error } = useFetcher({
     headers: {
       Authorization: "Token " + user_token
     },
-    body: {
+: {
       title: '%how to%'
     }
   }
@@ -243,6 +243,41 @@ You can also access some useful properties like the config used in the request a
 ```tsx
 const { config, code, data, loading, error } = useFetcher({
   ...
+```
+
+#### Formatting request body
+
+You can format your body by passing `formatBody` in the config property. By default it is formated into JSON format. If you pass a `FormData` instance, the request `Content-Type` header will be set to `multipart/form-data` (if you specify the `Content-Type` header it will be overwritten). When you pass a `FormData` instance as the body, it will not be formated as JSON.
+
+**Using `formatBody`**
+
+```tsx
+
+const { data } = useFetcher("/my-url", {
+  config: {
+    body: {
+      title: "new title"
+    },
+    formatBody(myBody){
+      // Send an uppercased version of the body JSON
+      return JSON.stringify(newBody).toUpperCase()
+    }
+  }
+})
+
+```
+
+**Sending `FormData`**
+
+```tsx
+const [myForm, setMyForm] = useState(new FormData())
+
+const { data } = useFetcher("/my-url", {
+  config: {
+    body: myForm
+  }
+})
+
 ```
 
 #### Handling error / success
