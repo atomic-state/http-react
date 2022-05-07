@@ -60,6 +60,13 @@ declare type FetcherType<FetchDataType> = {
         method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
         headers?: Headers | object;
         body?: Body | object;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: any) => any);
     };
     children?: React.FC<{
         data: FetchDataType | undefined;
@@ -117,6 +124,13 @@ declare type FetcherConfigOptions<FetchDataType> = {
         method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
         headers?: Headers | object;
         body?: Body | object;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: any) => any);
     };
     children?: React.FC<{
         data: FetchDataType | undefined;
@@ -153,6 +167,13 @@ export declare const useFetcher: {
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
             headers?: object | Headers | undefined;
             body?: object | Body | undefined;
+            /**
+             * Customize how body is formated for the request. By default it will be sent in JSON format
+             * but you can set it to false if for example, you are sending a `FormData`
+             * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+             * (the last one is the default behaviour so in that case you can ignore it)
+             */
+            formatBody?: boolean | ((b: any) => any) | undefined;
         } & {
             url: string;
         };
@@ -176,6 +197,13 @@ export declare const useFetcher: {
                 method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
                 headers?: object | Headers | undefined;
                 body?: object | Body | undefined;
+                /**
+                 * Customize how body is formated for the request. By default it will be sent in JSON format
+                 * but you can set it to false if for example, you are sending a `FormData`
+                 * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+                 * (the last one is the default behaviour so in that case you can ignore it)
+                 */
+                formatBody?: boolean | ((b: any) => any) | undefined;
             } & {
                 url: string;
             };
@@ -202,6 +230,12 @@ declare type FetcherExtendConfig = {
      */
     body?: any;
     /**
+     * Customize how body is formated for the next requests. By default it will be sent in JSON format but you can set it to false if for example, you are sending a `FormData`
+     * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+     * (the last one is the default behaviour so in that case you can ignore it)
+     */
+    formatBody?: boolean | ((b: any) => any);
+    /**
      * Custom resolver
      */
     resolver?: (d: Response) => any;
@@ -222,6 +256,13 @@ export declare const fetcher: {
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
             headers?: object | Headers | undefined;
             body?: object | Body | undefined;
+            /**
+             * Customize how body is formated for the request. By default it will be sent in JSON format
+             * but you can set it to false if for example, you are sending a `FormData`
+             * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+             * (the last one is the default behaviour so in that case you can ignore it)
+             */
+            formatBody?: boolean | ((b: any) => any) | undefined;
         } & {
             url: string;
         };
@@ -245,6 +286,13 @@ export declare const fetcher: {
                 method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
                 headers?: object | Headers | undefined;
                 body?: object | Body | undefined;
+                /**
+                 * Customize how body is formated for the request. By default it will be sent in JSON format
+                 * but you can set it to false if for example, you are sending a `FormData`
+                 * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+                 * (the last one is the default behaviour so in that case you can ignore it)
+                 */
+                formatBody?: boolean | ((b: any) => any) | undefined;
             } & {
                 url: string;
             };
@@ -260,6 +308,13 @@ export declare const fetcher: {
 interface IRequestParam {
     headers?: any;
     body?: any;
+    /**
+     * Customize how body is formated for the request. By default it will be sent in JSON format
+     * but you can set it to false if for example, you are sending a `FormData`
+     * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+     * (the last one is the default behaviour so in that case you can ignore it)
+     */
+    formatBody?: boolean | ((b: any) => any);
 }
 declare type requestType = <T>(path: string, data: IRequestParam) => Promise<T>;
 interface IHttpClient {

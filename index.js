@@ -202,9 +202,19 @@ var useFetcher = function (init, options) {
                         return [4 /*yield*/, fetch(url, {
                                 signal: newAbortController.signal,
                                 method: config.method,
-                                headers: __assign({ "Content-Type": "application/json" }, config.headers),
+                                headers: __assign({ "Content-Type": 
+                                    // If body is form-data, set Content-Type header to 'multipart/form-data'
+                                    typeof FormData !== "undefined" && config.body instanceof FormData
+                                        ? "multipart/form-data"
+                                        : "application/json" }, config.headers),
                                 body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE)/))
-                                    ? JSON.stringify(config.body)
+                                    ? typeof config.formatBody === "function"
+                                        ? config.formatBody(config.body)
+                                        : config.formatBody === false ||
+                                            (typeof FormData !== "undefined" &&
+                                                config.body instanceof FormData)
+                                            ? config.body
+                                            : JSON.stringify(config.body)
                                     : undefined,
                             })];
                     case 2:
