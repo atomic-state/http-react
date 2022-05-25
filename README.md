@@ -167,6 +167,93 @@ function App() {
 }
 ```
 
+You can pass extra configuration when calling `reFetch`, this includes `headers` and `body`.
+
+```tsx
+import { useFetcher } from "http-react-fetcher";
+
+function App() {
+  const { data, loading, error, reFetch } = useFetcher({
+    url: "api-url",
+    default: {},
+    config: {
+      method: "POST",
+      body: {
+        title: "Some title"
+      }
+    }
+    auto: false,
+  });
+
+  return (
+    <div>
+      <button onClick={() =>
+        reFetch({
+          body: {
+            // You will get an editor warning, since the type of body is inferred
+            title: 10
+          }
+        })
+      }>
+        Click to load information
+      </button>
+      {loading ? (
+        <p>Loading data...</p>
+      ) : error ? (
+        <p>Error=(</p>
+      ) : (
+        JSON.stringify(data)
+      )}
+    </div>
+  );
+}
+```
+
+
+#### Body type
+
+You can define the type that your body will have
+
+```tsx
+import { useFetcher } from "http-react-fetcher";
+
+function App() {
+  const { data, loading, error, reFetch } = useFetcher<any, { title: string }>({
+    url: "api-url",
+    default: {},
+    config: {
+      method: "POST",
+      body: {
+        title: "Some title"
+      }
+    }
+    auto: false,
+  });
+
+  return (
+    <div>
+      <button onClick={() =>
+        reFetch({
+          body: {
+            // You will get an editor warning
+            title: 10
+          }
+        })
+      }>
+        Click to load information
+      </button>
+      {loading ? (
+        <p>Loading data...</p>
+      ) : error ? (
+        <p>Error=(</p>
+      ) : (
+        JSON.stringify(data)
+      )}
+    </div>
+  );
+}
+```
+
 #### Loading from memory
 
 By default, responses are saved in memory using the `url` as key.

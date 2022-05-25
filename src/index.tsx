@@ -9,7 +9,7 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 
-type FetcherType<FetchDataType> = {
+type FetcherType<FetchDataType, BodyType> = {
   /**
    * url of the resource to fetch
    */
@@ -72,14 +72,14 @@ type FetcherType<FetchDataType> = {
       | "LINK"
       | "UNLINK";
     headers?: Headers | object;
-    body?: Body | object;
+    body?: BodyType;
     /**
      * Customize how body is formated for the request. By default it will be sent in JSON format
      * but you can set it to false if for example, you are sending a `FormData`
      * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
      * (the last one is the default behaviour so in that case you can ignore it)
      */
-    formatBody?: boolean | ((b: any) => any);
+    formatBody?: boolean | ((b: BodyType) => any);
   };
   children?: React.FC<{
     data: FetchDataType | undefined;
@@ -89,7 +89,7 @@ type FetcherType<FetchDataType> = {
 };
 
 // If first argument is a string
-type FetcherConfigOptions<FetchDataType> = {
+type FetcherConfigOptions<FetchDataType, BodyType = any> = {
   /**
    * Default data value
    */
@@ -148,14 +148,14 @@ type FetcherConfigOptions<FetchDataType> = {
       | "LINK"
       | "UNLINK";
     headers?: Headers | object;
-    body?: Body | object;
+    body?: BodyType;
     /**
      * Customize how body is formated for the request. By default it will be sent in JSON format
      * but you can set it to false if for example, you are sending a `FormData`
      * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
      * (the last one is the default behaviour so in that case you can ignore it)
      */
-    formatBody?: boolean | ((b: any) => any);
+    formatBody?: (b: BodyType) => any;
   };
   children?: React.FC<{
     data: FetchDataType | undefined;
@@ -175,7 +175,7 @@ const Fetcher = <FetchDataType extends unknown>({
   onError = () => {},
   onResolve = () => {},
   refresh = 0,
-}: FetcherType<FetchDataType>) => {
+}: FetcherType<FetchDataType, any>) => {
   const [data, setData] = useState<FetchDataType | undefined>(def);
   const [error, setError] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -265,15 +265,20 @@ export function FetcherConfig({
  * Fetcher available as a hook
  */
 
-export const useFetcher = <FetchDataType extends unknown>(
-  init: FetcherType<FetchDataType> | string,
-  options?: FetcherConfigOptions<FetchDataType>
+export const useFetcher = <FetchDataType extends unknown, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
 ) => {
   const {
     url = "/",
     default: def,
-    config = { method: "GET", headers: {} as Headers, body: {} as Body },
-    resolver = (d) => d.json(),
+    config = {
+      method: "GET",
+      headers: {} as Headers,
+      body: {} as Body,
+      formatBody: false,
+    },
+    resolver = (d: any) => d.json(),
     onError = () => {},
     auto = true,
     memory = true,
@@ -297,6 +302,13 @@ export const useFetcher = <FetchDataType extends unknown>(
     memory ? resolvedRequests[resolvedKey] || def : def
   );
 
+  const [requestBody, setRequestBody] = useState<BodyType>(
+    config.body as BodyType
+  );
+  const [requestHeaders, setRequestHeades] = useState<
+    object | Headers | undefined
+  >(config.headers);
+
   const [response, setResponse] = useState<Response>();
 
   const [statusCode, setStatusCode] = useState<number>();
@@ -305,7 +317,7 @@ export const useFetcher = <FetchDataType extends unknown>(
   const [requestAbortController, setRequestAbortController] =
     useState<AbortController>(new AbortController());
 
-  async function fetchData() {
+  async function fetchData(c: { headers?: any; body?: BodyType } = {}) {
     if (cancelOnChange) {
       requestAbortController?.abort();
     }
@@ -323,15 +335,21 @@ export const useFetcher = <FetchDataType extends unknown>(
               ? "multipart/form-data"
               : "application/json",
           ...config.headers,
+          ...c.headers,
         } as Headers,
         body: config.method?.match(/(POST|PUT|DELETE)/)
           ? typeof config.formatBody === "function"
-            ? config.formatBody(config.body)
+            ? config.formatBody(
+                (typeof FormData !== "undefined" &&
+                config.body instanceof FormData
+                  ? (config.body as BodyType)
+                  : { ...config.body, ...c.body }) as BodyType
+              )
             : config.formatBody === false ||
               (typeof FormData !== "undefined" &&
                 config.body instanceof FormData)
             ? config.body
-            : JSON.stringify(config.body)
+            : JSON.stringify({ ...config.body, ...c.body })
           : undefined,
       });
       setResponse(json);
@@ -397,11 +415,18 @@ export const useFetcher = <FetchDataType extends unknown>(
     };
   }, [requestAbortController, onAbort]);
 
-  async function reValidate() {
+  async function reValidate(c: { headers?: any; body?: BodyType } = {}) {
     // Only revalidate if request was already completed
+    if (c.body) {
+      setRequestBody((p) => ({ ...p, ...c.body }));
+    }
+    if (c.headers) {
+      setRequestHeades((p) => ({ ...p, ...c.headers }));
+    }
+
     if (!loading) {
       setLoading(true);
-      fetchData();
+      fetchData(c);
     }
   }
   useEffect(() => {
@@ -441,6 +466,8 @@ export const useFetcher = <FetchDataType extends unknown>(
     },
     config: {
       ...config,
+      headers: requestHeaders,
+      body: requestBody,
       url,
     },
     response,
@@ -449,10 +476,10 @@ export const useFetcher = <FetchDataType extends unknown>(
     loading: boolean;
     error: Error | null;
     code: number;
-    reFetch: () => Promise<void>;
+    reFetch: (c?: { headers?: any; body?: BodyType } | object) => Promise<void>;
     mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
     abort: () => void;
-    config: FetcherType<FetchDataType>["config"] & { url: string };
+    config: FetcherType<FetchDataType, BodyType>["config"] & { url: string };
     response: Response;
   };
 };
@@ -475,7 +502,7 @@ type FetcherExtendConfig = {
    * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
    * (the last one is the default behaviour so in that case you can ignore it)
    */
-  formatBody?: boolean | ((b: any) => any);
+  formatBody?: (b: any) => any;
   /**
    * Custom resolver
    */
@@ -492,9 +519,9 @@ useFetcher.extend = function extendFetcher({
   // json by default
   resolver = (d) => d.json(),
 }: FetcherExtendConfig = {}) {
-  function useCustomFetcher<T>(
-    init: FetcherType<T> | string,
-    options?: FetcherConfigOptions<T>
+  function useCustomFetcher<T, BodyType = any>(
+    init: FetcherType<T, BodyType> | string,
+    options?: FetcherConfigOptions<T, BodyType>
   ) {
     const {
       url = "",
@@ -509,7 +536,7 @@ useFetcher.extend = function extendFetcher({
       : // `url` will be required in init if it is an object
         init;
 
-    return useFetcher<T>({
+    return useFetcher<T, BodyType>({
       ...otherProps,
       url: `${baseUrl}${url}`,
       // If resolver is present is hook call, use that instead
