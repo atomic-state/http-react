@@ -174,18 +174,26 @@ var useFetcher = function (init, options) {
         ? __assign({ 
             // Pass init as the url if init is a string
             url: init }, options) : // `url` will be required in init if it is an object
-        init, _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? true : _f, _g = _a.memory, memory = _g === void 0 ? true : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.onAbort, onAbort = _j === void 0 ? function () { } : _j, _k = _a.refresh, refresh = _k === void 0 ? 0 : _k, _l = _a.cancelOnChange, cancelOnChange = _l === void 0 ? false : _l;
+        init, _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? {
+        method: "GET",
+        headers: {},
+        body: {},
+        formatBody: false,
+    } : _c, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? true : _f, _g = _a.memory, memory = _g === void 0 ? true : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.onAbort, onAbort = _j === void 0 ? function () { } : _j, _k = _a.refresh, refresh = _k === void 0 ? 0 : _k, _l = _a.cancelOnChange, cancelOnChange = _l === void 0 ? false : _l;
     var resolvedKey = url.split("?")[0];
     var _m = (0, react_1.useState)(
     // Saved to base url of request without query params
     memory ? resolvedRequests[resolvedKey] || def : def), data = _m[0], setData = _m[1];
-    var _o = (0, react_1.useState)(), response = _o[0], setResponse = _o[1];
-    var _p = (0, react_1.useState)(), statusCode = _p[0], setStatusCode = _p[1];
-    var _q = (0, react_1.useState)(null), error = _q[0], setError = _q[1];
-    var _r = (0, react_1.useState)(true), loading = _r[0], setLoading = _r[1];
-    var _s = (0, react_1.useState)(new AbortController()), requestAbortController = _s[0], setRequestAbortController = _s[1];
-    function fetchData() {
+    var _o = (0, react_1.useState)(config.body), requestBody = _o[0], setRequestBody = _o[1];
+    var _p = (0, react_1.useState)(config.headers), requestHeaders = _p[0], setRequestHeades = _p[1];
+    var _q = (0, react_1.useState)(), response = _q[0], setResponse = _q[1];
+    var _r = (0, react_1.useState)(), statusCode = _r[0], setStatusCode = _r[1];
+    var _s = (0, react_1.useState)(null), error = _s[0], setError = _s[1];
+    var _t = (0, react_1.useState)(true), loading = _t[0], setLoading = _t[1];
+    var _u = (0, react_1.useState)(new AbortController()), requestAbortController = _u[0], setRequestAbortController = _u[1];
+    function fetchData(c) {
         var _a;
+        if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
             var newAbortController, json, code, _data, err_2, errorString;
             return __generator(this, function (_b) {
@@ -203,19 +211,22 @@ var useFetcher = function (init, options) {
                         return [4 /*yield*/, fetch(url, {
                                 signal: newAbortController.signal,
                                 method: config.method,
-                                headers: __assign({ "Content-Type": 
+                                headers: __assign(__assign({ "Content-Type": 
                                     // If body is form-data, set Content-Type header to 'multipart/form-data'
                                     typeof FormData !== "undefined" && config.body instanceof FormData
                                         ? "multipart/form-data"
-                                        : "application/json" }, config.headers),
+                                        : "application/json" }, config.headers), c.headers),
                                 body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE)/))
                                     ? typeof config.formatBody === "function"
-                                        ? config.formatBody(config.body)
+                                        ? config.formatBody((typeof FormData !== "undefined" &&
+                                            config.body instanceof FormData
+                                            ? config.body
+                                            : __assign(__assign({}, config.body), c.body)))
                                         : config.formatBody === false ||
                                             (typeof FormData !== "undefined" &&
                                                 config.body instanceof FormData)
                                             ? config.body
-                                            : JSON.stringify(config.body)
+                                            : JSON.stringify(__assign(__assign({}, config.body), c.body))
                                     : undefined,
                             })];
                     case 2:
@@ -291,13 +302,20 @@ var useFetcher = function (init, options) {
             signal === null || signal === void 0 ? void 0 : signal.removeEventListener("abort", abortCallback);
         };
     }, [requestAbortController, onAbort]);
-    function reValidate() {
+    function reValidate(c) {
+        if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 // Only revalidate if request was already completed
+                if (c.body) {
+                    setRequestBody(function (p) { return (__assign(__assign({}, p), c.body)); });
+                }
+                if (c.headers) {
+                    setRequestHeades(function (p) { return (__assign(__assign({}, p), c.headers)); });
+                }
                 if (!loading) {
                     setLoading(true);
-                    fetchData();
+                    fetchData(c);
                 }
                 return [2 /*return*/];
             });
@@ -337,7 +355,7 @@ var useFetcher = function (init, options) {
                 setData(resolvedRequests[resolvedKey]);
             }
         },
-        config: __assign(__assign({}, config), { url: url }),
+        config: __assign(__assign({}, config), { headers: requestHeaders, body: requestBody, url: url }),
         response: response,
     };
 };

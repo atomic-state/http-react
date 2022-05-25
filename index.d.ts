@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 import * as React from "react";
-declare type FetcherType<FetchDataType> = {
+declare type FetcherType<FetchDataType, BodyType> = {
     /**
      * url of the resource to fetch
      */
@@ -59,14 +59,14 @@ declare type FetcherType<FetchDataType> = {
          */
         method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
         headers?: Headers | object;
-        body?: Body | object;
+        body?: BodyType;
         /**
          * Customize how body is formated for the request. By default it will be sent in JSON format
          * but you can set it to false if for example, you are sending a `FormData`
          * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
          * (the last one is the default behaviour so in that case you can ignore it)
          */
-        formatBody?: boolean | ((b: any) => any);
+        formatBody?: boolean | ((b: BodyType) => any);
     };
     children?: React.FC<{
         data: FetchDataType | undefined;
@@ -74,7 +74,7 @@ declare type FetcherType<FetchDataType> = {
         loading: boolean;
     }>;
 };
-declare type FetcherConfigOptions<FetchDataType> = {
+declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
     /**
      * Default data value
      */
@@ -123,14 +123,14 @@ declare type FetcherConfigOptions<FetchDataType> = {
          */
         method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
         headers?: Headers | object;
-        body?: Body | object;
+        body?: BodyType;
         /**
          * Customize how body is formated for the request. By default it will be sent in JSON format
          * but you can set it to false if for example, you are sending a `FormData`
          * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
          * (the last one is the default behaviour so in that case you can ignore it)
          */
-        formatBody?: boolean | ((b: any) => any);
+        formatBody?: (b: BodyType) => any;
     };
     children?: React.FC<{
         data: FetchDataType | undefined;
@@ -141,7 +141,7 @@ declare type FetcherConfigOptions<FetchDataType> = {
 /**
  * @deprecated Use the `useFetcher` hook instead
  */
-declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType>) => JSX.Element | null;
+declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType, any>) => JSX.Element | null;
 export default Fetcher;
 declare type fetcherConfigComponentType = {
     children: any;
@@ -152,12 +152,15 @@ export declare function FetcherConfig({ children, defaults, }: fetcherConfigComp
  * Fetcher available as a hook
  */
 export declare const useFetcher: {
-    <FetchDataType extends unknown>(init: string | FetcherType<FetchDataType>, options?: FetcherConfigOptions<FetchDataType> | undefined): {
+    <FetchDataType extends unknown, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
         code: number;
-        reFetch: () => Promise<void>;
+        reFetch: (c?: object | {
+            headers?: any;
+            body?: BodyType | undefined;
+        } | undefined) => Promise<void>;
         mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
         abort: () => void;
         config: {
@@ -166,14 +169,14 @@ export declare const useFetcher: {
              */
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
             headers?: object | Headers | undefined;
-            body?: object | Body | undefined;
+            body?: BodyType | undefined;
             /**
              * Customize how body is formated for the request. By default it will be sent in JSON format
              * but you can set it to false if for example, you are sending a `FormData`
              * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
              * (the last one is the default behaviour so in that case you can ignore it)
              */
-            formatBody?: boolean | ((b: any) => any) | undefined;
+            formatBody?: boolean | ((b: BodyType) => any) | undefined;
         } & {
             url: string;
         };
@@ -183,12 +186,15 @@ export declare const useFetcher: {
      * Extend the useFetcher hook
      */
     extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): {
-        <T>(init: string | FetcherType<T>, options?: FetcherConfigOptions<T> | undefined): {
+        <T, BodyType_1 = any>(init: string | FetcherType<T, BodyType_1>, options?: FetcherConfigOptions<T, BodyType_1> | undefined): {
             data: T;
             loading: boolean;
             error: Error | null;
             code: number;
-            reFetch: () => Promise<void>;
+            reFetch: (c?: object | {
+                headers?: any;
+                body?: BodyType_1 | undefined;
+            } | undefined) => Promise<void>;
             mutate: React.Dispatch<React.SetStateAction<T>>;
             abort: () => void;
             config: {
@@ -197,14 +203,14 @@ export declare const useFetcher: {
                  */
                 method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
                 headers?: object | Headers | undefined;
-                body?: object | Body | undefined;
+                body?: BodyType_1 | undefined;
                 /**
                  * Customize how body is formated for the request. By default it will be sent in JSON format
                  * but you can set it to false if for example, you are sending a `FormData`
                  * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
                  * (the last one is the default behaviour so in that case you can ignore it)
                  */
-                formatBody?: boolean | ((b: any) => any) | undefined;
+                formatBody?: boolean | ((b: BodyType_1) => any) | undefined;
             } & {
                 url: string;
             };
@@ -236,19 +242,22 @@ declare type FetcherExtendConfig = {
      * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
      * (the last one is the default behaviour so in that case you can ignore it)
      */
-    formatBody?: boolean | ((b: any) => any);
+    formatBody?: (b: any) => any;
     /**
      * Custom resolver
      */
     resolver?: (d: Response) => any;
 };
 export declare const fetcher: {
-    <FetchDataType extends unknown>(init: string | FetcherType<FetchDataType>, options?: FetcherConfigOptions<FetchDataType> | undefined): {
+    <FetchDataType extends unknown, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
         code: number;
-        reFetch: () => Promise<void>;
+        reFetch: (c?: object | {
+            headers?: any;
+            body?: BodyType | undefined;
+        } | undefined) => Promise<void>;
         mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
         abort: () => void;
         config: {
@@ -257,14 +266,14 @@ export declare const fetcher: {
              */
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
             headers?: object | Headers | undefined;
-            body?: object | Body | undefined;
+            body?: BodyType | undefined;
             /**
              * Customize how body is formated for the request. By default it will be sent in JSON format
              * but you can set it to false if for example, you are sending a `FormData`
              * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
              * (the last one is the default behaviour so in that case you can ignore it)
              */
-            formatBody?: boolean | ((b: any) => any) | undefined;
+            formatBody?: boolean | ((b: BodyType) => any) | undefined;
         } & {
             url: string;
         };
@@ -274,12 +283,15 @@ export declare const fetcher: {
      * Extend the useFetcher hook
      */
     extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): {
-        <T>(init: string | FetcherType<T>, options?: FetcherConfigOptions<T> | undefined): {
+        <T, BodyType_1 = any>(init: string | FetcherType<T, BodyType_1>, options?: FetcherConfigOptions<T, BodyType_1> | undefined): {
             data: T;
             loading: boolean;
             error: Error | null;
             code: number;
-            reFetch: () => Promise<void>;
+            reFetch: (c?: object | {
+                headers?: any;
+                body?: BodyType_1 | undefined;
+            } | undefined) => Promise<void>;
             mutate: React.Dispatch<React.SetStateAction<T>>;
             abort: () => void;
             config: {
@@ -288,14 +300,14 @@ export declare const fetcher: {
                  */
                 method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
                 headers?: object | Headers | undefined;
-                body?: object | Body | undefined;
+                body?: BodyType_1 | undefined;
                 /**
                  * Customize how body is formated for the request. By default it will be sent in JSON format
                  * but you can set it to false if for example, you are sending a `FormData`
                  * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
                  * (the last one is the default behaviour so in that case you can ignore it)
                  */
-                formatBody?: boolean | ((b: any) => any) | undefined;
+                formatBody?: boolean | ((b: BodyType_1) => any) | undefined;
             } & {
                 url: string;
             };
