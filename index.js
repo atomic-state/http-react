@@ -167,6 +167,80 @@ function FetcherConfig(_a) {
 }
 exports.FetcherConfig = FetcherConfig;
 /**
+ * Creates a new request function. This is for usage with fetcher and fetcher.extend
+ */
+function createRequestFn(method, baseUrl, $headers) {
+    return function (url, init) {
+        if (init === void 0) { init = {}; }
+        return __awaiter(this, void 0, void 0, function () {
+            var def, _a, resolver, _b, c, _c, onResolve, _d, onError, _e, headers, body, formatBody, reqConfig, r, req, data, err_2;
+            return __generator(this, function (_f) {
+                switch (_f.label) {
+                    case 0:
+                        def = init.default, _a = init.resolver, resolver = _a === void 0 ? function (e) { return e.json(); } : _a, _b = init.config, c = _b === void 0 ? {} : _b, _c = init.onResolve, onResolve = _c === void 0 ? function () { } : _c, _d = init.onError, onError = _d === void 0 ? function () { } : _d;
+                        _e = c.headers, headers = _e === void 0 ? {} : _e, body = c.body, formatBody = c.formatBody;
+                        reqConfig = {
+                            headers: __assign(__assign({ "Content-Type": "application/json" }, $headers), headers),
+                            body: (method === null || method === void 0 ? void 0 : method.match(/(POST|PUT|DELETE|PATCH)/))
+                                ? typeof formatBody === "function"
+                                    ? formatBody((typeof FormData !== "undefined" && body instanceof FormData
+                                        ? body
+                                        : body))
+                                    : formatBody === false ||
+                                        (typeof FormData !== "undefined" && body instanceof FormData)
+                                        ? body
+                                        : JSON.stringify(body)
+                                : undefined,
+                        };
+                        r = undefined;
+                        _f.label = 1;
+                    case 1:
+                        _f.trys.push([1, 4, , 5]);
+                        return [4 /*yield*/, fetch("".concat(baseUrl || "").concat(url), reqConfig)];
+                    case 2:
+                        req = _f.sent();
+                        r = req;
+                        return [4 /*yield*/, resolver(req)];
+                    case 3:
+                        data = _f.sent();
+                        if (req.status >= 400) {
+                            onError(true);
+                            return [2 /*return*/, {
+                                    res: req,
+                                    data: def,
+                                    error: true,
+                                    code: req.status,
+                                    config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
+                                }];
+                        }
+                        else {
+                            onResolve(data, req);
+                            return [2 /*return*/, {
+                                    res: req,
+                                    data: data,
+                                    error: false,
+                                    code: req.status,
+                                    config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
+                                }];
+                        }
+                        return [3 /*break*/, 5];
+                    case 4:
+                        err_2 = _f.sent();
+                        onError(err_2);
+                        return [2 /*return*/, {
+                                res: r,
+                                data: def,
+                                error: true,
+                                code: r.status,
+                                config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
+                            }];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+}
+/**
  * Fetcher available as a hook
  */
 var useFetcher = function (init, options) {
@@ -195,7 +269,7 @@ var useFetcher = function (init, options) {
         var _a;
         if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var newAbortController, json, code, _data, err_2, errorString;
+            var newAbortController, json, code, _data, err_3, errorString;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -254,13 +328,13 @@ var useFetcher = function (init, options) {
                         }
                         return [3 /*break*/, 6];
                     case 4:
-                        err_2 = _b.sent();
-                        errorString = err_2 === null || err_2 === void 0 ? void 0 : err_2.toString();
+                        err_3 = _b.sent();
+                        errorString = err_3 === null || err_3 === void 0 ? void 0 : err_3.toString();
                         // Only set error if no abort
                         if (!errorString.match(/abort/i)) {
                             setData(undefined);
-                            setError(new Error(err_2));
-                            onError(err_2);
+                            setError(new Error(err_3));
+                            onError(err_3);
                         }
                         else {
                             if (!resolvedRequests[resolvedKey]) {
@@ -360,6 +434,17 @@ var useFetcher = function (init, options) {
     };
 };
 exports.useFetcher = useFetcher;
+// Create a method for each request
+exports.useFetcher.get = createRequestFn("GET", "", {});
+exports.useFetcher.delete = createRequestFn("DELETE", "", {});
+exports.useFetcher.head = createRequestFn("HEAD", "", {});
+exports.useFetcher.options = createRequestFn("OPTIONS", "", {});
+exports.useFetcher.post = createRequestFn("POST", "", {});
+exports.useFetcher.put = createRequestFn("PUT", "", {});
+exports.useFetcher.patch = createRequestFn("PATCH", "", {});
+exports.useFetcher.purge = createRequestFn("PURGE", "", {});
+exports.useFetcher.link = createRequestFn("LINK", "", {});
+exports.useFetcher.unlink = createRequestFn("UNLINK", "", {});
 /**
  * Extend the useFetcher hook
  */
@@ -388,6 +473,17 @@ exports.useFetcher.extend = function extendFetcher(_a) {
         headers: headers,
         body: body,
     };
+    // Creating methods for fetcher.extend
+    useCustomFetcher.get = createRequestFn("GET", baseUrl, {});
+    useCustomFetcher.delete = createRequestFn("DELETE", baseUrl, {});
+    useCustomFetcher.head = createRequestFn("HEAD", baseUrl, {});
+    useCustomFetcher.options = createRequestFn("OPTIONS", baseUrl, {});
+    useCustomFetcher.post = createRequestFn("POST", baseUrl, {});
+    useCustomFetcher.put = createRequestFn("PUT", baseUrl, {});
+    useCustomFetcher.patch = createRequestFn("PATCH", baseUrl, {});
+    useCustomFetcher.purge = createRequestFn("PURGE", baseUrl, {});
+    useCustomFetcher.link = createRequestFn("LINK", baseUrl, {});
+    useCustomFetcher.unlink = createRequestFn("UNLINK", baseUrl, {});
     useCustomFetcher.Config = function FetcherConfig(_a) {
         var children = _a.children, _b = _a.defaults, defaults = _b === void 0 ? {} : _b;
         if (defaults) {

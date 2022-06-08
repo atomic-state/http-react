@@ -148,6 +148,23 @@ declare type fetcherConfigComponentType = {
     defaults: any;
 };
 export declare function FetcherConfig({ children, defaults, }: fetcherConfigComponentType): any;
+declare type RequestWithBody = <R = any, BodyType = any>(url: string, reqConfig?: {
+    default?: R;
+    config?: {
+        formatBody?(b: BodyType): any;
+        headers?: any;
+        body?: BodyType;
+    };
+    resolver?: (r: Response) => any;
+    onError?(error: Error): void;
+    onResolve?(data: R, res: Response): void;
+}) => Promise<{
+    error: any;
+    data: R;
+    config: any;
+    code: number;
+    res: Response;
+}>;
 /**
  * Fetcher available as a hook
  */
@@ -182,6 +199,16 @@ export declare const useFetcher: {
         };
         response: Response;
     };
+    get: RequestWithBody;
+    delete: RequestWithBody;
+    head: RequestWithBody;
+    options: RequestWithBody;
+    post: RequestWithBody;
+    put: RequestWithBody;
+    patch: RequestWithBody;
+    purge: RequestWithBody;
+    link: RequestWithBody;
+    unlink: RequestWithBody;
     /**
      * Extend the useFetcher hook
      */
@@ -221,6 +248,16 @@ export declare const useFetcher: {
             headers: object | Headers;
             body: any;
         };
+        get: RequestWithBody;
+        delete: RequestWithBody;
+        head: RequestWithBody;
+        options: RequestWithBody;
+        post: RequestWithBody;
+        put: RequestWithBody;
+        patch: RequestWithBody;
+        purge: RequestWithBody;
+        link: RequestWithBody;
+        unlink: RequestWithBody;
         Config({ children, defaults, }: fetcherConfigComponentType): any;
     };
 };
@@ -279,6 +316,16 @@ export declare const fetcher: {
         };
         response: Response;
     };
+    get: RequestWithBody;
+    delete: RequestWithBody;
+    head: RequestWithBody;
+    options: RequestWithBody;
+    post: RequestWithBody;
+    put: RequestWithBody;
+    patch: RequestWithBody;
+    purge: RequestWithBody;
+    link: RequestWithBody;
+    unlink: RequestWithBody;
     /**
      * Extend the useFetcher hook
      */
@@ -318,6 +365,16 @@ export declare const fetcher: {
             headers: object | Headers;
             body: any;
         };
+        get: RequestWithBody;
+        delete: RequestWithBody;
+        head: RequestWithBody;
+        options: RequestWithBody;
+        post: RequestWithBody;
+        put: RequestWithBody;
+        patch: RequestWithBody;
+        purge: RequestWithBody;
+        link: RequestWithBody;
+        unlink: RequestWithBody;
         Config({ children, defaults, }: fetcherConfigComponentType): any;
     };
 };

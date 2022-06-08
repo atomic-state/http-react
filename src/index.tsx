@@ -261,6 +261,103 @@ export function FetcherConfig({
   return children;
 }
 
+type RequestWithBody = <R = any, BodyType = any>(
+  url: string,
+  reqConfig?: {
+    default?: R;
+    config?: {
+      formatBody?(b: BodyType): any;
+      headers?: any;
+      body?: BodyType;
+    };
+    resolver?: (r: Response) => any;
+    onError?(error: Error): void;
+    onResolve?(data: R, res: Response): void;
+  }
+) => Promise<{
+  error: any;
+  data: R;
+  config: any;
+  code: number;
+  res: Response;
+}>;
+
+/**
+ * Creates a new request function. This is for usage with fetcher and fetcher.extend
+ */
+function createRequestFn(
+  method: string,
+  baseUrl: string,
+  $headers: any
+): RequestWithBody {
+  return async function (url, init = {}) {
+    const {
+      default: def,
+      resolver = (e) => e.json(),
+      config: c = {},
+      onResolve = () => {},
+      onError = () => {},
+    } = init;
+
+    const { headers = {}, body, formatBody } = c;
+
+    const reqConfig = {
+      headers: {
+        "Content-Type": "application/json",
+        ...$headers,
+        ...headers,
+      },
+      body: method?.match(/(POST|PUT|DELETE|PATCH)/)
+        ? typeof formatBody === "function"
+          ? formatBody(
+              (typeof FormData !== "undefined" && body instanceof FormData
+                ? body
+                : body) as any
+            )
+          : formatBody === false ||
+            (typeof FormData !== "undefined" && body instanceof FormData)
+          ? body
+          : JSON.stringify(body)
+        : undefined,
+    };
+
+    let r: Response = undefined as unknown as Response;
+    try {
+      const req = await fetch(`${baseUrl || ""}${url}`, reqConfig);
+      r = req;
+      const data = await resolver(req);
+      if (req.status >= 400) {
+        onError(true as any);
+        return {
+          res: req,
+          data: def,
+          error: true,
+          code: req.status,
+          config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
+        };
+      } else {
+        onResolve(data, req);
+        return {
+          res: req,
+          data: data,
+          error: false,
+          code: req.status,
+          config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
+        };
+      }
+    } catch (err) {
+      onError(err);
+      return {
+        res: r,
+        data: def,
+        error: true,
+        code: r.status,
+        config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
+      };
+    }
+  } as RequestWithBody;
+}
+
 /**
  * Fetcher available as a hook
  */
@@ -484,6 +581,18 @@ export const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   };
 };
 
+// Create a method for each request
+useFetcher.get = createRequestFn("GET", "", {});
+useFetcher.delete = createRequestFn("DELETE", "", {});
+useFetcher.head = createRequestFn("HEAD", "", {});
+useFetcher.options = createRequestFn("OPTIONS", "", {});
+useFetcher.post = createRequestFn("POST", "", {});
+useFetcher.put = createRequestFn("PUT", "", {});
+useFetcher.patch = createRequestFn("PATCH", "", {});
+useFetcher.purge = createRequestFn("PURGE", "", {});
+useFetcher.link = createRequestFn("LINK", "", {});
+useFetcher.unlink = createRequestFn("UNLINK", "", {});
+
 type FetcherExtendConfig = {
   /**
    * Request base url
@@ -559,6 +668,18 @@ useFetcher.extend = function extendFetcher({
     headers,
     body,
   };
+
+  // Creating methods for fetcher.extend
+  useCustomFetcher.get = createRequestFn("GET", baseUrl, {});
+  useCustomFetcher.delete = createRequestFn("DELETE", baseUrl, {});
+  useCustomFetcher.head = createRequestFn("HEAD", baseUrl, {});
+  useCustomFetcher.options = createRequestFn("OPTIONS", baseUrl, {});
+  useCustomFetcher.post = createRequestFn("POST", baseUrl, {});
+  useCustomFetcher.put = createRequestFn("PUT", baseUrl, {});
+  useCustomFetcher.patch = createRequestFn("PATCH", baseUrl, {});
+  useCustomFetcher.purge = createRequestFn("PURGE", baseUrl, {});
+  useCustomFetcher.link = createRequestFn("LINK", baseUrl, {});
+  useCustomFetcher.unlink = createRequestFn("UNLINK", baseUrl, {});
 
   useCustomFetcher.Config = function FetcherConfig({
     children,
