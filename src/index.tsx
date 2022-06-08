@@ -302,6 +302,7 @@ function createRequestFn(
     const { headers = {}, body, formatBody } = c;
 
     const reqConfig = {
+      method,
       headers: {
         "Content-Type": "application/json",
         ...$headers,
@@ -326,13 +327,13 @@ function createRequestFn(
       const req = await fetch(`${baseUrl || ""}${url}`, reqConfig);
       r = req;
       const data = await resolver(req);
-      if (req.status >= 400) {
+      if (req?.status >= 400) {
         onError(true as any);
         return {
           res: req,
           data: def,
           error: true,
-          code: req.status,
+          code: req?.status,
           config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
         };
       } else {
@@ -341,7 +342,7 @@ function createRequestFn(
           res: req,
           data: data,
           error: false,
-          code: req.status,
+          code: req?.status,
           config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
         };
       }
@@ -351,7 +352,7 @@ function createRequestFn(
         res: r,
         data: def,
         error: true,
-        code: r.status,
+        code: r?.status,
         config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
       };
     }

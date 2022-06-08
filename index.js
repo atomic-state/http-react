@@ -180,6 +180,7 @@ function createRequestFn(method, baseUrl, $headers) {
                         def = init.default, _a = init.resolver, resolver = _a === void 0 ? function (e) { return e.json(); } : _a, _b = init.config, c = _b === void 0 ? {} : _b, _c = init.onResolve, onResolve = _c === void 0 ? function () { } : _c, _d = init.onError, onError = _d === void 0 ? function () { } : _d;
                         _e = c.headers, headers = _e === void 0 ? {} : _e, body = c.body, formatBody = c.formatBody;
                         reqConfig = {
+                            method: method,
                             headers: __assign(__assign({ "Content-Type": "application/json" }, $headers), headers),
                             body: (method === null || method === void 0 ? void 0 : method.match(/(POST|PUT|DELETE|PATCH)/))
                                 ? typeof formatBody === "function"
@@ -203,13 +204,13 @@ function createRequestFn(method, baseUrl, $headers) {
                         return [4 /*yield*/, resolver(req)];
                     case 3:
                         data = _f.sent();
-                        if (req.status >= 400) {
+                        if ((req === null || req === void 0 ? void 0 : req.status) >= 400) {
                             onError(true);
                             return [2 /*return*/, {
                                     res: req,
                                     data: def,
                                     error: true,
-                                    code: req.status,
+                                    code: req === null || req === void 0 ? void 0 : req.status,
                                     config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
                                 }];
                         }
@@ -219,7 +220,7 @@ function createRequestFn(method, baseUrl, $headers) {
                                     res: req,
                                     data: data,
                                     error: false,
-                                    code: req.status,
+                                    code: req === null || req === void 0 ? void 0 : req.status,
                                     config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
                                 }];
                         }
@@ -231,7 +232,7 @@ function createRequestFn(method, baseUrl, $headers) {
                                 res: r,
                                 data: def,
                                 error: true,
-                                code: r.status,
+                                code: r === null || r === void 0 ? void 0 : r.status,
                                 config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
                             }];
                     case 5: return [2 /*return*/];
