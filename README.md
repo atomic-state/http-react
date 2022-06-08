@@ -700,3 +700,104 @@ export async function getServerSideProps() {
 }
 
 ```
+
+### Fetcher methods
+
+`useFetcher` has other methods that can help you make requests. They are similar to the ones provided by Axios and the configuration is almos the same
+
+Example
+
+```jsx
+import { useFetcher } from "http-react-fetcher"
+
+
+function App() {
+
+  // The hook
+  const { data, code } = useFetcher("/api/user", {
+    default: {},
+    onResolve(d) {
+      console.log("User:" , d)
+    }
+  })
+
+  // Without hooks
+  async function getUserData(){
+
+    const { data, error, code } = useFetcher.get("/api/user", {
+      default: {},
+      onResolve(d) {
+        console.log("User:" , d)
+      }
+    })
+
+  }
+
+
+  // Another example
+  async function saveUserInfo(){
+
+    const { data, error, code } = useFetcher.post("/api/user", {
+      onResolve(d) {
+        console.log("Info saved")
+      },
+      onError() {
+        consolelog("Error saving info")
+      }
+    })
+
+  }
+}
+
+```
+
+
+### Fetcher methods when using `.extend`
+
+You can extend the useFetcher hook and use those methods with the same config
+
+```jsx
+import { useFetcher } from "http-react-fetcher"
+
+const useAPI = useFetcher.extend({
+  baseUrl: "/api"
+})
+
+function App() {
+  const { data, code } = useAPI("/user", {
+    default: {},
+    onResolve(d) {
+      console.log("User:" , d)
+    }
+  })
+
+  // Without hooks
+  async function getUserData(){
+
+    // We also remove the '/api' part as we moved it to our fetcher extension
+    const { data, error, code } = useAPI.get("/user", {
+      default: {},
+      onResolve(d) {
+        console.log("User:" , d)
+      }
+    })
+
+  }
+
+
+  // Another example
+  async function saveUserInfo(){
+
+    const { data, error, code } = useAPI.post("/user", {
+      onResolve(d) {
+        console.log("Info saved")
+      },
+      onError() {
+        consolelog("Error saving info")
+      }
+    })
+
+  }
+}
+
+```
