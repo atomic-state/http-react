@@ -87,7 +87,7 @@ var Fetcher = function (_a) {
                         return [4 /*yield*/, fetch(url, {
                                 method: config.method,
                                 headers: __assign({ "Content-Type": "application/json" }, config.headers),
-                                body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE)/))
+                                body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE|PATCH)/))
                                     ? JSON.stringify(config.body)
                                     : undefined,
                             })];
@@ -100,7 +100,7 @@ var Fetcher = function (_a) {
                         if (code >= 200 && code < 300) {
                             setData(_data);
                             setError(null);
-                            onResolve(_data);
+                            onResolve(_data, json);
                         }
                         else {
                             if (def) {
@@ -216,7 +216,7 @@ var useFetcher = function (init, options) {
                                     typeof FormData !== "undefined" && config.body instanceof FormData
                                         ? "multipart/form-data"
                                         : "application/json" }, config.headers), c.headers),
-                                body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE)/))
+                                body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE|PATCH)/))
                                     ? typeof config.formatBody === "function"
                                         ? config.formatBody((typeof FormData !== "undefined" &&
                                             config.body instanceof FormData
@@ -243,14 +243,14 @@ var useFetcher = function (init, options) {
                             }
                             setData(_data);
                             setError(null);
-                            onResolve(_data);
+                            onResolve(_data, json);
                         }
                         else {
                             if (def) {
                                 setData(def);
                             }
                             setError(true);
-                            onError(_data);
+                            onError(_data, json);
                         }
                         return [3 /*break*/, 6];
                     case 4:
