@@ -475,16 +475,16 @@ exports.useFetcher.extend = function extendFetcher(_a) {
         body: body,
     };
     // Creating methods for fetcher.extend
-    useCustomFetcher.get = createRequestFn("GET", baseUrl, {});
-    useCustomFetcher.delete = createRequestFn("DELETE", baseUrl, {});
-    useCustomFetcher.head = createRequestFn("HEAD", baseUrl, {});
-    useCustomFetcher.options = createRequestFn("OPTIONS", baseUrl, {});
-    useCustomFetcher.post = createRequestFn("POST", baseUrl, {});
-    useCustomFetcher.put = createRequestFn("PUT", baseUrl, {});
-    useCustomFetcher.patch = createRequestFn("PATCH", baseUrl, {});
-    useCustomFetcher.purge = createRequestFn("PURGE", baseUrl, {});
-    useCustomFetcher.link = createRequestFn("LINK", baseUrl, {});
-    useCustomFetcher.unlink = createRequestFn("UNLINK", baseUrl, {});
+    useCustomFetcher.get = createRequestFn("GET", baseUrl, headers);
+    useCustomFetcher.delete = createRequestFn("DELETE", baseUrl, headers);
+    useCustomFetcher.head = createRequestFn("HEAD", baseUrl, headers);
+    useCustomFetcher.options = createRequestFn("OPTIONS", baseUrl, headers);
+    useCustomFetcher.post = createRequestFn("POST", baseUrl, headers);
+    useCustomFetcher.put = createRequestFn("PUT", baseUrl, headers);
+    useCustomFetcher.patch = createRequestFn("PATCH", baseUrl, headers);
+    useCustomFetcher.purge = createRequestFn("PURGE", baseUrl, headers);
+    useCustomFetcher.link = createRequestFn("LINK", baseUrl, headers);
+    useCustomFetcher.unlink = createRequestFn("UNLINK", baseUrl, headers);
     useCustomFetcher.Config = function FetcherConfig(_a) {
         var children = _a.children, _b = _a.defaults, defaults = _b === void 0 ? {} : _b;
         if (defaults) {
