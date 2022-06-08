@@ -33,11 +33,11 @@ declare type FetcherType<FetchDataType, BodyType> = {
     /**
      * Function to run when request is resolved succesfuly
      */
-    onResolve?: (data: FetchDataType) => void;
+    onResolve?: (data: FetchDataType, req?: Response) => void;
     /**
      * Function to run when the request fails
      */
-    onError?: (error: Error) => void;
+    onError?: (error: Error, req?: Response) => void;
     /**
      * Function to run when a request is aborted
      */

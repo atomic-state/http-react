@@ -36,11 +36,11 @@ type FetcherType<FetchDataType, BodyType> = {
   /**
    * Function to run when request is resolved succesfuly
    */
-  onResolve?: (data: FetchDataType) => void;
+  onResolve?: (data: FetchDataType, req?: Response) => void;
   /**
    * Function to run when the request fails
    */
-  onError?: (error: Error) => void;
+  onError?: (error: Error, req?: Response) => void;
   /**
    * Function to run when a request is aborted
    */
@@ -188,7 +188,7 @@ const Fetcher = <FetchDataType extends unknown>({
           "Content-Type": "application/json",
           ...config.headers,
         } as Headers,
-        body: config.method?.match(/(POST|PUT|DELETE)/)
+        body: config.method?.match(/(POST|PUT|DELETE|PATCH)/)
           ? JSON.stringify(config.body)
           : undefined,
       });
@@ -197,7 +197,7 @@ const Fetcher = <FetchDataType extends unknown>({
       if (code >= 200 && code < 300) {
         setData(_data);
         setError(null);
-        onResolve(_data);
+        onResolve(_data, json);
       } else {
         if (def) {
           setData(def);
@@ -337,7 +337,7 @@ export const useFetcher = <FetchDataType extends unknown, BodyType = any>(
           ...config.headers,
           ...c.headers,
         } as Headers,
-        body: config.method?.match(/(POST|PUT|DELETE)/)
+        body: config.method?.match(/(POST|PUT|DELETE|PATCH)/)
           ? typeof config.formatBody === "function"
             ? config.formatBody(
                 (typeof FormData !== "undefined" &&
@@ -362,13 +362,13 @@ export const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         }
         setData(_data);
         setError(null);
-        onResolve(_data);
+        onResolve(_data, json);
       } else {
         if (def) {
           setData(def);
         }
         setError(true);
-        onError(_data);
+        onError(_data, json);
       }
     } catch (err) {
       const errorString = err?.toString();
