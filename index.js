@@ -563,7 +563,9 @@ var HttpClient = /** @class */ (function () {
     return HttpClient;
 }());
 /**
- * Creates a new HTTP client
+ * @deprecated - Use the fetcher instead
+ *
+ * Basic HttpClient
  */
 function createHttpClient(url) {
     return new HttpClient(url);

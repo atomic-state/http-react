@@ -772,7 +772,9 @@ class HttpClient implements IHttpClient {
 }
 
 /**
- * Creates a new HTTP client
+ * @deprecated - Use the fetcher instead
+ *
+ * Basic HttpClient
  */
 export function createHttpClient(url: string) {
   return new HttpClient(url);
