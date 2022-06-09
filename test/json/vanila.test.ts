@@ -1,5 +1,5 @@
 import { act } from "@testing-library/react";
-import { fetcher } from "../../vanila";
+import { fetcher } from "../../vanilla";
 import mocks from "../mocks";
 
 test("DELETE data in JSON", async () => {

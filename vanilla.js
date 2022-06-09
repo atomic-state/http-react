@@ -246,4 +246,4 @@ function createHttpClient(url) {
     return new HttpClient(url);
 }
 exports.createHttpClient = createHttpClient;
-//# sourceMappingURL=vanila.js.map
+//# sourceMappingURL=vanilla.js.map
