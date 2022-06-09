@@ -409,6 +409,8 @@ declare class HttpClient implements IHttpClient {
     constructor(url: string);
 }
 /**
- * Creates a new HTTP client
+ * @deprecated - Use the fetcher instead
+ *
+ * Basic HttpClient
  */
 export declare function createHttpClient(url: string): HttpClient;
