@@ -5,8 +5,8 @@
     "module": "commonjs",
     "target": "es5",
     "lib": ["es6", "dom", "es2019"],
-    "sourceMap": true,
-    "allowJs": false,
+    "sourceMap": false,
+    "allowJs": true,
     "jsx": "react",
     "moduleResolution": "node",
     "rootDir": "src",
@@ -20,6 +20,7 @@
   "exclude": [
     "node_modules",
     "build",
+    "shared",
     "scripts",
     "acceptance-tests",
     "webpack",

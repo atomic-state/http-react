@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 import * as React from "react";
+import { CustomResponse, FetcherExtendConfig } from "./shared";
 declare type FetcherType<FetchDataType, BodyType> = {
     /**
      * url of the resource to fetch
@@ -49,7 +50,7 @@ declare type FetcherType<FetchDataType, BodyType> = {
     /**
      * Parse as json by default
      */
-    resolver?: (d: Response) => any;
+    resolver?: (d: CustomResponse<FetchDataType>) => any;
     /**
      * Request configuration
      */
@@ -113,7 +114,7 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
     /**
      * Parse as json by default
      */
-    resolver?: (d: Response) => any;
+    resolver?: (d: CustomResponse<FetchDataType>) => any;
     /**
      * Request configuration
      */
@@ -148,23 +149,6 @@ declare type fetcherConfigComponentType = {
     defaults: any;
 };
 export declare function FetcherConfig({ children, defaults, }: fetcherConfigComponentType): any;
-declare type RequestWithBody = <R = any, BodyType = any>(url: string, reqConfig?: {
-    default?: R;
-    config?: {
-        formatBody?(b: BodyType): any;
-        headers?: any;
-        body?: BodyType;
-    };
-    resolver?: (r: Response) => any;
-    onError?(error: Error): void;
-    onResolve?(data: R, res: Response): void;
-}) => Promise<{
-    error: any;
-    data: R;
-    config: any;
-    code: number;
-    res: Response;
-}>;
 /**
  * Fetcher available as a hook
  */
@@ -197,18 +181,18 @@ export declare const useFetcher: {
         } & {
             url: string;
         };
-        response: Response;
+        response: CustomResponse<FetchDataType>;
     };
-    get: RequestWithBody;
-    delete: RequestWithBody;
-    head: RequestWithBody;
-    options: RequestWithBody;
-    post: RequestWithBody;
-    put: RequestWithBody;
-    patch: RequestWithBody;
-    purge: RequestWithBody;
-    link: RequestWithBody;
-    unlink: RequestWithBody;
+    get: import("./shared").RequestWithBody;
+    delete: import("./shared").RequestWithBody;
+    head: import("./shared").RequestWithBody;
+    options: import("./shared").RequestWithBody;
+    post: import("./shared").RequestWithBody;
+    put: import("./shared").RequestWithBody;
+    patch: import("./shared").RequestWithBody;
+    purge: import("./shared").RequestWithBody;
+    link: import("./shared").RequestWithBody;
+    unlink: import("./shared").RequestWithBody;
     /**
      * Extend the useFetcher hook
      */
@@ -241,49 +225,25 @@ export declare const useFetcher: {
             } & {
                 url: string;
             };
-            response: Response;
+            response: CustomResponse<T>;
         };
         config: {
             baseUrl: string;
             headers: object | Headers;
             body: any;
         };
-        get: RequestWithBody;
-        delete: RequestWithBody;
-        head: RequestWithBody;
-        options: RequestWithBody;
-        post: RequestWithBody;
-        put: RequestWithBody;
-        patch: RequestWithBody;
-        purge: RequestWithBody;
-        link: RequestWithBody;
-        unlink: RequestWithBody;
+        get: import("./shared").RequestWithBody;
+        delete: import("./shared").RequestWithBody;
+        head: import("./shared").RequestWithBody;
+        options: import("./shared").RequestWithBody;
+        post: import("./shared").RequestWithBody;
+        put: import("./shared").RequestWithBody;
+        patch: import("./shared").RequestWithBody;
+        purge: import("./shared").RequestWithBody;
+        link: import("./shared").RequestWithBody;
+        unlink: import("./shared").RequestWithBody;
         Config({ children, defaults, }: fetcherConfigComponentType): any;
     };
-};
-declare type FetcherExtendConfig = {
-    /**
-     * Request base url
-     */
-    baseUrl?: string;
-    /**
-     * Headers to include in each request
-     */
-    headers?: Headers | object;
-    /**
-     * Body to include in each request (if aplicable)
-     */
-    body?: any;
-    /**
-     * Customize how body is formated for the next requests. By default it will be sent in JSON format but you can set it to false if for example, you are sending a `FormData`
-     * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
-     * (the last one is the default behaviour so in that case you can ignore it)
-     */
-    formatBody?: (b: any) => any;
-    /**
-     * Custom resolver
-     */
-    resolver?: (d: Response) => any;
 };
 export declare const fetcher: {
     <FetchDataType extends unknown, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
@@ -314,18 +274,18 @@ export declare const fetcher: {
         } & {
             url: string;
         };
-        response: Response;
+        response: CustomResponse<FetchDataType>;
     };
-    get: RequestWithBody;
-    delete: RequestWithBody;
-    head: RequestWithBody;
-    options: RequestWithBody;
-    post: RequestWithBody;
-    put: RequestWithBody;
-    patch: RequestWithBody;
-    purge: RequestWithBody;
-    link: RequestWithBody;
-    unlink: RequestWithBody;
+    get: import("./shared").RequestWithBody;
+    delete: import("./shared").RequestWithBody;
+    head: import("./shared").RequestWithBody;
+    options: import("./shared").RequestWithBody;
+    post: import("./shared").RequestWithBody;
+    put: import("./shared").RequestWithBody;
+    patch: import("./shared").RequestWithBody;
+    purge: import("./shared").RequestWithBody;
+    link: import("./shared").RequestWithBody;
+    unlink: import("./shared").RequestWithBody;
     /**
      * Extend the useFetcher hook
      */
@@ -358,23 +318,23 @@ export declare const fetcher: {
             } & {
                 url: string;
             };
-            response: Response;
+            response: CustomResponse<T>;
         };
         config: {
             baseUrl: string;
             headers: object | Headers;
             body: any;
         };
-        get: RequestWithBody;
-        delete: RequestWithBody;
-        head: RequestWithBody;
-        options: RequestWithBody;
-        post: RequestWithBody;
-        put: RequestWithBody;
-        patch: RequestWithBody;
-        purge: RequestWithBody;
-        link: RequestWithBody;
-        unlink: RequestWithBody;
+        get: import("./shared").RequestWithBody;
+        delete: import("./shared").RequestWithBody;
+        head: import("./shared").RequestWithBody;
+        options: import("./shared").RequestWithBody;
+        post: import("./shared").RequestWithBody;
+        put: import("./shared").RequestWithBody;
+        patch: import("./shared").RequestWithBody;
+        purge: import("./shared").RequestWithBody;
+        link: import("./shared").RequestWithBody;
+        unlink: import("./shared").RequestWithBody;
         Config({ children, defaults, }: fetcherConfigComponentType): any;
     };
 };

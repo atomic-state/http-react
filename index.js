@@ -68,6 +68,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.FetcherConfig = void 0;
 var React = require("react");
 var react_1 = require("react");
+var shared_1 = require("./shared");
 /**
  * @deprecated Use the `useFetcher` hook instead
  */
@@ -167,81 +168,6 @@ function FetcherConfig(_a) {
 }
 exports.FetcherConfig = FetcherConfig;
 /**
- * Creates a new request function. This is for usage with fetcher and fetcher.extend
- */
-function createRequestFn(method, baseUrl, $headers) {
-    return function (url, init) {
-        if (init === void 0) { init = {}; }
-        return __awaiter(this, void 0, void 0, function () {
-            var def, _a, resolver, _b, c, _c, onResolve, _d, onError, _e, headers, body, formatBody, reqConfig, r, req, data, err_2;
-            return __generator(this, function (_f) {
-                switch (_f.label) {
-                    case 0:
-                        def = init.default, _a = init.resolver, resolver = _a === void 0 ? function (e) { return e.json(); } : _a, _b = init.config, c = _b === void 0 ? {} : _b, _c = init.onResolve, onResolve = _c === void 0 ? function () { } : _c, _d = init.onError, onError = _d === void 0 ? function () { } : _d;
-                        _e = c.headers, headers = _e === void 0 ? {} : _e, body = c.body, formatBody = c.formatBody;
-                        reqConfig = {
-                            method: method,
-                            headers: __assign(__assign({ "Content-Type": "application/json" }, $headers), headers),
-                            body: (method === null || method === void 0 ? void 0 : method.match(/(POST|PUT|DELETE|PATCH)/))
-                                ? typeof formatBody === "function"
-                                    ? formatBody((typeof FormData !== "undefined" && body instanceof FormData
-                                        ? body
-                                        : body))
-                                    : formatBody === false ||
-                                        (typeof FormData !== "undefined" && body instanceof FormData)
-                                        ? body
-                                        : JSON.stringify(body)
-                                : undefined,
-                        };
-                        r = undefined;
-                        _f.label = 1;
-                    case 1:
-                        _f.trys.push([1, 4, , 5]);
-                        return [4 /*yield*/, fetch("".concat(baseUrl || "").concat(url), reqConfig)];
-                    case 2:
-                        req = _f.sent();
-                        r = req;
-                        return [4 /*yield*/, resolver(req)];
-                    case 3:
-                        data = _f.sent();
-                        if ((req === null || req === void 0 ? void 0 : req.status) >= 400) {
-                            onError(true);
-                            return [2 /*return*/, {
-                                    res: req,
-                                    data: def,
-                                    error: true,
-                                    code: req === null || req === void 0 ? void 0 : req.status,
-                                    config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
-                                }];
-                        }
-                        else {
-                            onResolve(data, req);
-                            return [2 /*return*/, {
-                                    res: req,
-                                    data: data,
-                                    error: false,
-                                    code: req === null || req === void 0 ? void 0 : req.status,
-                                    config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
-                                }];
-                        }
-                        return [3 /*break*/, 5];
-                    case 4:
-                        err_2 = _f.sent();
-                        onError(err_2);
-                        return [2 /*return*/, {
-                                res: r,
-                                data: def,
-                                error: true,
-                                code: r === null || r === void 0 ? void 0 : r.status,
-                                config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
-                            }];
-                    case 5: return [2 /*return*/];
-                }
-            });
-        });
-    };
-}
-/**
  * Fetcher available as a hook
  */
 var useFetcher = function (init, options) {
@@ -270,7 +196,7 @@ var useFetcher = function (init, options) {
         var _a;
         if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var newAbortController, json, code, _data, err_3, errorString;
+            var newAbortController, json, code, _data, err_2, errorString;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -329,13 +255,13 @@ var useFetcher = function (init, options) {
                         }
                         return [3 /*break*/, 6];
                     case 4:
-                        err_3 = _b.sent();
-                        errorString = err_3 === null || err_3 === void 0 ? void 0 : err_3.toString();
+                        err_2 = _b.sent();
+                        errorString = err_2 === null || err_2 === void 0 ? void 0 : err_2.toString();
                         // Only set error if no abort
                         if (!errorString.match(/abort/i)) {
                             setData(undefined);
-                            setError(new Error(err_3));
-                            onError(err_3);
+                            setError(new Error(err_2));
+                            onError(err_2);
                         }
                         else {
                             if (!resolvedRequests[resolvedKey]) {
@@ -436,16 +362,16 @@ var useFetcher = function (init, options) {
 };
 exports.useFetcher = useFetcher;
 // Create a method for each request
-exports.useFetcher.get = createRequestFn("GET", "", {});
-exports.useFetcher.delete = createRequestFn("DELETE", "", {});
-exports.useFetcher.head = createRequestFn("HEAD", "", {});
-exports.useFetcher.options = createRequestFn("OPTIONS", "", {});
-exports.useFetcher.post = createRequestFn("POST", "", {});
-exports.useFetcher.put = createRequestFn("PUT", "", {});
-exports.useFetcher.patch = createRequestFn("PATCH", "", {});
-exports.useFetcher.purge = createRequestFn("PURGE", "", {});
-exports.useFetcher.link = createRequestFn("LINK", "", {});
-exports.useFetcher.unlink = createRequestFn("UNLINK", "", {});
+exports.useFetcher.get = (0, shared_1.createRequestFn)("GET", "", {});
+exports.useFetcher.delete = (0, shared_1.createRequestFn)("DELETE", "", {});
+exports.useFetcher.head = (0, shared_1.createRequestFn)("HEAD", "", {});
+exports.useFetcher.options = (0, shared_1.createRequestFn)("OPTIONS", "", {});
+exports.useFetcher.post = (0, shared_1.createRequestFn)("POST", "", {});
+exports.useFetcher.put = (0, shared_1.createRequestFn)("PUT", "", {});
+exports.useFetcher.patch = (0, shared_1.createRequestFn)("PATCH", "", {});
+exports.useFetcher.purge = (0, shared_1.createRequestFn)("PURGE", "", {});
+exports.useFetcher.link = (0, shared_1.createRequestFn)("LINK", "", {});
+exports.useFetcher.unlink = (0, shared_1.createRequestFn)("UNLINK", "", {});
 /**
  * Extend the useFetcher hook
  */
@@ -475,16 +401,16 @@ exports.useFetcher.extend = function extendFetcher(_a) {
         body: body,
     };
     // Creating methods for fetcher.extend
-    useCustomFetcher.get = createRequestFn("GET", baseUrl, headers);
-    useCustomFetcher.delete = createRequestFn("DELETE", baseUrl, headers);
-    useCustomFetcher.head = createRequestFn("HEAD", baseUrl, headers);
-    useCustomFetcher.options = createRequestFn("OPTIONS", baseUrl, headers);
-    useCustomFetcher.post = createRequestFn("POST", baseUrl, headers);
-    useCustomFetcher.put = createRequestFn("PUT", baseUrl, headers);
-    useCustomFetcher.patch = createRequestFn("PATCH", baseUrl, headers);
-    useCustomFetcher.purge = createRequestFn("PURGE", baseUrl, headers);
-    useCustomFetcher.link = createRequestFn("LINK", baseUrl, headers);
-    useCustomFetcher.unlink = createRequestFn("UNLINK", baseUrl, headers);
+    useCustomFetcher.get = (0, shared_1.createRequestFn)("GET", baseUrl, headers);
+    useCustomFetcher.delete = (0, shared_1.createRequestFn)("DELETE", baseUrl, headers);
+    useCustomFetcher.head = (0, shared_1.createRequestFn)("HEAD", baseUrl, headers);
+    useCustomFetcher.options = (0, shared_1.createRequestFn)("OPTIONS", baseUrl, headers);
+    useCustomFetcher.post = (0, shared_1.createRequestFn)("POST", baseUrl, headers);
+    useCustomFetcher.put = (0, shared_1.createRequestFn)("PUT", baseUrl, headers);
+    useCustomFetcher.patch = (0, shared_1.createRequestFn)("PATCH", baseUrl, headers);
+    useCustomFetcher.purge = (0, shared_1.createRequestFn)("PURGE", baseUrl, headers);
+    useCustomFetcher.link = (0, shared_1.createRequestFn)("LINK", baseUrl, headers);
+    useCustomFetcher.unlink = (0, shared_1.createRequestFn)("UNLINK", baseUrl, headers);
     useCustomFetcher.Config = function FetcherConfig(_a) {
         var children = _a.children, _b = _a.defaults, defaults = _b === void 0 ? {} : _b;
         if (defaults) {
@@ -571,4 +497,3 @@ function createHttpClient(url) {
     return new HttpClient(url);
 }
 exports.createHttpClient = createHttpClient;
-//# sourceMappingURL=index.js.map
