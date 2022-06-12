@@ -8,6 +8,7 @@
 
 import * as React from "react";
 import { useState, useEffect } from "react";
+import { CustomResponse, createRequestFn, FetcherExtendConfig } from "./shared";
 
 type FetcherType<FetchDataType, BodyType> = {
   /**
@@ -52,7 +53,7 @@ type FetcherType<FetchDataType, BodyType> = {
   /**
    * Parse as json by default
    */
-  resolver?: (d: Response) => any;
+  resolver?: (d: CustomResponse<FetchDataType>) => any;
   /**
    * Request configuration
    */
@@ -128,7 +129,7 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
   /**
    * Parse as json by default
    */
-  resolver?: (d: Response) => any;
+  resolver?: (d: CustomResponse<FetchDataType>) => any;
   /**
    * Request configuration
    */
@@ -270,94 +271,17 @@ type RequestWithBody = <R = any, BodyType = any>(
       headers?: any;
       body?: BodyType;
     };
-    resolver?: (r: Response) => any;
+    resolver?: (r: CustomResponse<R>) => any;
     onError?(error: Error): void;
-    onResolve?(data: R, res: Response): void;
+    onResolve?(data: R, res: CustomResponse<R>): void;
   }
 ) => Promise<{
   error: any;
   data: R;
   config: any;
   code: number;
-  res: Response;
+  res: CustomResponse<R>;
 }>;
-
-/**
- * Creates a new request function. This is for usage with fetcher and fetcher.extend
- */
-function createRequestFn(
-  method: string,
-  baseUrl: string,
-  $headers: any
-): RequestWithBody {
-  return async function (url, init = {}) {
-    const {
-      default: def,
-      resolver = (e) => e.json(),
-      config: c = {},
-      onResolve = () => {},
-      onError = () => {},
-    } = init;
-
-    const { headers = {}, body, formatBody } = c;
-
-    const reqConfig = {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        ...$headers,
-        ...headers,
-      },
-      body: method?.match(/(POST|PUT|DELETE|PATCH)/)
-        ? typeof formatBody === "function"
-          ? formatBody(
-              (typeof FormData !== "undefined" && body instanceof FormData
-                ? body
-                : body) as any
-            )
-          : formatBody === false ||
-            (typeof FormData !== "undefined" && body instanceof FormData)
-          ? body
-          : JSON.stringify(body)
-        : undefined,
-    };
-
-    let r: Response = undefined as unknown as Response;
-    try {
-      const req = await fetch(`${baseUrl || ""}${url}`, reqConfig);
-      r = req;
-      const data = await resolver(req);
-      if (req?.status >= 400) {
-        onError(true as any);
-        return {
-          res: req,
-          data: def,
-          error: true,
-          code: req?.status,
-          config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
-        };
-      } else {
-        onResolve(data, req);
-        return {
-          res: req,
-          data: data,
-          error: false,
-          code: req?.status,
-          config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
-        };
-      }
-    } catch (err) {
-      onError(err);
-      return {
-        res: r,
-        data: def,
-        error: true,
-        code: r?.status,
-        config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
-      };
-    }
-  } as RequestWithBody;
-}
 
 /**
  * Fetcher available as a hook
@@ -407,7 +331,7 @@ export const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     object | Headers | undefined
   >(config.headers);
 
-  const [response, setResponse] = useState<Response>();
+  const [response, setResponse] = useState<CustomResponse<FetchDataType>>();
 
   const [statusCode, setStatusCode] = useState<number>();
   const [error, setError] = useState<any>(null);
@@ -578,7 +502,7 @@ export const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
     abort: () => void;
     config: FetcherType<FetchDataType, BodyType>["config"] & { url: string };
-    response: Response;
+    response: CustomResponse<FetchDataType>;
   };
 };
 
@@ -593,31 +517,6 @@ useFetcher.patch = createRequestFn("PATCH", "", {});
 useFetcher.purge = createRequestFn("PURGE", "", {});
 useFetcher.link = createRequestFn("LINK", "", {});
 useFetcher.unlink = createRequestFn("UNLINK", "", {});
-
-type FetcherExtendConfig = {
-  /**
-   * Request base url
-   */
-  baseUrl?: string;
-  /**
-   * Headers to include in each request
-   */
-  headers?: Headers | object;
-  /**
-   * Body to include in each request (if aplicable)
-   */
-  body?: any;
-  /**
-   * Customize how body is formated for the next requests. By default it will be sent in JSON format but you can set it to false if for example, you are sending a `FormData`
-   * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
-   * (the last one is the default behaviour so in that case you can ignore it)
-   */
-  formatBody?: (b: any) => any;
-  /**
-   * Custom resolver
-   */
-  resolver?: (d: Response) => any;
-};
 
 /**
  * Extend the useFetcher hook
