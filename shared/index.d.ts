@@ -1,4 +1,4 @@
-export declare type CustomResponse<T> = Omit<Response, "json"> & {
+export declare type CustomResponse<T> = Omit<Response, 'json'> & {
     json(): Promise<T>;
 };
 export declare type RequestWithBody = <R = any, BodyType = any>(url: string, reqConfig?: {

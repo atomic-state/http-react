@@ -7,8 +7,24 @@
  */
 
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { CustomResponse, createRequestFn, FetcherExtendConfig } from "./shared";
+
+type FetcherContextType = {
+  headers?: any;
+  baseUrl?: string;
+  body?: object | FormData;
+  defaults?: any;
+  resolver?: (r: Response) => any;
+  children?: any;
+  auto?: boolean;
+  memory?: boolean;
+  refresh?: number;
+};
+
+const FetcherContext = createContext<FetcherContextType>({
+  defaults: {},
+});
 
 type FetcherType<FetchDataType, BodyType> = {
   /**
@@ -58,6 +74,10 @@ type FetcherType<FetchDataType, BodyType> = {
    * Request configuration
    */
   config?: {
+    /**
+     * Override base url
+     */
+    baseUrl?: string;
     /**
      * Request method
      */
@@ -134,6 +154,11 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
    * Request configuration
    */
   config?: {
+    /**
+     * Override base url
+     */
+    baseUrl?: string;
+
     /**
      * Request method
      */
@@ -250,38 +275,33 @@ type fetcherConfigComponentType = {
   defaults: any;
 };
 
-export function FetcherConfig({
-  children,
-  defaults = {},
-}: fetcherConfigComponentType) {
-  if (defaults) {
-    for (let defaultKey in defaults) {
-      resolvedRequests[defaultKey] = defaults[defaultKey];
-    }
-  }
-  return children;
-}
+export function FetcherConfig(props: FetcherContextType) {
+  const {
+    children,
+    defaults = {},
+    baseUrl,
+    body,
+    resolver,
+    headers,
+    auto,
+    memory,
+    refresh,
+  } = props;
 
-type RequestWithBody = <R = any, BodyType = any>(
-  url: string,
-  reqConfig?: {
-    default?: R;
-    config?: {
-      formatBody?(b: BodyType): any;
-      headers?: any;
-      body?: BodyType;
-    };
-    resolver?: (r: CustomResponse<R>) => any;
-    onError?(error: Error): void;
-    onResolve?(data: R, res: CustomResponse<R>): void;
+  for (let defaultKey in defaults) {
+    resolvedRequests[
+      `${typeof baseUrl === "undefined" ? "" : baseUrl}${defaultKey}`
+    ] = defaults[defaultKey];
   }
-) => Promise<{
-  error: any;
-  data: R;
-  config: any;
-  code: number;
-  res: CustomResponse<R>;
-}>;
+
+  return (
+    <FetcherContext.Provider
+      value={{ baseUrl, body, resolver, headers, auto, memory, refresh }}
+    >
+      {children}
+    </FetcherContext.Provider>
+  );
+}
 
 /**
  * Fetcher available as a hook
@@ -291,23 +311,27 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   init: FetcherType<FetchDataType, BodyType> | string,
   options?: FetcherConfigOptions<FetchDataType, BodyType>
 ) => {
+  const ctx = useContext(FetcherContext);
   const {
     url = "/",
     default: def,
     config = {
+      baseUrl: undefined,
       method: "GET",
       headers: {} as Headers,
-      body: {} as Body,
+      body: undefined as unknown as Body,
       formatBody: false,
     },
-    resolver = (d: any) => d.json(),
+    resolver = typeof ctx.resolver === "function"
+      ? ctx.resolver
+      : (d: any) => d.json(),
     onError = () => {},
-    auto = true,
-    memory = true,
+    auto = typeof ctx.auto === "undefined" ? true : ctx.memory,
+    memory = typeof ctx.memory === "undefined" ? true : ctx.memory,
     onResolve = () => {},
     onAbort = () => {},
-    refresh = 0,
-    cancelOnChange = false,
+    refresh = typeof ctx.refresh === "undefined" ? 0 : ctx.refresh,
+    cancelOnChange = typeof ctx.refresh === "undefined" ? false : ctx.refresh,
   } = typeof init === "string"
     ? {
         // Pass init as the url if init is a string
@@ -317,7 +341,14 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     : // `url` will be required in init if it is an object
       init;
 
-  const resolvedKey = url.split("?")[0];
+  const realUrl =
+    (typeof config.baseUrl === "undefined"
+      ? typeof ctx.baseUrl === "undefined"
+        ? ""
+        : ctx.baseUrl
+      : config.baseUrl) + url;
+
+  const resolvedKey = realUrl.split("?")[0];
 
   const [data, setData] = useState<FetchDataType | undefined>(
     // Saved to base url of request without query params
@@ -325,11 +356,21 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   );
 
   const [requestBody, setRequestBody] = useState<BodyType>(
-    config.body as BodyType
+    (typeof FormData !== "undefined"
+      ? config.body instanceof FormData
+        ? config.body
+        : typeof ctx.body !== "undefined" || typeof config.body !== "undefined"
+        ? {
+            ...ctx.body,
+            ...config.body,
+          }
+        : undefined
+      : config.body) as BodyType
   );
+
   const [requestHeaders, setRequestHeades] = useState<
     object | Headers | undefined
-  >(config.headers);
+  >({ ...ctx.headers, ...config.headers });
 
   const [response, setResponse] = useState<CustomResponse<FetchDataType>>();
 
@@ -347,7 +388,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     setRequestAbortController(newAbortController);
     setError(null);
     try {
-      const json = await fetch(url, {
+      const json = await fetch(realUrl, {
         signal: newAbortController.signal,
         method: config.method,
         headers: {
@@ -408,19 +449,6 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       setLoading(false);
     }
   }
-
-  // const cancelCurrentRequest = React.useMemo(
-  //   () =>
-  //     function cancelCurrentRequest() {
-  //       if (loading) {
-  //         requestAbortController.abort();
-  //         setError(false);
-  //         setLoading(false);
-  //         setData(resolvedRequests[resolvedKey]);
-  //       }
-  //     },
-  //   [requestAbortController, loading, resolvedKey]
-  // );
 
   useEffect(() => {
     const { signal } = requestAbortController || {};
@@ -490,7 +518,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       ...config,
       headers: requestHeaders,
       body: requestBody,
-      url,
+      url: realUrl,
     },
     response,
   } as unknown as {
@@ -522,17 +550,21 @@ export { useFetcher };
 /**
  * Extend the useFetcher hook
  */
-useFetcher.extend = function extendFetcher({
-  baseUrl = "",
-  headers = {} as Headers,
-  body = {},
-  // json by default
-  resolver = (d) => d.json(),
-}: FetcherExtendConfig = {}) {
+useFetcher.extend = function extendFetcher(props: FetcherContextType = {}) {
+  const {
+    baseUrl = undefined as any,
+    headers = {} as Headers,
+    body = {},
+    // json by default
+    resolver,
+  } = props;
+
   function useCustomFetcher<T, BodyType = any>(
     init: FetcherType<T, BodyType> | string,
     options?: FetcherConfigOptions<T, BodyType>
   ) {
+    const ctx = useContext(FetcherContext);
+
     const {
       url = "",
       config = {},
@@ -548,19 +580,28 @@ useFetcher.extend = function extendFetcher({
 
     return useFetcher<T, BodyType>({
       ...otherProps,
-      url: `${baseUrl}${url}`,
+      url: `${url}`,
       // If resolver is present is hook call, use that instead
-      resolver: otherProps.resolver || resolver,
+      resolver:
+        resolver || otherProps.resolver || ctx.resolver || ((d) => d.json()),
       config: {
+        baseUrl:
+          typeof config.baseUrl === "undefined"
+            ? typeof ctx.baseUrl === "undefined"
+              ? baseUrl
+              : ctx.baseUrl
+            : config.baseUrl,
         method: config.method,
         headers: {
           ...headers,
+          ...ctx.headers,
           ...config.headers,
         },
         body: {
           ...body,
+          ...ctx.body,
           ...config.body,
-        },
+        } as any,
       },
     });
   }
@@ -582,18 +623,7 @@ useFetcher.extend = function extendFetcher({
   useCustomFetcher.link = createRequestFn("LINK", baseUrl, headers);
   useCustomFetcher.unlink = createRequestFn("UNLINK", baseUrl, headers);
 
-  useCustomFetcher.Config = function FetcherConfig({
-    children,
-    defaults = {},
-  }: fetcherConfigComponentType) {
-    if (defaults) {
-      for (let defaultKey in defaults) {
-        const url = `${baseUrl}${defaultKey}`;
-        resolvedRequests[url] = defaults[defaultKey];
-      }
-    }
-    return children;
-  };
+  useCustomFetcher.Config = FetcherConfig;
 
   return useCustomFetcher;
 };

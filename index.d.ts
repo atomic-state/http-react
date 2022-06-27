@@ -6,7 +6,18 @@
  * LICENSE file in the root directory of this source tree.
  */
 import * as React from "react";
-import { CustomResponse, FetcherExtendConfig } from "./shared";
+import { CustomResponse } from "./shared";
+declare type FetcherContextType = {
+    headers?: any;
+    baseUrl?: string;
+    body?: object | FormData;
+    defaults?: any;
+    resolver?: (r: Response) => any;
+    children?: any;
+    auto?: boolean;
+    memory?: boolean;
+    refresh?: number;
+};
 declare type FetcherType<FetchDataType, BodyType> = {
     /**
      * url of the resource to fetch
@@ -55,6 +66,10 @@ declare type FetcherType<FetchDataType, BodyType> = {
      * Request configuration
      */
     config?: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string;
         /**
          * Request method
          */
@@ -120,6 +135,10 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
      */
     config?: {
         /**
+         * Override base url
+         */
+        baseUrl?: string;
+        /**
          * Request method
          */
         method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
@@ -144,11 +163,7 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
  */
 declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType, any>) => JSX.Element | null;
 export default Fetcher;
-declare type fetcherConfigComponentType = {
-    children: any;
-    defaults: any;
-};
-export declare function FetcherConfig({ children, defaults, }: fetcherConfigComponentType): any;
+export declare function FetcherConfig(props: FetcherContextType): JSX.Element;
 /**
  * Fetcher available as a hook
  */
@@ -166,6 +181,10 @@ declare const useFetcher: {
         abort: () => void;
         config: {
             /**
+             * Override base url
+             */
+            baseUrl?: string | undefined;
+            /**
              * Request method
              */
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
@@ -196,7 +215,7 @@ declare const useFetcher: {
     /**
      * Extend the useFetcher hook
      */
-    extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): {
+    extend(props?: FetcherContextType): {
         <T, BodyType_1 = any>(init: string | FetcherType<T, BodyType_1>, options?: FetcherConfigOptions<T, BodyType_1> | undefined): {
             data: T;
             loading: boolean;
@@ -209,6 +228,10 @@ declare const useFetcher: {
             mutate: React.Dispatch<React.SetStateAction<T>>;
             abort: () => void;
             config: {
+                /**
+                 * Override base url
+                 */
+                baseUrl?: string | undefined;
                 /**
                  * Request method
                  */
@@ -228,9 +251,9 @@ declare const useFetcher: {
             response: CustomResponse<T>;
         };
         config: {
-            baseUrl: string;
-            headers: object | Headers;
-            body: any;
+            baseUrl: any;
+            headers: any;
+            body: object;
         };
         get: import("./shared").RequestWithBody;
         delete: import("./shared").RequestWithBody;
@@ -242,7 +265,7 @@ declare const useFetcher: {
         purge: import("./shared").RequestWithBody;
         link: import("./shared").RequestWithBody;
         unlink: import("./shared").RequestWithBody;
-        Config({ children, defaults, }: fetcherConfigComponentType): any;
+        Config: typeof FetcherConfig;
     };
 };
 export { useFetcher };
@@ -260,6 +283,10 @@ export declare const fetcher: {
         abort: () => void;
         config: {
             /**
+             * Override base url
+             */
+            baseUrl?: string | undefined;
+            /**
              * Request method
              */
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
@@ -290,7 +317,7 @@ export declare const fetcher: {
     /**
      * Extend the useFetcher hook
      */
-    extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): {
+    extend(props?: FetcherContextType): {
         <T, BodyType_1 = any>(init: string | FetcherType<T, BodyType_1>, options?: FetcherConfigOptions<T, BodyType_1> | undefined): {
             data: T;
             loading: boolean;
@@ -303,6 +330,10 @@ export declare const fetcher: {
             mutate: React.Dispatch<React.SetStateAction<T>>;
             abort: () => void;
             config: {
+                /**
+                 * Override base url
+                 */
+                baseUrl?: string | undefined;
                 /**
                  * Request method
                  */
@@ -322,9 +353,9 @@ export declare const fetcher: {
             response: CustomResponse<T>;
         };
         config: {
-            baseUrl: string;
-            headers: object | Headers;
-            body: any;
+            baseUrl: any;
+            headers: any;
+            body: object;
         };
         get: import("./shared").RequestWithBody;
         delete: import("./shared").RequestWithBody;
@@ -336,7 +367,7 @@ export declare const fetcher: {
         purge: import("./shared").RequestWithBody;
         link: import("./shared").RequestWithBody;
         unlink: import("./shared").RequestWithBody;
-        Config({ children, defaults, }: fetcherConfigComponentType): any;
+        Config: typeof FetcherConfig;
     };
 };
 interface IRequestParam {
