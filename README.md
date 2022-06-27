@@ -569,7 +569,7 @@ export default function App() {
 
 ### SSR
 
-A simple SSR API is supported. This is an example using Next.js:
+A SSR API is supported. This is an example using Next.js:
 
 ```tsx
 import { useFetcher, FetcherConfig } from "http-react-fetcher";
@@ -584,6 +584,8 @@ function SomeDataFetch() {
 export default function Home({ user }) {
   return (
     <FetcherConfig
+      // You can pass many other configurations to all requests under this tree
+      // like the baseUrl, headers, a resolver, etc
       defaults={{
         "/api/test": {
           user,

@@ -1,27 +1,27 @@
-export type CustomResponse<T> = Omit<Response, "json"> & {
-  json(): Promise<T>;
-};
+export type CustomResponse<T> = Omit<Response, 'json'> & {
+  json(): Promise<T>
+}
 
 export type RequestWithBody = <R = any, BodyType = any>(
   url: string,
   reqConfig?: {
-    default?: R;
+    default?: R
     config?: {
-      formatBody?(b: BodyType): any;
-      headers?: any;
-      body?: BodyType;
-    };
-    resolver?: (r: CustomResponse<R>) => any;
-    onError?(error: Error): void;
-    onResolve?(data: R, res: CustomResponse<R>): void;
+      formatBody?(b: BodyType): any
+      headers?: any
+      body?: BodyType
+    }
+    resolver?: (r: CustomResponse<R>) => any
+    onError?(error: Error): void
+    onResolve?(data: R, res: CustomResponse<R>): void
   }
 ) => Promise<{
-  error: any;
-  data: R;
-  config: any;
-  code: number;
-  res: CustomResponse<R>;
-}>;
+  error: any
+  data: R
+  config: any
+  code: number
+  res: CustomResponse<R>
+}>
 
 /**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
@@ -37,90 +37,90 @@ export function createRequestFn(
       resolver = (e) => e.json(),
       config: c = {},
       onResolve = () => {},
-      onError = () => {},
-    } = init;
+      onError = () => {}
+    } = init
 
-    const { headers = {}, body, formatBody } = c;
+    const { headers = {}, body, formatBody } = c
 
     const reqConfig = {
       method,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         ...$headers,
-        ...headers,
+        ...headers
       },
       body: method?.match(/(POST|PUT|DELETE|PATCH)/)
-        ? typeof formatBody === "function"
+        ? typeof formatBody === 'function'
           ? formatBody(
-              (typeof FormData !== "undefined" && body instanceof FormData
+              (typeof FormData !== 'undefined' && body instanceof FormData
                 ? body
                 : body) as any
             )
           : formatBody === false ||
-            (typeof FormData !== "undefined" && body instanceof FormData)
+            (typeof FormData !== 'undefined' && body instanceof FormData)
           ? body
           : JSON.stringify(body)
-        : undefined,
-    };
+        : undefined
+    }
 
-    let r = undefined as any;
+    let r = undefined as any
     try {
-      const req = await fetch(`${baseUrl || ""}${url}`, reqConfig);
-      r = req;
-      const data = await resolver(req);
+      const req = await fetch(`${baseUrl || ''}${url}`, reqConfig)
+      r = req
+      const data = await resolver(req)
       if (req?.status >= 400) {
-        onError(true as any);
+        onError(true as any)
         return {
           res: req,
           data: def,
           error: true,
           code: req?.status,
-          config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
-        };
+          config: { url: `${baseUrl || ''}${url}`, ...reqConfig }
+        }
       } else {
-        onResolve(data, req);
+        onResolve(data, req)
         return {
           res: req,
           data: data,
           error: false,
           code: req?.status,
-          config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
-        };
+          config: { url: `${baseUrl || ''}${url}`, ...reqConfig }
+        }
       }
     } catch (err) {
-      onError(err);
+      onError(err)
       return {
         res: r,
         data: def,
         error: true,
         code: r?.status,
-        config: { url: `${baseUrl || ""}${url}`, ...reqConfig },
-      };
+        config: { url: `${baseUrl || ''}${url}`, ...reqConfig }
+      }
     }
-  } as RequestWithBody;
+  } as RequestWithBody
 }
 
 export type FetcherExtendConfig = {
   /**
    * Request base url
    */
-  baseUrl?: string;
+  baseUrl?: string
   /**
    * Headers to include in each request
    */
-  headers?: Headers | object;
+  headers?: Headers | object
   /**
    * Body to include in each request (if aplicable)
    */
-  body?: any;
+  body?: any
   /**
    * Customize how body is formated for the next requests. By default it will be sent in JSON format but you can set it to false if for example, you are sending a `FormData`
    * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
    * (the last one is the default behaviour so in that case you can ignore it)
    */
-  formatBody?: (b: any) => any;
+  formatBody?: (b: any) => any
   /**
    * Custom resolver
    */
-  resolver?: (d: Response) => any;
-};
+  resolver?: (d: Response) => any
+}

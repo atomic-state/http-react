@@ -63,23 +63,23 @@ function createRequestFn(method, baseUrl, $headers) {
                         _e = c.headers, headers = _e === void 0 ? {} : _e, body = c.body, formatBody = c.formatBody;
                         reqConfig = {
                             method: method,
-                            headers: __assign(__assign({ "Content-Type": "application/json" }, $headers), headers),
+                            headers: __assign(__assign({ 'Content-Type': 'application/json' }, $headers), headers),
                             body: (method === null || method === void 0 ? void 0 : method.match(/(POST|PUT|DELETE|PATCH)/))
-                                ? typeof formatBody === "function"
-                                    ? formatBody((typeof FormData !== "undefined" && body instanceof FormData
+                                ? typeof formatBody === 'function'
+                                    ? formatBody((typeof FormData !== 'undefined' && body instanceof FormData
                                         ? body
                                         : body))
                                     : formatBody === false ||
-                                        (typeof FormData !== "undefined" && body instanceof FormData)
+                                        (typeof FormData !== 'undefined' && body instanceof FormData)
                                         ? body
                                         : JSON.stringify(body)
-                                : undefined,
+                                : undefined
                         };
                         r = undefined;
                         _f.label = 1;
                     case 1:
                         _f.trys.push([1, 4, , 5]);
-                        return [4 /*yield*/, fetch("".concat(baseUrl || "").concat(url), reqConfig)];
+                        return [4 /*yield*/, fetch("".concat(baseUrl || '').concat(url), reqConfig)];
                     case 2:
                         req = _f.sent();
                         r = req;
@@ -93,7 +93,7 @@ function createRequestFn(method, baseUrl, $headers) {
                                     data: def,
                                     error: true,
                                     code: req === null || req === void 0 ? void 0 : req.status,
-                                    config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
+                                    config: __assign({ url: "".concat(baseUrl || '').concat(url) }, reqConfig)
                                 }];
                         }
                         else {
@@ -103,7 +103,7 @@ function createRequestFn(method, baseUrl, $headers) {
                                     data: data,
                                     error: false,
                                     code: req === null || req === void 0 ? void 0 : req.status,
-                                    config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
+                                    config: __assign({ url: "".concat(baseUrl || '').concat(url) }, reqConfig)
                                 }];
                         }
                         return [3 /*break*/, 5];
@@ -115,7 +115,7 @@ function createRequestFn(method, baseUrl, $headers) {
                                 data: def,
                                 error: true,
                                 code: r === null || r === void 0 ? void 0 : r.status,
-                                config: __assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig),
+                                config: __assign({ url: "".concat(baseUrl || '').concat(url) }, reqConfig)
                             }];
                     case 5: return [2 /*return*/];
                 }

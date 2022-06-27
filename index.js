@@ -69,6 +69,9 @@ exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.Fetche
 var React = require("react");
 var react_1 = require("react");
 var shared_1 = require("./shared");
+var FetcherContext = (0, react_1.createContext)({
+    defaults: {},
+});
 /**
  * @deprecated Use the `useFetcher` hook instead
  */
@@ -157,36 +160,48 @@ var Fetcher = function (_a) {
 };
 exports.default = Fetcher;
 var resolvedRequests = {};
-function FetcherConfig(_a) {
-    var children = _a.children, _b = _a.defaults, defaults = _b === void 0 ? {} : _b;
-    if (defaults) {
-        for (var defaultKey in defaults) {
-            resolvedRequests[defaultKey] = defaults[defaultKey];
-        }
+function FetcherConfig(props) {
+    var children = props.children, _a = props.defaults, defaults = _a === void 0 ? {} : _a, baseUrl = props.baseUrl, body = props.body, resolver = props.resolver, headers = props.headers, auto = props.auto, memory = props.memory, refresh = props.refresh;
+    for (var defaultKey in defaults) {
+        resolvedRequests["".concat(typeof baseUrl === "undefined" ? "" : baseUrl).concat(defaultKey)] = defaults[defaultKey];
     }
-    return children;
+    return (React.createElement(FetcherContext.Provider, { value: { baseUrl: baseUrl, body: body, resolver: resolver, headers: headers, auto: auto, memory: memory, refresh: refresh } }, children));
 }
 exports.FetcherConfig = FetcherConfig;
 /**
  * Fetcher available as a hook
  */
 var useFetcher = function (init, options) {
+    var ctx = (0, react_1.useContext)(FetcherContext);
     var _a = typeof init === "string"
         ? __assign({ 
             // Pass init as the url if init is a string
             url: init }, options) : // `url` will be required in init if it is an object
         init, _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? {
+        baseUrl: undefined,
         method: "GET",
         headers: {},
-        body: {},
+        body: undefined,
         formatBody: false,
-    } : _c, _d = _a.resolver, resolver = _d === void 0 ? function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? true : _f, _g = _a.memory, memory = _g === void 0 ? true : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.onAbort, onAbort = _j === void 0 ? function () { } : _j, _k = _a.refresh, refresh = _k === void 0 ? 0 : _k, _l = _a.cancelOnChange, cancelOnChange = _l === void 0 ? false : _l;
-    var resolvedKey = url.split("?")[0];
+    } : _c, _d = _a.resolver, resolver = _d === void 0 ? typeof ctx.resolver === "function"
+        ? ctx.resolver
+        : function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.memory : _f, _g = _a.memory, memory = _g === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.onAbort, onAbort = _j === void 0 ? function () { } : _j, _k = _a.refresh, refresh = _k === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _k, _l = _a.cancelOnChange, cancelOnChange = _l === void 0 ? typeof ctx.refresh === "undefined" ? false : ctx.refresh : _l;
+    var realUrl = (typeof config.baseUrl === "undefined"
+        ? typeof ctx.baseUrl === "undefined"
+            ? ""
+            : ctx.baseUrl
+        : config.baseUrl) + url;
+    var resolvedKey = realUrl.split("?")[0];
     var _m = (0, react_1.useState)(
     // Saved to base url of request without query params
     memory ? resolvedRequests[resolvedKey] || def : def), data = _m[0], setData = _m[1];
-    var _o = (0, react_1.useState)(config.body), requestBody = _o[0], setRequestBody = _o[1];
-    var _p = (0, react_1.useState)(config.headers), requestHeaders = _p[0], setRequestHeades = _p[1];
+    var _o = (0, react_1.useState)((typeof FormData !== "undefined"
+        ? config.body instanceof FormData
+            ? config.body
+            : typeof ctx.body !== "undefined" || typeof config.body !== "undefined"
+                ? __assign(__assign({}, ctx.body), config.body) : undefined
+        : config.body)), requestBody = _o[0], setRequestBody = _o[1];
+    var _p = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _p[0], setRequestHeades = _p[1];
     var _q = (0, react_1.useState)(), response = _q[0], setResponse = _q[1];
     var _r = (0, react_1.useState)(), statusCode = _r[0], setStatusCode = _r[1];
     var _s = (0, react_1.useState)(null), error = _s[0], setError = _s[1];
@@ -209,7 +224,7 @@ var useFetcher = function (init, options) {
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 4, 5, 6]);
-                        return [4 /*yield*/, fetch(url, {
+                        return [4 /*yield*/, fetch(realUrl, {
                                 signal: newAbortController.signal,
                                 method: config.method,
                                 headers: __assign(__assign({ "Content-Type": 
@@ -277,18 +292,6 @@ var useFetcher = function (init, options) {
             });
         });
     }
-    // const cancelCurrentRequest = React.useMemo(
-    //   () =>
-    //     function cancelCurrentRequest() {
-    //       if (loading) {
-    //         requestAbortController.abort();
-    //         setError(false);
-    //         setLoading(false);
-    //         setData(resolvedRequests[resolvedKey]);
-    //       }
-    //     },
-    //   [requestAbortController, loading, resolvedKey]
-    // );
     (0, react_1.useEffect)(function () {
         var signal = (requestAbortController || {}).signal;
         // Run onAbort callback
@@ -356,7 +359,7 @@ var useFetcher = function (init, options) {
                 setData(resolvedRequests[resolvedKey]);
             }
         },
-        config: __assign(__assign({}, config), { headers: requestHeaders, body: requestBody, url: url }),
+        config: __assign(__assign({}, config), { headers: requestHeaders, body: requestBody, url: realUrl }),
         response: response,
     };
 };
@@ -375,24 +378,29 @@ useFetcher.unlink = (0, shared_1.createRequestFn)("UNLINK", "", {});
 /**
  * Extend the useFetcher hook
  */
-useFetcher.extend = function extendFetcher(_a) {
-    var _b = _a === void 0 ? {} : _a, _c = _b.baseUrl, baseUrl = _c === void 0 ? "" : _c, _d = _b.headers, headers = _d === void 0 ? {} : _d, _e = _b.body, body = _e === void 0 ? {} : _e, 
+useFetcher.extend = function extendFetcher(props) {
+    if (props === void 0) { props = {}; }
+    var _a = props.baseUrl, baseUrl = _a === void 0 ? undefined : _a, _b = props.headers, headers = _b === void 0 ? {} : _b, _c = props.body, body = _c === void 0 ? {} : _c, 
     // json by default
-    _f = _b.resolver, 
-    // json by default
-    resolver = _f === void 0 ? function (d) { return d.json(); } : _f;
+    resolver = props.resolver;
     function useCustomFetcher(init, options) {
+        var ctx = (0, react_1.useContext)(FetcherContext);
         var _a = typeof init === "string"
             ? __assign({ 
                 // set url if init is a stringss
                 url: init }, options) : // `url` will be required in init if it is an object
             init, _b = _a.url, url = _b === void 0 ? "" : _b, _c = _a.config, config = _c === void 0 ? {} : _c, otherProps = __rest(_a, ["url", "config"]);
-        return useFetcher(__assign(__assign({}, otherProps), { url: "".concat(baseUrl).concat(url), 
+        return useFetcher(__assign(__assign({}, otherProps), { url: "".concat(url), 
             // If resolver is present is hook call, use that instead
-            resolver: otherProps.resolver || resolver, config: {
+            resolver: resolver || otherProps.resolver || ctx.resolver || (function (d) { return d.json(); }), config: {
+                baseUrl: typeof config.baseUrl === "undefined"
+                    ? typeof ctx.baseUrl === "undefined"
+                        ? baseUrl
+                        : ctx.baseUrl
+                    : config.baseUrl,
                 method: config.method,
-                headers: __assign(__assign({}, headers), config.headers),
-                body: __assign(__assign({}, body), config.body),
+                headers: __assign(__assign(__assign({}, headers), ctx.headers), config.headers),
+                body: __assign(__assign(__assign({}, body), ctx.body), config.body),
             } }));
     }
     useCustomFetcher.config = {
@@ -411,16 +419,7 @@ useFetcher.extend = function extendFetcher(_a) {
     useCustomFetcher.purge = (0, shared_1.createRequestFn)("PURGE", baseUrl, headers);
     useCustomFetcher.link = (0, shared_1.createRequestFn)("LINK", baseUrl, headers);
     useCustomFetcher.unlink = (0, shared_1.createRequestFn)("UNLINK", baseUrl, headers);
-    useCustomFetcher.Config = function FetcherConfig(_a) {
-        var children = _a.children, _b = _a.defaults, defaults = _b === void 0 ? {} : _b;
-        if (defaults) {
-            for (var defaultKey in defaults) {
-                var url = "".concat(baseUrl).concat(defaultKey);
-                resolvedRequests[url] = defaults[defaultKey];
-            }
-        }
-        return children;
-    };
+    useCustomFetcher.Config = FetcherConfig;
     return useCustomFetcher;
 };
 exports.fetcher = useFetcher;
