@@ -15,20 +15,20 @@ var shared_1 = require("./shared");
 var fetcher = function () { };
 exports.fetcher = fetcher;
 // Create a method for each request
-exports.fetcher.get = (0, shared_1.createRequestFn)("GET", "", {});
-exports.fetcher.delete = (0, shared_1.createRequestFn)("DELETE", "", {});
-exports.fetcher.head = (0, shared_1.createRequestFn)("HEAD", "", {});
-exports.fetcher.options = (0, shared_1.createRequestFn)("OPTIONS", "", {});
-exports.fetcher.post = (0, shared_1.createRequestFn)("POST", "", {});
-exports.fetcher.put = (0, shared_1.createRequestFn)("PUT", "", {});
-exports.fetcher.patch = (0, shared_1.createRequestFn)("PATCH", "", {});
-exports.fetcher.purge = (0, shared_1.createRequestFn)("PURGE", "", {});
-exports.fetcher.link = (0, shared_1.createRequestFn)("LINK", "", {});
-exports.fetcher.unlink = (0, shared_1.createRequestFn)("UNLINK", "", {});
+fetcher.get = (0, shared_1.createRequestFn)("GET", "", {});
+fetcher.delete = (0, shared_1.createRequestFn)("DELETE", "", {});
+fetcher.head = (0, shared_1.createRequestFn)("HEAD", "", {});
+fetcher.options = (0, shared_1.createRequestFn)("OPTIONS", "", {});
+fetcher.post = (0, shared_1.createRequestFn)("POST", "", {});
+fetcher.put = (0, shared_1.createRequestFn)("PUT", "", {});
+fetcher.patch = (0, shared_1.createRequestFn)("PATCH", "", {});
+fetcher.purge = (0, shared_1.createRequestFn)("PURGE", "", {});
+fetcher.link = (0, shared_1.createRequestFn)("LINK", "", {});
+fetcher.unlink = (0, shared_1.createRequestFn)("UNLINK", "", {});
 /**
  * Extend the fetcher object
  */
-exports.fetcher.extend = function extendFetcher(_a) {
+fetcher.extend = function extendFetcher(_a) {
     var _b = _a === void 0 ? {} : _a, _c = _b.baseUrl, baseUrl = _c === void 0 ? "" : _c, _d = _b.headers, headers = _d === void 0 ? {} : _d, _e = _b.body, body = _e === void 0 ? {} : _e, 
     // json by default
     _f = _b.resolver, 

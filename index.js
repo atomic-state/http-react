@@ -362,20 +362,20 @@ var useFetcher = function (init, options) {
 };
 exports.useFetcher = useFetcher;
 // Create a method for each request
-exports.useFetcher.get = (0, shared_1.createRequestFn)("GET", "", {});
-exports.useFetcher.delete = (0, shared_1.createRequestFn)("DELETE", "", {});
-exports.useFetcher.head = (0, shared_1.createRequestFn)("HEAD", "", {});
-exports.useFetcher.options = (0, shared_1.createRequestFn)("OPTIONS", "", {});
-exports.useFetcher.post = (0, shared_1.createRequestFn)("POST", "", {});
-exports.useFetcher.put = (0, shared_1.createRequestFn)("PUT", "", {});
-exports.useFetcher.patch = (0, shared_1.createRequestFn)("PATCH", "", {});
-exports.useFetcher.purge = (0, shared_1.createRequestFn)("PURGE", "", {});
-exports.useFetcher.link = (0, shared_1.createRequestFn)("LINK", "", {});
-exports.useFetcher.unlink = (0, shared_1.createRequestFn)("UNLINK", "", {});
+useFetcher.get = (0, shared_1.createRequestFn)("GET", "", {});
+useFetcher.delete = (0, shared_1.createRequestFn)("DELETE", "", {});
+useFetcher.head = (0, shared_1.createRequestFn)("HEAD", "", {});
+useFetcher.options = (0, shared_1.createRequestFn)("OPTIONS", "", {});
+useFetcher.post = (0, shared_1.createRequestFn)("POST", "", {});
+useFetcher.put = (0, shared_1.createRequestFn)("PUT", "", {});
+useFetcher.patch = (0, shared_1.createRequestFn)("PATCH", "", {});
+useFetcher.purge = (0, shared_1.createRequestFn)("PURGE", "", {});
+useFetcher.link = (0, shared_1.createRequestFn)("LINK", "", {});
+useFetcher.unlink = (0, shared_1.createRequestFn)("UNLINK", "", {});
 /**
  * Extend the useFetcher hook
  */
-exports.useFetcher.extend = function extendFetcher(_a) {
+useFetcher.extend = function extendFetcher(_a) {
     var _b = _a === void 0 ? {} : _a, _c = _b.baseUrl, baseUrl = _c === void 0 ? "" : _c, _d = _b.headers, headers = _d === void 0 ? {} : _d, _e = _b.body, body = _e === void 0 ? {} : _e, 
     // json by default
     _f = _b.resolver, 
@@ -387,7 +387,7 @@ exports.useFetcher.extend = function extendFetcher(_a) {
                 // set url if init is a stringss
                 url: init }, options) : // `url` will be required in init if it is an object
             init, _b = _a.url, url = _b === void 0 ? "" : _b, _c = _a.config, config = _c === void 0 ? {} : _c, otherProps = __rest(_a, ["url", "config"]);
-        return (0, exports.useFetcher)(__assign(__assign({}, otherProps), { url: "".concat(baseUrl).concat(url), 
+        return useFetcher(__assign(__assign({}, otherProps), { url: "".concat(baseUrl).concat(url), 
             // If resolver is present is hook call, use that instead
             resolver: otherProps.resolver || resolver, config: {
                 method: config.method,
@@ -423,7 +423,7 @@ exports.useFetcher.extend = function extendFetcher(_a) {
     };
     return useCustomFetcher;
 };
-exports.fetcher = exports.useFetcher;
+exports.fetcher = useFetcher;
 var defaultConfig = { headers: {}, body: undefined };
 /**
  * Basic HttpClient

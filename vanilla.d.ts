@@ -9,7 +9,7 @@ import { FetcherExtendConfig } from "./shared";
 /**
  * Fetcher object
  */
-export declare const fetcher: {
+declare const fetcher: {
     (): void;
     get: import("./shared").RequestWithBody;
     delete: import("./shared").RequestWithBody;
@@ -43,3 +43,4 @@ export declare const fetcher: {
         unlink: import("./shared").RequestWithBody;
     };
 };
+export { fetcher };

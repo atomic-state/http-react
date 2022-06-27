@@ -152,7 +152,7 @@ export declare function FetcherConfig({ children, defaults, }: fetcherConfigComp
 /**
  * Fetcher available as a hook
  */
-export declare const useFetcher: {
+declare const useFetcher: {
     <FetchDataType extends unknown, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
         data: FetchDataType;
         loading: boolean;
@@ -245,6 +245,7 @@ export declare const useFetcher: {
         Config({ children, defaults, }: fetcherConfigComponentType): any;
     };
 };
+export { useFetcher };
 export declare const fetcher: {
     <FetchDataType extends unknown, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
         data: FetchDataType;

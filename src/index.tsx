@@ -287,7 +287,7 @@ type RequestWithBody = <R = any, BodyType = any>(
  * Fetcher available as a hook
  */
 
-export const useFetcher = <FetchDataType extends unknown, BodyType = any>(
+const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   init: FetcherType<FetchDataType, BodyType> | string,
   options?: FetcherConfigOptions<FetchDataType, BodyType>
 ) => {
@@ -518,6 +518,7 @@ useFetcher.purge = createRequestFn("PURGE", "", {});
 useFetcher.link = createRequestFn("LINK", "", {});
 useFetcher.unlink = createRequestFn("UNLINK", "", {});
 
+export { useFetcher };
 /**
  * Extend the useFetcher hook
  */
