@@ -12,7 +12,7 @@ import { createRequestFn, FetcherExtendConfig } from "./shared";
  * Fetcher object
  */
 
-export const fetcher = () => {};
+const fetcher = () => {};
 
 // Create a method for each request
 fetcher.get = createRequestFn("GET", "", {});
@@ -57,3 +57,5 @@ fetcher.extend = function extendFetcher({
 
   return customFetcher;
 };
+
+export { fetcher };
