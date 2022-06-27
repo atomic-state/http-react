@@ -20,6 +20,19 @@ Or
 yarn add http-react-fetcher
 ```
 
+### Browser
+
+With React
+
+```html
+<script src="https://unpkg.com/http-react-fetcher@1.4.4/dist/http-react-fetcher.min.js"></script>
+```
+Without React
+
+```html
+<script src="https://unpkg.com/http-react-fetcher@1.4.4/dist/vanilla.min.js"></script>
+```
+
 #### Basic usage
 
 ```tsx
