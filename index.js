@@ -74,6 +74,7 @@ var FetcherContext = (0, react_1.createContext)({
     attempts: 0,
     // By default its 5 seconds
     attemptInterval: 5,
+    revalidateOnFocus: false,
 });
 /**
  * @deprecated Use the `useFetcher` hook instead
@@ -200,29 +201,29 @@ var useFetcher = function (init, options) {
         formatBody: false,
     } : _c, _d = _a.resolver, resolver = _d === void 0 ? typeof ctx.resolver === "function"
         ? ctx.resolver
-        : function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.memory : _f, _g = _a.memory, memory = _g === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.onAbort, onAbort = _j === void 0 ? function () { } : _j, _k = _a.refresh, refresh = _k === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _k, _l = _a.cancelOnChange, cancelOnChange = _l === void 0 ? typeof ctx.refresh === "undefined" ? false : ctx.refresh : _l, _m = _a.attempts, attempts = _m === void 0 ? ctx.attempts : _m, _o = _a.attemptInterval, attemptInterval = _o === void 0 ? ctx.attemptInterval : _o;
+        : function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.memory : _f, _g = _a.memory, memory = _g === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.onAbort, onAbort = _j === void 0 ? function () { } : _j, _k = _a.refresh, refresh = _k === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _k, _l = _a.cancelOnChange, cancelOnChange = _l === void 0 ? typeof ctx.refresh === "undefined" ? false : ctx.refresh : _l, _m = _a.attempts, attempts = _m === void 0 ? ctx.attempts : _m, _o = _a.attemptInterval, attemptInterval = _o === void 0 ? ctx.attemptInterval : _o, _p = _a.revalidateOnFocus, revalidateOnFocus = _p === void 0 ? ctx.revalidateOnFocus : _p;
     var realUrl = (typeof config.baseUrl === "undefined"
         ? typeof ctx.baseUrl === "undefined"
             ? ""
             : ctx.baseUrl
         : config.baseUrl) + url;
     var resolvedKey = realUrl.split("?")[0];
-    var _p = (0, react_1.useState)(
+    var _q = (0, react_1.useState)(
     // Saved to base url of request without query params
-    memory ? resolvedRequests[resolvedKey] || def : def), data = _p[0], setData = _p[1];
-    var _q = (0, react_1.useState)((typeof FormData !== "undefined"
+    memory ? resolvedRequests[resolvedKey] || def : def), data = _q[0], setData = _q[1];
+    var _r = (0, react_1.useState)((typeof FormData !== "undefined"
         ? config.body instanceof FormData
             ? config.body
             : typeof ctx.body !== "undefined" || typeof config.body !== "undefined"
                 ? __assign(__assign({}, ctx.body), config.body) : undefined
-        : config.body)), requestBody = _q[0], setRequestBody = _q[1];
-    var _r = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _r[0], setRequestHeades = _r[1];
-    var _s = (0, react_1.useState)(), response = _s[0], setResponse = _s[1];
-    var _t = (0, react_1.useState)(), statusCode = _t[0], setStatusCode = _t[1];
-    var _u = (0, react_1.useState)(null), error = _u[0], setError = _u[1];
-    var _v = (0, react_1.useState)(true), loading = _v[0], setLoading = _v[1];
-    var _w = (0, react_1.useState)(0), completedAttemps = _w[0], setCompletedAttempts = _w[1];
-    var _x = (0, react_1.useState)(new AbortController()), requestAbortController = _x[0], setRequestAbortController = _x[1];
+        : config.body)), requestBody = _r[0], setRequestBody = _r[1];
+    var _s = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _s[0], setRequestHeades = _s[1];
+    var _t = (0, react_1.useState)(), response = _t[0], setResponse = _t[1];
+    var _u = (0, react_1.useState)(), statusCode = _u[0], setStatusCode = _u[1];
+    var _v = (0, react_1.useState)(null), error = _v[0], setError = _v[1];
+    var _w = (0, react_1.useState)(true), loading = _w[0], setLoading = _w[1];
+    var _x = (0, react_1.useState)(0), completedAttemps = _x[0], setCompletedAttempts = _x[1];
+    var _y = (0, react_1.useState)(new AbortController()), requestAbortController = _y[0], setRequestAbortController = _y[1];
     function fetchData(c) {
         var _a;
         if (c === void 0) { c = {}; }
@@ -382,6 +383,26 @@ var useFetcher = function (init, options) {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url, stringDeps, ctx.children, refresh, JSON.stringify(config)]);
+    (0, react_1.useEffect)(function () {
+        if (revalidateOnFocus) {
+            if (typeof window !== "undefined") {
+                if ("addEventListener" in window) {
+                    window.addEventListener("focus", reValidate);
+                    return function () {
+                        window.removeEventListener("focus", reValidate);
+                    };
+                }
+            }
+        }
+    }, [
+        url,
+        revalidateOnFocus,
+        stringDeps,
+        loading,
+        ctx.children,
+        refresh,
+        JSON.stringify(config),
+    ]);
     return {
         data: data,
         loading: loading,

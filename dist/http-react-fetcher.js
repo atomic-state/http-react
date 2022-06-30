@@ -105,6 +105,7 @@
     attempts: 0,
     // By default its 5 seconds
     attemptInterval: 5,
+    revalidateOnFocus: false,
   });
   /**
    * @deprecated Use the `useFetcher` hook instead
@@ -243,6 +244,7 @@
       cancelOnChange = typeof ctx.refresh === "undefined" ? false : ctx.refresh,
       attempts = ctx.attempts,
       attemptInterval = ctx.attemptInterval,
+      revalidateOnFocus = ctx.revalidateOnFocus,
     } = typeof init === "string"
       ? Object.assign(
           {
@@ -447,6 +449,29 @@
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url, stringDeps, ctx.children, refresh, JSON.stringify(config)]);
+
+    React.useEffect(() => {
+      if (revalidateOnFocus) {
+        if (typeof window !== "undefined") {
+          if ("addEventListener" in window) {
+            window.addEventListener("focus", reValidate);
+
+            return () => {
+              window.removeEventListener("focus", reValidate);
+            };
+          }
+        }
+      }
+    }, [
+      url,
+      revalidateOnFocus,
+      stringDeps,
+      loading,
+      ctx.children,
+      refresh,
+      JSON.stringify(config),
+    ]);
+
     return {
       data,
       loading,
@@ -605,6 +630,7 @@
     return new HttpClient(url);
   }
 
+  window.Fetcher = Fetcher;
   window.useFetcher = useFetcher;
   window.createHttpClient = createHttpClient;
   window.FetcherConfig = FetcherConfig;
