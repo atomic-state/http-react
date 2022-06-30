@@ -17,6 +17,8 @@ declare type FetcherContextType = {
     auto?: boolean;
     memory?: boolean;
     refresh?: number;
+    attempts?: number;
+    attemptInterval?: number;
 };
 declare type FetcherType<FetchDataType, BodyType> = {
     /**
@@ -62,6 +64,14 @@ declare type FetcherType<FetchDataType, BodyType> = {
      * Parse as json by default
      */
     resolver?: (d: CustomResponse<FetchDataType>) => any;
+    /**
+     * The ammount of attempts if request fails
+     */
+    attempts?: number;
+    /**
+     * The interval at which to run attempts on request fail
+     */
+    attemptInterval?: number;
     /**
      * Request configuration
      */
@@ -130,6 +140,14 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
      * Parse as json by default
      */
     resolver?: (d: CustomResponse<FetchDataType>) => any;
+    /**
+     * The ammount of attempts if request fails
+     */
+    attempts?: number;
+    /**
+     * The interval at which to run attempts on request fail
+     */
+    attemptInterval?: number;
     /**
      * Request configuration
      */

@@ -8,7 +8,7 @@
 
 import * as React from "react";
 import { useState, useEffect, createContext, useContext } from "react";
-import { CustomResponse, createRequestFn, FetcherExtendConfig } from "./shared";
+import { CustomResponse, createRequestFn } from "./shared";
 
 type FetcherContextType = {
   headers?: any;
@@ -20,10 +20,15 @@ type FetcherContextType = {
   auto?: boolean;
   memory?: boolean;
   refresh?: number;
+  attempts?: number;
+  attemptInterval?: number;
 };
 
 const FetcherContext = createContext<FetcherContextType>({
   defaults: {},
+  attempts: 0,
+  // By default its 5 seconds
+  attemptInterval: 5,
 });
 
 type FetcherType<FetchDataType, BodyType> = {
@@ -70,6 +75,14 @@ type FetcherType<FetchDataType, BodyType> = {
    * Parse as json by default
    */
   resolver?: (d: CustomResponse<FetchDataType>) => any;
+  /**
+   * The ammount of attempts if request fails
+   */
+  attempts?: number;
+  /**
+   * The interval at which to run attempts on request fail
+   */
+  attemptInterval?: number;
   /**
    * Request configuration
    */
@@ -150,6 +163,14 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
    * Parse as json by default
    */
   resolver?: (d: CustomResponse<FetchDataType>) => any;
+  /**
+   * The ammount of attempts if request fails
+   */
+  attempts?: number;
+  /**
+   * The interval at which to run attempts on request fail
+   */
+  attemptInterval?: number;
   /**
    * Request configuration
    */
@@ -270,34 +291,38 @@ export default Fetcher;
 
 const resolvedRequests: any = {};
 
-type fetcherConfigComponentType = {
-  children: any;
-  defaults: any;
-};
-
 export function FetcherConfig(props: FetcherContextType) {
-  const {
-    children,
-    defaults = {},
-    baseUrl,
-    body,
-    resolver,
-    headers,
-    auto,
-    memory,
-    refresh,
-  } = props;
+  const { children, defaults = {}, baseUrl } = props;
+
+  const previousConfig = useContext(FetcherContext);
+
+  let base =
+    typeof baseUrl === "undefined"
+      ? typeof previousConfig.baseUrl === "undefined"
+        ? ""
+        : previousConfig.baseUrl
+      : baseUrl;
 
   for (let defaultKey in defaults) {
-    resolvedRequests[
-      `${typeof baseUrl === "undefined" ? "" : baseUrl}${defaultKey}`
-    ] = defaults[defaultKey];
+    resolvedRequests[`${base}${defaultKey}`] = defaults[defaultKey];
+  }
+
+  let mergedConfig = {
+    ...previousConfig,
+    ...props,
+  };
+
+  for (let e in props) {
+    if (e === "headers") {
+      mergedConfig.headers = {
+        ...previousConfig.headers,
+        ...props.headers,
+      };
+    }
   }
 
   return (
-    <FetcherContext.Provider
-      value={{ baseUrl, body, resolver, headers, auto, memory, refresh }}
-    >
+    <FetcherContext.Provider value={mergedConfig}>
       {children}
     </FetcherContext.Provider>
   );
@@ -332,6 +357,8 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     onAbort = () => {},
     refresh = typeof ctx.refresh === "undefined" ? 0 : ctx.refresh,
     cancelOnChange = typeof ctx.refresh === "undefined" ? false : ctx.refresh,
+    attempts = ctx.attempts,
+    attemptInterval = ctx.attemptInterval,
   } = typeof init === "string"
     ? {
         // Pass init as the url if init is a string
@@ -377,6 +404,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   const [statusCode, setStatusCode] = useState<number>();
   const [error, setError] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [completedAttemps, setCompletedAttempts] = useState(0);
   const [requestAbortController, setRequestAbortController] =
     useState<AbortController>(new AbortController());
 
@@ -426,6 +454,9 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         setData(_data);
         setError(null);
         onResolve(_data, json);
+
+        // If a request completes succesfuly, we reset the error attempts to 0
+        setCompletedAttempts(0);
       } else {
         if (def) {
           setData(def);
@@ -479,6 +510,20 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       fetchData(c);
     }
   }
+
+  useEffect(() => {
+    // Attempts will be made after a request fails
+    if (error) {
+      if (completedAttemps < (attempts as number)) {
+        const tm = setTimeout(() => {
+          reValidate();
+          setCompletedAttempts((previousAttempts) => previousAttempts + 1);
+          clearTimeout(tm);
+        }, (attemptInterval as number) * 1000);
+      }
+    }
+  }, [error, attempts, attemptInterval, completedAttemps]);
+
   useEffect(() => {
     if (refresh > 0 && auto) {
       const interval = setTimeout(reValidate, refresh * 1000);
@@ -492,7 +537,9 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       setLoading(true);
       fetchData();
     } else {
-      setData(def);
+      if (typeof data === "undefined") {
+        setData(def);
+      }
       setError(null);
       setLoading(false);
     }
