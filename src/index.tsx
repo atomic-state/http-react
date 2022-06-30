@@ -22,6 +22,7 @@ type FetcherContextType = {
   refresh?: number;
   attempts?: number;
   attemptInterval?: number;
+  revalidateOnFocus?: boolean;
 };
 
 const FetcherContext = createContext<FetcherContextType>({
@@ -29,6 +30,7 @@ const FetcherContext = createContext<FetcherContextType>({
   attempts: 0,
   // By default its 5 seconds
   attemptInterval: 5,
+  revalidateOnFocus: false,
 });
 
 type FetcherType<FetchDataType, BodyType> = {
@@ -83,6 +85,10 @@ type FetcherType<FetchDataType, BodyType> = {
    * The interval at which to run attempts on request fail
    */
   attemptInterval?: number;
+  /**
+   * If a request should be made when the tab is focused. This currently works on browsers
+   */
+  revalidateOnFocus?: boolean;
   /**
    * Request configuration
    */
@@ -171,6 +177,10 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
    * The interval at which to run attempts on request fail
    */
   attemptInterval?: number;
+  /**
+   * If a request should be made when the tab is focused. This currently works on browsers
+   */
+  revalidateOnFocus?: boolean;
   /**
    * Request configuration
    */
@@ -359,6 +369,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     cancelOnChange = typeof ctx.refresh === "undefined" ? false : ctx.refresh,
     attempts = ctx.attempts,
     attemptInterval = ctx.attemptInterval,
+    revalidateOnFocus = ctx.revalidateOnFocus,
   } = typeof init === "string"
     ? {
         // Pass init as the url if init is a string
@@ -557,6 +568,28 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, stringDeps, ctx.children, refresh, JSON.stringify(config)]);
+
+  useEffect(() => {
+    if (revalidateOnFocus) {
+      if (typeof window !== "undefined") {
+        if ("addEventListener" in window) {
+          window.addEventListener("focus", reValidate as any);
+
+          return () => {
+            window.removeEventListener("focus", reValidate as any);
+          };
+        }
+      }
+    }
+  }, [
+    url,
+    revalidateOnFocus,
+    stringDeps,
+    loading,
+    ctx.children,
+    refresh,
+    JSON.stringify(config),
+  ]);
 
   return {
     data,

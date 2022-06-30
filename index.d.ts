@@ -19,6 +19,7 @@ declare type FetcherContextType = {
     refresh?: number;
     attempts?: number;
     attemptInterval?: number;
+    revalidateOnFocus?: boolean;
 };
 declare type FetcherType<FetchDataType, BodyType> = {
     /**
@@ -72,6 +73,10 @@ declare type FetcherType<FetchDataType, BodyType> = {
      * The interval at which to run attempts on request fail
      */
     attemptInterval?: number;
+    /**
+     * If a request should be made when the tab is focused. This currently works on browsers
+     */
+    revalidateOnFocus?: boolean;
     /**
      * Request configuration
      */
@@ -148,6 +153,10 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
      * The interval at which to run attempts on request fail
      */
     attemptInterval?: number;
+    /**
+     * If a request should be made when the tab is focused. This currently works on browsers
+     */
+    revalidateOnFocus?: boolean;
     /**
      * Request configuration
      */
