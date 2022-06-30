@@ -401,6 +401,14 @@
         fetchData(c);
       }
     }
+
+    React.useEffect(() => {
+      setRequestHeades((r) => ({
+        ...r,
+        ...ctx.headers,
+      }));
+    }, [ctx.headers]);
+
     React.useEffect(() => {
       // Attempts will be made after a request fails
       if (error) {
@@ -420,6 +428,12 @@
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, loading, error, data, config]);
+
+    const stringDeps = JSON.stringify(
+      // We ignore children and resolver
+      Object.assign(ctx, { children: undefined }, { resolver: undefined })
+    );
+
     React.useEffect(() => {
       if (auto) {
         setLoading(true);
@@ -432,7 +446,7 @@
         setLoading(false);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [url, refresh, JSON.stringify(config)]);
+    }, [url, stringDeps, ctx.children, refresh, JSON.stringify(config)]);
     return {
       data,
       loading,

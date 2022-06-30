@@ -9,3 +9,4 @@ vanilla.js.map
 src
 .gitignore
 yarn.lock
+.github

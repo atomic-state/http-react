@@ -344,6 +344,9 @@ var useFetcher = function (init, options) {
         });
     }
     (0, react_1.useEffect)(function () {
+        setRequestHeades(function (r) { return (__assign(__assign({}, r), ctx.headers)); });
+    }, [ctx.headers]);
+    (0, react_1.useEffect)(function () {
         // Attempts will be made after a request fails
         if (error) {
             if (completedAttemps < attempts) {
@@ -362,6 +365,9 @@ var useFetcher = function (init, options) {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, loading, error, data, config]);
+    var stringDeps = JSON.stringify(
+    // We ignore children and resolver
+    Object.assign(ctx, { children: undefined }, { resolver: undefined }));
     (0, react_1.useEffect)(function () {
         if (auto) {
             setLoading(true);
@@ -375,7 +381,7 @@ var useFetcher = function (init, options) {
             setLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [url, refresh, JSON.stringify(config)]);
+    }, [url, stringDeps, ctx.children, refresh, JSON.stringify(config)]);
     return {
         data: data,
         loading: loading,
