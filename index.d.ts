@@ -20,6 +20,7 @@ declare type FetcherContextType = {
     attempts?: number;
     attemptInterval?: number;
     revalidateOnFocus?: boolean;
+    query?: any;
 };
 declare type FetcherType<FetchDataType, BodyType> = {
     /**
@@ -90,6 +91,7 @@ declare type FetcherType<FetchDataType, BodyType> = {
          */
         method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
         headers?: Headers | object;
+        query?: any;
         body?: BodyType;
         /**
          * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -170,6 +172,10 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
          */
         method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
         headers?: Headers | object;
+        /**
+         * Request query params
+         */
+        query?: any;
         body?: BodyType;
         /**
          * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -216,6 +222,7 @@ declare const useFetcher: {
              */
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
             headers?: object | Headers | undefined;
+            query?: any;
             body?: BodyType | undefined;
             /**
              * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -264,6 +271,7 @@ declare const useFetcher: {
                  */
                 method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
                 headers?: object | Headers | undefined;
+                query?: any;
                 body?: BodyType_1 | undefined;
                 /**
                  * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -281,6 +289,7 @@ declare const useFetcher: {
             baseUrl: any;
             headers: any;
             body: object;
+            query: any;
         };
         get: import("./shared").RequestWithBody;
         delete: import("./shared").RequestWithBody;
@@ -318,6 +327,7 @@ export declare const fetcher: {
              */
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
             headers?: object | Headers | undefined;
+            query?: any;
             body?: BodyType | undefined;
             /**
              * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -366,6 +376,7 @@ export declare const fetcher: {
                  */
                 method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
                 headers?: object | Headers | undefined;
+                query?: any;
                 body?: BodyType_1 | undefined;
                 /**
                  * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -383,6 +394,7 @@ export declare const fetcher: {
             baseUrl: any;
             headers: any;
             body: object;
+            query: any;
         };
         get: import("./shared").RequestWithBody;
         delete: import("./shared").RequestWithBody;

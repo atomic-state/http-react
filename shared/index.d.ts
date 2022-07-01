@@ -1,9 +1,10 @@
-export declare type CustomResponse<T> = Omit<Response, 'json'> & {
+export declare type CustomResponse<T> = Omit<Response, "json"> & {
     json(): Promise<T>;
 };
 export declare type RequestWithBody = <R = any, BodyType = any>(url: string, reqConfig?: {
     default?: R;
     config?: {
+        query?: any;
         formatBody?(b: BodyType): any;
         headers?: any;
         body?: BodyType;
@@ -21,7 +22,7 @@ export declare type RequestWithBody = <R = any, BodyType = any>(url: string, req
 /**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
  */
-export declare function createRequestFn(method: string, baseUrl: string, $headers: any): RequestWithBody;
+export declare function createRequestFn(method: string, baseUrl: string, $headers: any, q?: any): RequestWithBody;
 export declare type FetcherExtendConfig = {
     /**
      * Request base url
@@ -45,4 +46,8 @@ export declare type FetcherExtendConfig = {
      * Custom resolver
      */
     resolver?: (d: Response) => any;
+    /**
+     * Request query params
+     */
+    query?: any;
 };

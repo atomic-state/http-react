@@ -27,11 +27,10 @@
         }
       return t;
     };
-
   /**
    * Creates a new request function. This is for usage with fetcher and fetcher.extend
    */
-  function createRequestFn(method, baseUrl, $headers) {
+  function createRequestFn(method, baseUrl, $headers, q) {
     return async function (url, init = {}) {
       const {
         default: def,
@@ -40,6 +39,18 @@
         onResolve = () => {},
         onError = () => {},
       } = init;
+      let query = Object.assign(Object.assign({}, q), c.query);
+      const [, qp = ""] = url.split("?");
+      qp.split("&").forEach((q) => {
+        const [key, value] = q.split("=");
+        if (query[key] !== value) {
+          query = Object.assign(Object.assign({}, query), { [key]: value });
+        }
+      });
+      const reqQueryString = Object.keys(query)
+        .map((q) => [q, query[q]].join("="))
+        .join("&");
+      // console.log(reqQueryString)
       const { headers = {}, body, formatBody } = c;
       const reqConfig = {
         method,
@@ -66,7 +77,12 @@
       };
       let r = undefined;
       try {
-        const req = await fetch(`${baseUrl || ""}${url}`, reqConfig);
+        const req = await fetch(
+          `${baseUrl || ""}${url}${
+            url.includes("?") ? `&${reqQueryString}` : `?${reqQueryString}`
+          }`,
+          reqConfig
+        );
         r = req;
         const data = await resolver(req);
         if ((req === null || req === void 0 ? void 0 : req.status) >= 400) {
@@ -76,7 +92,10 @@
             data: def,
             error: true,
             code: req === null || req === void 0 ? void 0 : req.status,
-            config: Object.assign({ url: `${baseUrl || ""}${url}` }, reqConfig),
+            config: Object.assign(
+              Object.assign({ url: `${baseUrl || ""}${url}` }, reqConfig),
+              { query }
+            ),
           };
         } else {
           onResolve(data, req);
@@ -85,7 +104,10 @@
             data: data,
             error: false,
             code: req === null || req === void 0 ? void 0 : req.status,
-            config: Object.assign({ url: `${baseUrl || ""}${url}` }, reqConfig),
+            config: Object.assign(
+              Object.assign({ url: `${baseUrl || ""}${url}` }, reqConfig),
+              { query }
+            ),
           };
         }
       } catch (err) {
@@ -95,17 +117,24 @@
           data: def,
           error: true,
           code: r === null || r === void 0 ? void 0 : r.status,
-          config: Object.assign({ url: `${baseUrl || ""}${url}` }, reqConfig),
+          config: Object.assign(
+            Object.assign({ url: `${baseUrl || ""}${url}` }, reqConfig),
+            { query }
+          ),
         };
       }
     };
   }
-  const FetcherContext = React.createContext({
+
+  const { useState, useEffect, createContext, useContext } = React;
+
+  const FetcherContext = createContext({
     defaults: {},
     attempts: 0,
     // By default its 5 seconds
     attemptInterval: 5,
     revalidateOnFocus: false,
+    query: {},
   });
   /**
    * @deprecated Use the `useFetcher` hook instead
@@ -119,9 +148,9 @@
     onResolve = () => {},
     refresh = 0,
   }) => {
-    const [data, setData] = React.useState(def);
-    const [error, setError] = React.useState(null);
-    const [loading, setLoading] = React.useState(true);
+    const [data, setData] = useState(def);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
     async function fetchData() {
       var _a;
       try {
@@ -160,7 +189,7 @@
         setLoading(false);
       }
     }
-    React.useEffect(() => {
+    useEffect(() => {
       async function reValidate() {
         if ((data || error) && !loading) {
           setLoading(true);
@@ -173,7 +202,7 @@
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, loading, error, data, config]);
-    React.useEffect(() => {
+    useEffect(() => {
       setLoading(true);
       fetchData();
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -192,7 +221,7 @@
   const resolvedRequests = {};
   function FetcherConfig(props) {
     const { children, defaults = {}, baseUrl } = props;
-    const previousConfig = React.useContext(FetcherContext);
+    const previousConfig = useContext(FetcherContext);
     let base =
       typeof baseUrl === "undefined"
         ? typeof previousConfig.baseUrl === "undefined"
@@ -221,11 +250,12 @@
    * Fetcher available as a hook
    */
   const useFetcher = (init, options) => {
-    const ctx = React.useContext(FetcherContext);
+    const ctx = useContext(FetcherContext);
     const {
       url = "/",
       default: def,
       config = {
+        query: {},
         baseUrl: undefined,
         method: "GET",
         headers: {},
@@ -254,18 +284,41 @@
           options
         ) // `url` will be required in init if it is an object
       : init;
-    const realUrl =
+    const [reqQuery, setReqQuery] = useState(
+      Object.assign(Object.assign({}, ctx.query), config.query)
+    );
+    useEffect(() => {
+      setReqQuery(Object.assign(Object.assign({}, ctx.query), config.query));
+    }, [JSON.stringify(ctx.query), JSON.stringify(config.query), url]);
+    const rawUrl =
       (typeof config.baseUrl === "undefined"
         ? typeof ctx.baseUrl === "undefined"
           ? ""
           : ctx.baseUrl
         : config.baseUrl) + url;
-    const resolvedKey = realUrl.split("?")[0];
-    const [data, setData] = React.useState(
+    const reqQueryString = Object.keys(reqQuery)
+      .map((q) => [q, reqQuery[q]].join("="))
+      .join("&");
+    const realUrl =
+      rawUrl +
+      (rawUrl.includes("?") ? `&${reqQueryString}` : "?" + reqQueryString);
+    const [resolvedKey, qp] = realUrl.split("?");
+    useEffect(() => {
+      // Getting
+      qp.split("&").forEach((q) => {
+        const [key, value] = q.split("=");
+        if (reqQuery[key] !== value) {
+          setReqQuery((previousQuery) =>
+            Object.assign(Object.assign({}, previousQuery), { [key]: value })
+          );
+        }
+      });
+    }, [JSON.stringify(reqQuery)]);
+    const [data, setData] = useState(
       // Saved to base url of request without query params
       memory ? resolvedRequests[resolvedKey] || def : def
     );
-    const [requestBody, setRequestBody] = React.useState(
+    const [requestBody, setRequestBody] = useState(
       typeof FormData !== "undefined"
         ? config.body instanceof FormData
           ? config.body
@@ -275,15 +328,15 @@
           : undefined
         : config.body
     );
-    const [requestHeaders, setRequestHeades] = React.useState(
+    const [requestHeaders, setRequestHeades] = useState(
       Object.assign(Object.assign({}, ctx.headers), config.headers)
     );
-    const [response, setResponse] = React.useState();
-    const [statusCode, setStatusCode] = React.useState();
-    const [error, setError] = React.useState(null);
-    const [loading, setLoading] = React.useState(true);
-    const [completedAttemps, setCompletedAttempts] = React.useState(0);
-    const [requestAbortController, setRequestAbortController] = React.useState(
+    const [response, setResponse] = useState();
+    const [statusCode, setStatusCode] = useState();
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [completedAttemps, setCompletedAttempts] = useState(0);
+    const [requestAbortController, setRequestAbortController] = useState(
       new AbortController()
     );
     async function fetchData(c = {}) {
@@ -372,7 +425,7 @@
         setLoading(false);
       }
     }
-    React.useEffect(() => {
+    useEffect(() => {
       const { signal } = requestAbortController || {};
       // Run onAbort callback
       const abortCallback = () => {
@@ -403,15 +456,10 @@
         fetchData(c);
       }
     }
-
-    React.useEffect(() => {
-      setRequestHeades((r) => ({
-        ...r,
-        ...ctx.headers,
-      }));
+    useEffect(() => {
+      setRequestHeades((r) => Object.assign(Object.assign({}, r), ctx.headers));
     }, [ctx.headers]);
-
-    React.useEffect(() => {
+    useEffect(() => {
       // Attempts will be made after a request fails
       if (error) {
         if (completedAttemps < attempts) {
@@ -423,39 +471,45 @@
         }
       }
     }, [error, attempts, attemptInterval, completedAttemps]);
-    React.useEffect(() => {
+    useEffect(() => {
       if (refresh > 0 && auto) {
         const interval = setTimeout(reValidate, refresh * 1000);
         return () => clearTimeout(interval);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, loading, error, data, config]);
-
     const stringDeps = JSON.stringify(
       // We ignore children and resolver
-      Object.assign(ctx, { children: undefined }, { resolver: undefined })
+      Object.assign(
+        ctx,
+        { children: undefined },
+        { resolver: undefined },
+        { reqQuery }
+      )
     );
-
-    React.useEffect(() => {
-      if (auto) {
-        setLoading(true);
-        fetchData();
-      } else {
-        if (typeof data === "undefined") {
-          setData(def);
+    useEffect(() => {
+      const tm = setTimeout(() => {
+        if (auto) {
+          setLoading(true);
+          fetchData();
+        } else {
+          if (typeof data === "undefined") {
+            setData(def);
+          }
+          setError(null);
+          setLoading(false);
         }
-        setError(null);
-        setLoading(false);
-      }
+      }, 0);
+      return () => {
+        clearTimeout(tm);
+      };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [url, stringDeps, ctx.children, refresh, JSON.stringify(config)]);
-
-    React.useEffect(() => {
+    useEffect(() => {
       if (revalidateOnFocus) {
         if (typeof window !== "undefined") {
           if ("addEventListener" in window) {
             window.addEventListener("focus", reValidate);
-
             return () => {
               window.removeEventListener("focus", reValidate);
             };
@@ -471,7 +525,6 @@
       refresh,
       JSON.stringify(config),
     ]);
-
     return {
       data,
       loading,
@@ -490,7 +543,8 @@
       config: Object.assign(Object.assign({}, config), {
         headers: requestHeaders,
         body: requestBody,
-        url: realUrl,
+        url: resolvedKey,
+        query: reqQuery,
       }),
       response,
     };
@@ -506,7 +560,9 @@
   useFetcher.purge = createRequestFn("PURGE", "", {});
   useFetcher.link = createRequestFn("LINK", "", {});
   useFetcher.unlink = createRequestFn("UNLINK", "", {});
-
+  {
+    useFetcher;
+  }
   /**
    * Extend the useFetcher hook
    */
@@ -515,11 +571,12 @@
       baseUrl = undefined,
       headers = {},
       body = {},
+      query = {},
       // json by default
       resolver,
     } = props;
     function useCustomFetcher(init, options) {
-      const ctx = React.useContext(FetcherContext);
+      const ctx = useContext(FetcherContext);
       const _a =
           typeof init === "string"
             ? Object.assign(
@@ -565,18 +622,34 @@
       baseUrl,
       headers,
       body,
+      query,
     };
     // Creating methods for fetcher.extend
-    useCustomFetcher.get = createRequestFn("GET", baseUrl, headers);
-    useCustomFetcher.delete = createRequestFn("DELETE", baseUrl, headers);
-    useCustomFetcher.head = createRequestFn("HEAD", baseUrl, headers);
-    useCustomFetcher.options = createRequestFn("OPTIONS", baseUrl, headers);
-    useCustomFetcher.post = createRequestFn("POST", baseUrl, headers);
-    useCustomFetcher.put = createRequestFn("PUT", baseUrl, headers);
-    useCustomFetcher.patch = createRequestFn("PATCH", baseUrl, headers);
-    useCustomFetcher.purge = createRequestFn("PURGE", baseUrl, headers);
-    useCustomFetcher.link = createRequestFn("LINK", baseUrl, headers);
-    useCustomFetcher.unlink = createRequestFn("UNLINK", baseUrl, headers);
+    useCustomFetcher.get = createRequestFn("GET", baseUrl, headers, query);
+    useCustomFetcher.delete = createRequestFn(
+      "DELETE",
+      baseUrl,
+      headers,
+      query
+    );
+    useCustomFetcher.head = createRequestFn("HEAD", baseUrl, headers, query);
+    useCustomFetcher.options = createRequestFn(
+      "OPTIONS",
+      baseUrl,
+      headers,
+      query
+    );
+    useCustomFetcher.post = createRequestFn("POST", baseUrl, headers, query);
+    useCustomFetcher.put = createRequestFn("PUT", baseUrl, headers, query);
+    useCustomFetcher.patch = createRequestFn("PATCH", baseUrl, headers, query);
+    useCustomFetcher.purge = createRequestFn("PURGE", baseUrl, headers, query);
+    useCustomFetcher.link = createRequestFn("LINK", baseUrl, headers, query);
+    useCustomFetcher.unlink = createRequestFn(
+      "UNLINK",
+      baseUrl,
+      headers,
+      query
+    );
     useCustomFetcher.Config = FetcherConfig;
     return useCustomFetcher;
   };
