@@ -23,6 +23,7 @@ type FetcherContextType = {
   attempts?: number;
   attemptInterval?: number;
   revalidateOnFocus?: boolean;
+  query?: any;
 };
 
 const FetcherContext = createContext<FetcherContextType>({
@@ -31,6 +32,7 @@ const FetcherContext = createContext<FetcherContextType>({
   // By default its 5 seconds
   attemptInterval: 5,
   revalidateOnFocus: false,
+  query: {},
 });
 
 type FetcherType<FetchDataType, BodyType> = {
@@ -112,6 +114,7 @@ type FetcherType<FetchDataType, BodyType> = {
       | "LINK"
       | "UNLINK";
     headers?: Headers | object;
+    query?: any;
     body?: BodyType;
     /**
      * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -205,6 +208,10 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
       | "LINK"
       | "UNLINK";
     headers?: Headers | object;
+    /**
+     * Request query params
+     */
+    query?: any;
     body?: BodyType;
     /**
      * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -351,6 +358,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     url = "/",
     default: def,
     config = {
+      query: {},
       baseUrl: undefined,
       method: "GET",
       headers: {} as Headers,
@@ -379,14 +387,46 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     : // `url` will be required in init if it is an object
       init;
 
-  const realUrl =
+  const [reqQuery, setReqQuery] = useState({
+    ...ctx.query,
+    ...config.query,
+  });
+
+  useEffect(() => {
+    setReqQuery({
+      ...ctx.query,
+      ...config.query,
+    });
+  }, [JSON.stringify(ctx.query), JSON.stringify(config.query), url]);
+
+  const rawUrl =
     (typeof config.baseUrl === "undefined"
       ? typeof ctx.baseUrl === "undefined"
         ? ""
         : ctx.baseUrl
       : config.baseUrl) + url;
 
-  const resolvedKey = realUrl.split("?")[0];
+  const reqQueryString = Object.keys(reqQuery)
+    .map((q) => [q, reqQuery[q]].join("="))
+    .join("&");
+
+  const realUrl =
+    rawUrl +
+    (rawUrl.includes("?") ? `&${reqQueryString}` : "?" + reqQueryString);
+
+  const [resolvedKey, qp] = realUrl.split("?");
+  useEffect(() => {
+    // Getting
+    qp.split("&").forEach((q) => {
+      const [key, value] = q.split("=");
+      if (reqQuery[key] !== value) {
+        setReqQuery((previousQuery: any) => ({
+          ...previousQuery,
+          [key]: value,
+        }));
+      }
+    });
+  }, [JSON.stringify(reqQuery)]);
 
   const [data, setData] = useState<FetchDataType | undefined>(
     // Saved to base url of request without query params
@@ -552,20 +592,31 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
   const stringDeps = JSON.stringify(
     // We ignore children and resolver
-    Object.assign(ctx, { children: undefined }, { resolver: undefined })
+    Object.assign(
+      ctx,
+      { children: undefined },
+      { resolver: undefined },
+      { reqQuery }
+    )
   );
 
   useEffect(() => {
-    if (auto) {
-      setLoading(true);
-      fetchData();
-    } else {
-      if (typeof data === "undefined") {
-        setData(def);
+    const tm = setTimeout(() => {
+      if (auto) {
+        setLoading(true);
+        fetchData();
+      } else {
+        if (typeof data === "undefined") {
+          setData(def);
+        }
+        setError(null);
+        setLoading(false);
       }
-      setError(null);
-      setLoading(false);
-    }
+    }, 0);
+
+    return () => {
+      clearTimeout(tm);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, stringDeps, ctx.children, refresh, JSON.stringify(config)]);
 
@@ -610,7 +661,8 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       ...config,
       headers: requestHeaders,
       body: requestBody,
-      url: realUrl,
+      url: resolvedKey,
+      query: reqQuery,
     },
     response,
   } as unknown as {
@@ -647,6 +699,7 @@ useFetcher.extend = function extendFetcher(props: FetcherContextType = {}) {
     baseUrl = undefined as any,
     headers = {} as Headers,
     body = {},
+    query = {},
     // json by default
     resolver,
   } = props;
@@ -701,19 +754,25 @@ useFetcher.extend = function extendFetcher(props: FetcherContextType = {}) {
     baseUrl,
     headers,
     body,
+    query,
   };
 
   // Creating methods for fetcher.extend
-  useCustomFetcher.get = createRequestFn("GET", baseUrl, headers);
-  useCustomFetcher.delete = createRequestFn("DELETE", baseUrl, headers);
-  useCustomFetcher.head = createRequestFn("HEAD", baseUrl, headers);
-  useCustomFetcher.options = createRequestFn("OPTIONS", baseUrl, headers);
-  useCustomFetcher.post = createRequestFn("POST", baseUrl, headers);
-  useCustomFetcher.put = createRequestFn("PUT", baseUrl, headers);
-  useCustomFetcher.patch = createRequestFn("PATCH", baseUrl, headers);
-  useCustomFetcher.purge = createRequestFn("PURGE", baseUrl, headers);
-  useCustomFetcher.link = createRequestFn("LINK", baseUrl, headers);
-  useCustomFetcher.unlink = createRequestFn("UNLINK", baseUrl, headers);
+  useCustomFetcher.get = createRequestFn("GET", baseUrl, headers, query);
+  useCustomFetcher.delete = createRequestFn("DELETE", baseUrl, headers, query);
+  useCustomFetcher.head = createRequestFn("HEAD", baseUrl, headers, query);
+  useCustomFetcher.options = createRequestFn(
+    "OPTIONS",
+    baseUrl,
+    headers,
+    query
+  );
+  useCustomFetcher.post = createRequestFn("POST", baseUrl, headers, query);
+  useCustomFetcher.put = createRequestFn("PUT", baseUrl, headers, query);
+  useCustomFetcher.patch = createRequestFn("PATCH", baseUrl, headers, query);
+  useCustomFetcher.purge = createRequestFn("PURGE", baseUrl, headers, query);
+  useCustomFetcher.link = createRequestFn("LINK", baseUrl, headers, query);
+  useCustomFetcher.unlink = createRequestFn("UNLINK", baseUrl, headers, query);
 
   useCustomFetcher.Config = FetcherConfig;
 

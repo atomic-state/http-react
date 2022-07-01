@@ -24,12 +24,13 @@ declare const fetcher: {
     /**
      * Extend the fetcher object
      */
-    extend({ baseUrl, headers, body, resolver, }?: FetcherExtendConfig): {
+    extend({ baseUrl, headers, body, query, resolver, }?: FetcherExtendConfig): {
         (): void;
         config: {
             baseUrl: string;
             headers: object | Headers;
             body: any;
+            query: any;
         };
         get: import("./shared").RequestWithBody;
         delete: import("./shared").RequestWithBody;

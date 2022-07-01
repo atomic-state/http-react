@@ -33,6 +33,7 @@ fetcher.extend = function extendFetcher({
   baseUrl = "",
   headers = {} as Headers,
   body = {},
+  query = {},
   // json by default
   resolver = (d) => d.json(),
 }: FetcherExtendConfig = {}) {
@@ -41,19 +42,20 @@ fetcher.extend = function extendFetcher({
     baseUrl,
     headers,
     body,
+    query,
   };
 
   // Creating methods for fetcher.extend
-  customFetcher.get = createRequestFn("GET", baseUrl, headers);
-  customFetcher.delete = createRequestFn("DELETE", baseUrl, headers);
-  customFetcher.head = createRequestFn("HEAD", baseUrl, headers);
-  customFetcher.options = createRequestFn("OPTIONS", baseUrl, headers);
-  customFetcher.post = createRequestFn("POST", baseUrl, headers);
-  customFetcher.put = createRequestFn("PUT", baseUrl, headers);
-  customFetcher.patch = createRequestFn("PATCH", baseUrl, headers);
-  customFetcher.purge = createRequestFn("PURGE", baseUrl, headers);
-  customFetcher.link = createRequestFn("LINK", baseUrl, headers);
-  customFetcher.unlink = createRequestFn("UNLINK", baseUrl, headers);
+  customFetcher.get = createRequestFn("GET", baseUrl, headers, query);
+  customFetcher.delete = createRequestFn("DELETE", baseUrl, headers, query);
+  customFetcher.head = createRequestFn("HEAD", baseUrl, headers, query);
+  customFetcher.options = createRequestFn("OPTIONS", baseUrl, headers, query);
+  customFetcher.post = createRequestFn("POST", baseUrl, headers, query);
+  customFetcher.put = createRequestFn("PUT", baseUrl, headers, query);
+  customFetcher.patch = createRequestFn("PATCH", baseUrl, headers, query);
+  customFetcher.purge = createRequestFn("PURGE", baseUrl, headers, query);
+  customFetcher.link = createRequestFn("LINK", baseUrl, headers, query);
+  customFetcher.unlink = createRequestFn("UNLINK", baseUrl, headers, query);
 
   return customFetcher;
 };

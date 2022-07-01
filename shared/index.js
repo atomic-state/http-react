@@ -51,41 +51,53 @@ exports.createRequestFn = void 0;
 /**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
  */
-function createRequestFn(method, baseUrl, $headers) {
+function createRequestFn(method, baseUrl, $headers, q) {
     return function (url, init) {
         if (init === void 0) { init = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var def, _a, resolver, _b, c, _c, onResolve, _d, onError, _e, headers, body, formatBody, reqConfig, r, req, data, err_1;
-            return __generator(this, function (_f) {
-                switch (_f.label) {
+            var def, _a, resolver, _b, c, _c, onResolve, _d, onError, query, _e, _f, qp, reqQueryString, _g, headers, body, formatBody, reqConfig, r, req, data, err_1;
+            return __generator(this, function (_h) {
+                switch (_h.label) {
                     case 0:
                         def = init.default, _a = init.resolver, resolver = _a === void 0 ? function (e) { return e.json(); } : _a, _b = init.config, c = _b === void 0 ? {} : _b, _c = init.onResolve, onResolve = _c === void 0 ? function () { } : _c, _d = init.onError, onError = _d === void 0 ? function () { } : _d;
-                        _e = c.headers, headers = _e === void 0 ? {} : _e, body = c.body, formatBody = c.formatBody;
+                        query = __assign(__assign({}, q), c.query);
+                        _e = url.split("?"), _f = _e[1], qp = _f === void 0 ? "" : _f;
+                        qp.split("&").forEach(function (q) {
+                            var _a;
+                            var _b = q.split("="), key = _b[0], value = _b[1];
+                            if (query[key] !== value) {
+                                query = __assign(__assign({}, query), (_a = {}, _a[key] = value, _a));
+                            }
+                        });
+                        reqQueryString = Object.keys(query)
+                            .map(function (q) { return [q, query[q]].join("="); })
+                            .join("&");
+                        _g = c.headers, headers = _g === void 0 ? {} : _g, body = c.body, formatBody = c.formatBody;
                         reqConfig = {
                             method: method,
-                            headers: __assign(__assign({ 'Content-Type': 'application/json' }, $headers), headers),
+                            headers: __assign(__assign({ "Content-Type": "application/json" }, $headers), headers),
                             body: (method === null || method === void 0 ? void 0 : method.match(/(POST|PUT|DELETE|PATCH)/))
-                                ? typeof formatBody === 'function'
-                                    ? formatBody((typeof FormData !== 'undefined' && body instanceof FormData
+                                ? typeof formatBody === "function"
+                                    ? formatBody((typeof FormData !== "undefined" && body instanceof FormData
                                         ? body
                                         : body))
                                     : formatBody === false ||
-                                        (typeof FormData !== 'undefined' && body instanceof FormData)
+                                        (typeof FormData !== "undefined" && body instanceof FormData)
                                         ? body
                                         : JSON.stringify(body)
-                                : undefined
+                                : undefined,
                         };
                         r = undefined;
-                        _f.label = 1;
+                        _h.label = 1;
                     case 1:
-                        _f.trys.push([1, 4, , 5]);
-                        return [4 /*yield*/, fetch("".concat(baseUrl || '').concat(url), reqConfig)];
+                        _h.trys.push([1, 4, , 5]);
+                        return [4 /*yield*/, fetch("".concat(baseUrl || "").concat(url).concat(url.includes("?") ? "&".concat(reqQueryString) : "?".concat(reqQueryString)), reqConfig)];
                     case 2:
-                        req = _f.sent();
+                        req = _h.sent();
                         r = req;
                         return [4 /*yield*/, resolver(req)];
                     case 3:
-                        data = _f.sent();
+                        data = _h.sent();
                         if ((req === null || req === void 0 ? void 0 : req.status) >= 400) {
                             onError(true);
                             return [2 /*return*/, {
@@ -93,7 +105,7 @@ function createRequestFn(method, baseUrl, $headers) {
                                     data: def,
                                     error: true,
                                     code: req === null || req === void 0 ? void 0 : req.status,
-                                    config: __assign({ url: "".concat(baseUrl || '').concat(url) }, reqConfig)
+                                    config: __assign(__assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig), { query: query }),
                                 }];
                         }
                         else {
@@ -103,19 +115,19 @@ function createRequestFn(method, baseUrl, $headers) {
                                     data: data,
                                     error: false,
                                     code: req === null || req === void 0 ? void 0 : req.status,
-                                    config: __assign({ url: "".concat(baseUrl || '').concat(url) }, reqConfig)
+                                    config: __assign(__assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig), { query: query }),
                                 }];
                         }
                         return [3 /*break*/, 5];
                     case 4:
-                        err_1 = _f.sent();
+                        err_1 = _h.sent();
                         onError(err_1);
                         return [2 /*return*/, {
                                 res: r,
                                 data: def,
                                 error: true,
                                 code: r === null || r === void 0 ? void 0 : r.status,
-                                config: __assign({ url: "".concat(baseUrl || '').concat(url) }, reqConfig)
+                                config: __assign(__assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig), { query: query }),
                             }];
                     case 5: return [2 /*return*/];
                 }
