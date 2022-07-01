@@ -7,8 +7,137 @@
  */
 
 import * as React from "react";
-import { useState, useEffect, createContext, useContext } from "react";
-import { CustomResponse, createRequestFn } from "./shared";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
+
+type CustomResponse<T> = Omit<Response, "json"> & {
+  json(): Promise<T>;
+};
+
+type RequestWithBody = <R = any, BodyType = any>(
+  url: string,
+  reqConfig?: {
+    default?: R;
+    config?: {
+      query?: any;
+      formatBody?(b: BodyType): any;
+      headers?: any;
+      body?: BodyType;
+    };
+    resolver?: (r: CustomResponse<R>) => any;
+    onError?(error: Error): void;
+    onResolve?(data: R, res: CustomResponse<R>): void;
+  }
+) => Promise<{
+  error: any;
+  data: R;
+  config: any;
+  code: number;
+  res: CustomResponse<R>;
+}>;
+
+/**
+ * Creates a new request function. This is for usage with fetcher and fetcher.extend
+ */
+function createRequestFn(
+  method: string,
+  baseUrl: string,
+  $headers: any,
+  q?: any
+): RequestWithBody {
+  return async function (url, init = {}) {
+    const {
+      default: def,
+      resolver = (e) => e.json(),
+      config: c = {},
+      onResolve = () => {},
+      onError = () => {},
+    } = init;
+
+    let query = {
+      ...q,
+      ...c.query,
+    };
+
+    const [, qp = ""] = url.split("?");
+
+    qp.split("&").forEach((q) => {
+      const [key, value] = q.split("=");
+      if (query[key] !== value) {
+        query = {
+          ...query,
+          [key]: value,
+        };
+      }
+    });
+
+    const reqQueryString = Object.keys(query)
+      .map((q) => [q, query[q]].join("="))
+      .join("&");
+
+    const { headers = {}, body, formatBody } = c;
+
+    const reqConfig = {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...$headers,
+        ...headers,
+      },
+      body: method?.match(/(POST|PUT|DELETE|PATCH)/)
+        ? typeof formatBody === "function"
+          ? formatBody(
+              (typeof FormData !== "undefined" && body instanceof FormData
+                ? body
+                : body) as any
+            )
+          : formatBody === false ||
+            (typeof FormData !== "undefined" && body instanceof FormData)
+          ? body
+          : JSON.stringify(body)
+        : undefined,
+    };
+
+    let r = undefined as any;
+    try {
+      const req = await fetch(
+        `${baseUrl || ""}${url}${
+          url.includes("?") ? `&${reqQueryString}` : `?${reqQueryString}`
+        }`,
+        reqConfig
+      );
+      r = req;
+      const data = await resolver(req);
+      if (req?.status >= 400) {
+        onError(true as any);
+        return {
+          res: req,
+          data: def,
+          error: true,
+          code: req?.status,
+          config: { url: `${baseUrl || ""}${url}`, ...reqConfig, query },
+        };
+      } else {
+        onResolve(data, req);
+        return {
+          res: req,
+          data: data,
+          error: false,
+          code: req?.status,
+          config: { url: `${baseUrl || ""}${url}`, ...reqConfig, query },
+        };
+      }
+    } catch (err) {
+      onError(err);
+      return {
+        res: r,
+        data: def,
+        error: true,
+        code: r?.status,
+        config: { url: `${baseUrl || ""}${url}`, ...reqConfig, query },
+      };
+    }
+  } as RequestWithBody;
+}
 
 type FetcherContextType = {
   headers?: any;
@@ -24,6 +153,10 @@ type FetcherContextType = {
   attemptInterval?: number;
   revalidateOnFocus?: boolean;
   query?: any;
+  onOnline?: (e: { cancel: () => void }) => void;
+  onOffline?: () => void;
+  online?: boolean;
+  retryOnReconnect?: boolean;
 };
 
 const FetcherContext = createContext<FetcherContextType>({
@@ -33,6 +166,10 @@ const FetcherContext = createContext<FetcherContextType>({
   attemptInterval: 5,
   revalidateOnFocus: false,
   query: {},
+  onOffline() {},
+  onOnline() {},
+  online: true,
+  retryOnReconnect: true,
 });
 
 type FetcherType<FetchDataType, BodyType> = {
@@ -91,6 +228,18 @@ type FetcherType<FetchDataType, BodyType> = {
    * If a request should be made when the tab is focused. This currently works on browsers
    */
   revalidateOnFocus?: boolean;
+  /**
+   * This will run when connection is interrupted
+   */
+  onOffline?: () => void;
+  /**
+   * This will run when connection is restored
+   */
+  onOnline?: (e: { cancel: () => void }) => void;
+  /**
+   * If the request should retry when connection is restored
+   */
+  retryOnReconnect?: boolean;
   /**
    * Request configuration
    */
@@ -184,6 +333,18 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
    * If a request should be made when the tab is focused. This currently works on browsers
    */
   revalidateOnFocus?: boolean;
+  /**
+   * This will run when connection is interrupted
+   */
+  onOffline?: () => void;
+  /**
+   * This will run when connection is restored
+   */
+  onOnline?: (e: { cancel: () => void }) => void;
+  /**
+   * If the request should retry when connection is restored
+   */
+  retryOnReconnect?: boolean;
   /**
    * Request configuration
    */
@@ -355,6 +516,9 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 ) => {
   const ctx = useContext(FetcherContext);
   const {
+    onOnline = ctx.onOnline,
+    onOffline = ctx.onOffline,
+    retryOnReconnect = ctx.retryOnReconnect,
     url = "/",
     default: def,
     config = {
@@ -415,17 +579,32 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     (rawUrl.includes("?") ? `&${reqQueryString}` : "?" + reqQueryString);
 
   const [resolvedKey, qp] = realUrl.split("?");
+  const [queryReady, setQueryReady] = useState(false);
+
   useEffect(() => {
-    // Getting
-    qp.split("&").forEach((q) => {
+    setQueryReady(false);
+    let queryParamsFromString: any = {};
+    // getting query params from passed url
+    const queryParts = qp.split("&");
+    queryParts.forEach((q, i) => {
       const [key, value] = q.split("=");
-      if (reqQuery[key] !== value) {
-        setReqQuery((previousQuery: any) => ({
-          ...previousQuery,
-          [key]: value,
-        }));
+      if (queryParamsFromString[key] !== value) {
+        queryParamsFromString[key] = value;
       }
     });
+
+    const tm1 = setTimeout(() => {
+      setReqQuery((previousQuery: any) => ({
+        ...previousQuery,
+        ...queryParamsFromString,
+      }));
+      clearTimeout(tm1);
+    }, 0);
+
+    const tm = setTimeout(() => {
+      setQueryReady(true);
+      clearTimeout(tm);
+    }, 0);
   }, [JSON.stringify(reqQuery)]);
 
   const [data, setData] = useState<FetchDataType | undefined>(
@@ -563,6 +742,43 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   }
 
   useEffect(() => {
+    function backOnline() {
+      let willCancel = false;
+      function cancelReconectionAttempt() {
+        willCancel = true;
+      }
+      (onOnline as any)({ cancel: cancelReconectionAttempt });
+      if (!willCancel) {
+        reValidate();
+      }
+    }
+    if (typeof window !== "undefined") {
+      if ("addEventListener" in window) {
+        if (retryOnReconnect) {
+          window.addEventListener("online", backOnline);
+          return () => {
+            window.removeEventListener("online", backOnline);
+          };
+        }
+      }
+    }
+  }, [onOnline, retryOnReconnect]);
+
+  useEffect(() => {
+    function wentOffline() {
+      (onOffline as any)();
+    }
+    if (typeof window !== "undefined") {
+      if ("addEventListener" in window) {
+        window.addEventListener("offline", wentOffline);
+        return () => {
+          window.removeEventListener("offline", wentOffline);
+        };
+      }
+    }
+  }, [onOnline]);
+
+  useEffect(() => {
     setRequestHeades((r) => ({
       ...r,
       ...ctx.headers,
@@ -602,15 +818,17 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
   useEffect(() => {
     const tm = setTimeout(() => {
-      if (auto) {
-        setLoading(true);
-        fetchData();
-      } else {
-        if (typeof data === "undefined") {
-          setData(def);
+      if (queryReady) {
+        if (auto) {
+          setLoading(true);
+          fetchData();
+        } else {
+          if (typeof data === "undefined") {
+            setData(def);
+          }
+          setError(null);
+          setLoading(false);
         }
-        setError(null);
-        setLoading(false);
       }
     }, 0);
 
@@ -618,7 +836,14 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       clearTimeout(tm);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, stringDeps, ctx.children, refresh, JSON.stringify(config)]);
+  }, [
+    url,
+    stringDeps,
+    ctx.children,
+    refresh,
+    JSON.stringify(config),
+    queryReady,
+  ]);
 
   useEffect(() => {
     if (revalidateOnFocus) {
