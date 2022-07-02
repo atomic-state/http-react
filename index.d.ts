@@ -6,7 +6,27 @@
  * LICENSE file in the root directory of this source tree.
  */
 import * as React from "react";
-import { CustomResponse } from "./shared";
+declare type CustomResponse<T> = Omit<Response, "json"> & {
+    json(): Promise<T>;
+};
+declare type RequestWithBody = <R = any, BodyType = any>(url: string, reqConfig?: {
+    default?: R;
+    config?: {
+        query?: any;
+        formatBody?(b: BodyType): any;
+        headers?: any;
+        body?: BodyType;
+    };
+    resolver?: (r: CustomResponse<R>) => any;
+    onError?(error: Error): void;
+    onResolve?(data: R, res: CustomResponse<R>): void;
+}) => Promise<{
+    error: any;
+    data: R;
+    config: any;
+    code: number;
+    res: CustomResponse<R>;
+}>;
 declare type FetcherContextType = {
     headers?: any;
     baseUrl?: string;
@@ -21,6 +41,12 @@ declare type FetcherContextType = {
     attemptInterval?: number;
     revalidateOnFocus?: boolean;
     query?: any;
+    onOnline?: (e: {
+        cancel: () => void;
+    }) => void;
+    onOffline?: () => void;
+    online?: boolean;
+    retryOnReconnect?: boolean;
 };
 declare type FetcherType<FetchDataType, BodyType> = {
     /**
@@ -78,6 +104,20 @@ declare type FetcherType<FetchDataType, BodyType> = {
      * If a request should be made when the tab is focused. This currently works on browsers
      */
     revalidateOnFocus?: boolean;
+    /**
+     * This will run when connection is interrupted
+     */
+    onOffline?: () => void;
+    /**
+     * This will run when connection is restored
+     */
+    onOnline?: (e: {
+        cancel: () => void;
+    }) => void;
+    /**
+     * If the request should retry when connection is restored
+     */
+    retryOnReconnect?: boolean;
     /**
      * Request configuration
      */
@@ -160,6 +200,20 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
      */
     revalidateOnFocus?: boolean;
     /**
+     * This will run when connection is interrupted
+     */
+    onOffline?: () => void;
+    /**
+     * This will run when connection is restored
+     */
+    onOnline?: (e: {
+        cancel: () => void;
+    }) => void;
+    /**
+     * If the request should retry when connection is restored
+     */
+    retryOnReconnect?: boolean;
+    /**
      * Request configuration
      */
     config?: {
@@ -236,16 +290,16 @@ declare const useFetcher: {
         };
         response: CustomResponse<FetchDataType>;
     };
-    get: import("./shared").RequestWithBody;
-    delete: import("./shared").RequestWithBody;
-    head: import("./shared").RequestWithBody;
-    options: import("./shared").RequestWithBody;
-    post: import("./shared").RequestWithBody;
-    put: import("./shared").RequestWithBody;
-    patch: import("./shared").RequestWithBody;
-    purge: import("./shared").RequestWithBody;
-    link: import("./shared").RequestWithBody;
-    unlink: import("./shared").RequestWithBody;
+    get: RequestWithBody;
+    delete: RequestWithBody;
+    head: RequestWithBody;
+    options: RequestWithBody;
+    post: RequestWithBody;
+    put: RequestWithBody;
+    patch: RequestWithBody;
+    purge: RequestWithBody;
+    link: RequestWithBody;
+    unlink: RequestWithBody;
     /**
      * Extend the useFetcher hook
      */
@@ -291,16 +345,16 @@ declare const useFetcher: {
             body: object;
             query: any;
         };
-        get: import("./shared").RequestWithBody;
-        delete: import("./shared").RequestWithBody;
-        head: import("./shared").RequestWithBody;
-        options: import("./shared").RequestWithBody;
-        post: import("./shared").RequestWithBody;
-        put: import("./shared").RequestWithBody;
-        patch: import("./shared").RequestWithBody;
-        purge: import("./shared").RequestWithBody;
-        link: import("./shared").RequestWithBody;
-        unlink: import("./shared").RequestWithBody;
+        get: RequestWithBody;
+        delete: RequestWithBody;
+        head: RequestWithBody;
+        options: RequestWithBody;
+        post: RequestWithBody;
+        put: RequestWithBody;
+        patch: RequestWithBody;
+        purge: RequestWithBody;
+        link: RequestWithBody;
+        unlink: RequestWithBody;
         Config: typeof FetcherConfig;
     };
 };
@@ -341,16 +395,16 @@ export declare const fetcher: {
         };
         response: CustomResponse<FetchDataType>;
     };
-    get: import("./shared").RequestWithBody;
-    delete: import("./shared").RequestWithBody;
-    head: import("./shared").RequestWithBody;
-    options: import("./shared").RequestWithBody;
-    post: import("./shared").RequestWithBody;
-    put: import("./shared").RequestWithBody;
-    patch: import("./shared").RequestWithBody;
-    purge: import("./shared").RequestWithBody;
-    link: import("./shared").RequestWithBody;
-    unlink: import("./shared").RequestWithBody;
+    get: RequestWithBody;
+    delete: RequestWithBody;
+    head: RequestWithBody;
+    options: RequestWithBody;
+    post: RequestWithBody;
+    put: RequestWithBody;
+    patch: RequestWithBody;
+    purge: RequestWithBody;
+    link: RequestWithBody;
+    unlink: RequestWithBody;
     /**
      * Extend the useFetcher hook
      */
@@ -396,16 +450,16 @@ export declare const fetcher: {
             body: object;
             query: any;
         };
-        get: import("./shared").RequestWithBody;
-        delete: import("./shared").RequestWithBody;
-        head: import("./shared").RequestWithBody;
-        options: import("./shared").RequestWithBody;
-        post: import("./shared").RequestWithBody;
-        put: import("./shared").RequestWithBody;
-        patch: import("./shared").RequestWithBody;
-        purge: import("./shared").RequestWithBody;
-        link: import("./shared").RequestWithBody;
-        unlink: import("./shared").RequestWithBody;
+        get: RequestWithBody;
+        delete: RequestWithBody;
+        head: RequestWithBody;
+        options: RequestWithBody;
+        post: RequestWithBody;
+        put: RequestWithBody;
+        patch: RequestWithBody;
+        purge: RequestWithBody;
+        link: RequestWithBody;
+        unlink: RequestWithBody;
         Config: typeof FetcherConfig;
     };
 };

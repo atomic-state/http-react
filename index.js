@@ -68,7 +68,93 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.FetcherConfig = void 0;
 var React = require("react");
 var react_1 = require("react");
-var shared_1 = require("./shared");
+/**
+ * Creates a new request function. This is for usage with fetcher and fetcher.extend
+ */
+function createRequestFn(method, baseUrl, $headers, q) {
+    return function (url, init) {
+        if (init === void 0) { init = {}; }
+        return __awaiter(this, void 0, void 0, function () {
+            var def, _a, resolver, _b, c, _c, onResolve, _d, onError, query, _e, _f, qp, reqQueryString, _g, headers, body, formatBody, reqConfig, r, req, data, err_1;
+            return __generator(this, function (_h) {
+                switch (_h.label) {
+                    case 0:
+                        def = init.default, _a = init.resolver, resolver = _a === void 0 ? function (e) { return e.json(); } : _a, _b = init.config, c = _b === void 0 ? {} : _b, _c = init.onResolve, onResolve = _c === void 0 ? function () { } : _c, _d = init.onError, onError = _d === void 0 ? function () { } : _d;
+                        query = __assign(__assign({}, q), c.query);
+                        _e = url.split("?"), _f = _e[1], qp = _f === void 0 ? "" : _f;
+                        qp.split("&").forEach(function (q) {
+                            var _a;
+                            var _b = q.split("="), key = _b[0], value = _b[1];
+                            if (query[key] !== value) {
+                                query = __assign(__assign({}, query), (_a = {}, _a[key] = value, _a));
+                            }
+                        });
+                        reqQueryString = Object.keys(query)
+                            .map(function (q) { return [q, query[q]].join("="); })
+                            .join("&");
+                        _g = c.headers, headers = _g === void 0 ? {} : _g, body = c.body, formatBody = c.formatBody;
+                        reqConfig = {
+                            method: method,
+                            headers: __assign(__assign({ "Content-Type": "application/json" }, $headers), headers),
+                            body: (method === null || method === void 0 ? void 0 : method.match(/(POST|PUT|DELETE|PATCH)/))
+                                ? typeof formatBody === "function"
+                                    ? formatBody((typeof FormData !== "undefined" && body instanceof FormData
+                                        ? body
+                                        : body))
+                                    : formatBody === false ||
+                                        (typeof FormData !== "undefined" && body instanceof FormData)
+                                        ? body
+                                        : JSON.stringify(body)
+                                : undefined,
+                        };
+                        r = undefined;
+                        _h.label = 1;
+                    case 1:
+                        _h.trys.push([1, 4, , 5]);
+                        return [4 /*yield*/, fetch("".concat(baseUrl || "").concat(url).concat(url.includes("?") ? "&".concat(reqQueryString) : "?".concat(reqQueryString)), reqConfig)];
+                    case 2:
+                        req = _h.sent();
+                        r = req;
+                        return [4 /*yield*/, resolver(req)];
+                    case 3:
+                        data = _h.sent();
+                        if ((req === null || req === void 0 ? void 0 : req.status) >= 400) {
+                            onError(true);
+                            return [2 /*return*/, {
+                                    res: req,
+                                    data: def,
+                                    error: true,
+                                    code: req === null || req === void 0 ? void 0 : req.status,
+                                    config: __assign(__assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig), { query: query }),
+                                }];
+                        }
+                        else {
+                            onResolve(data, req);
+                            return [2 /*return*/, {
+                                    res: req,
+                                    data: data,
+                                    error: false,
+                                    code: req === null || req === void 0 ? void 0 : req.status,
+                                    config: __assign(__assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig), { query: query }),
+                                }];
+                        }
+                        return [3 /*break*/, 5];
+                    case 4:
+                        err_1 = _h.sent();
+                        onError(err_1);
+                        return [2 /*return*/, {
+                                res: r,
+                                data: def,
+                                error: true,
+                                code: r === null || r === void 0 ? void 0 : r.status,
+                                config: __assign(__assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig), { query: query }),
+                            }];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+}
 var FetcherContext = (0, react_1.createContext)({
     defaults: {},
     attempts: 0,
@@ -76,6 +162,10 @@ var FetcherContext = (0, react_1.createContext)({
     attemptInterval: 5,
     revalidateOnFocus: false,
     query: {},
+    onOffline: function () { },
+    onOnline: function () { },
+    online: true,
+    retryOnReconnect: true,
 });
 /**
  * @deprecated Use the `useFetcher` hook instead
@@ -88,7 +178,7 @@ var Fetcher = function (_a) {
     function fetchData() {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var json, _data, code, err_1;
+            var json, _data, code, err_2;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -120,10 +210,10 @@ var Fetcher = function (_a) {
                         }
                         return [3 /*break*/, 5];
                     case 3:
-                        err_1 = _b.sent();
+                        err_2 = _b.sent();
                         setData(undefined);
-                        setError(new Error(err_1));
-                        onError(err_1);
+                        setError(new Error(err_2));
+                        onError(err_2);
                         return [3 /*break*/, 5];
                     case 4:
                         setLoading(false);
@@ -194,17 +284,17 @@ var useFetcher = function (init, options) {
         ? __assign({ 
             // Pass init as the url if init is a string
             url: init }, options) : // `url` will be required in init if it is an object
-        init, _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? {
+        init, _b = _a.onOnline, onOnline = _b === void 0 ? ctx.onOnline : _b, _c = _a.onOffline, onOffline = _c === void 0 ? ctx.onOffline : _c, _d = _a.retryOnReconnect, retryOnReconnect = _d === void 0 ? ctx.retryOnReconnect : _d, _e = _a.url, url = _e === void 0 ? "/" : _e, def = _a.default, _f = _a.config, config = _f === void 0 ? {
         query: {},
         baseUrl: undefined,
         method: "GET",
         headers: {},
         body: undefined,
         formatBody: false,
-    } : _c, _d = _a.resolver, resolver = _d === void 0 ? typeof ctx.resolver === "function"
+    } : _f, _g = _a.resolver, resolver = _g === void 0 ? typeof ctx.resolver === "function"
         ? ctx.resolver
-        : function (d) { return d.json(); } : _d, _e = _a.onError, onError = _e === void 0 ? function () { } : _e, _f = _a.auto, auto = _f === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.memory : _f, _g = _a.memory, memory = _g === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _g, _h = _a.onResolve, onResolve = _h === void 0 ? function () { } : _h, _j = _a.onAbort, onAbort = _j === void 0 ? function () { } : _j, _k = _a.refresh, refresh = _k === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _k, _l = _a.cancelOnChange, cancelOnChange = _l === void 0 ? typeof ctx.refresh === "undefined" ? false : ctx.refresh : _l, _m = _a.attempts, attempts = _m === void 0 ? ctx.attempts : _m, _o = _a.attemptInterval, attemptInterval = _o === void 0 ? ctx.attemptInterval : _o, _p = _a.revalidateOnFocus, revalidateOnFocus = _p === void 0 ? ctx.revalidateOnFocus : _p;
-    var _q = (0, react_1.useState)(__assign(__assign({}, ctx.query), config.query)), reqQuery = _q[0], setReqQuery = _q[1];
+        : function (d) { return d.json(); } : _g, _h = _a.onError, onError = _h === void 0 ? function () { } : _h, _j = _a.auto, auto = _j === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.memory : _j, _k = _a.memory, memory = _k === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _k, _l = _a.onResolve, onResolve = _l === void 0 ? function () { } : _l, _m = _a.onAbort, onAbort = _m === void 0 ? function () { } : _m, _o = _a.refresh, refresh = _o === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _o, _p = _a.cancelOnChange, cancelOnChange = _p === void 0 ? typeof ctx.refresh === "undefined" ? false : ctx.refresh : _p, _q = _a.attempts, attempts = _q === void 0 ? ctx.attempts : _q, _r = _a.attemptInterval, attemptInterval = _r === void 0 ? ctx.attemptInterval : _r, _s = _a.revalidateOnFocus, revalidateOnFocus = _s === void 0 ? ctx.revalidateOnFocus : _s;
+    var _t = (0, react_1.useState)(__assign(__assign({}, ctx.query), config.query)), reqQuery = _t[0], setReqQuery = _t[1];
     (0, react_1.useEffect)(function () {
         setReqQuery(__assign(__assign({}, ctx.query), config.query));
     }, [JSON.stringify(ctx.query), JSON.stringify(config.query), url]);
@@ -218,40 +308,49 @@ var useFetcher = function (init, options) {
         .join("&");
     var realUrl = rawUrl +
         (rawUrl.includes("?") ? "&".concat(reqQueryString) : "?" + reqQueryString);
-    var _r = realUrl.split("?"), resolvedKey = _r[0], qp = _r[1];
+    var _u = realUrl.split("?"), resolvedKey = _u[0], qp = _u[1];
+    var _v = (0, react_1.useState)(false), queryReady = _v[0], setQueryReady = _v[1];
     (0, react_1.useEffect)(function () {
-        // Getting
-        qp.split("&").forEach(function (q) {
+        setQueryReady(false);
+        var queryParamsFromString = {};
+        // getting query params from passed url
+        var queryParts = qp.split("&");
+        queryParts.forEach(function (q, i) {
             var _a = q.split("="), key = _a[0], value = _a[1];
-            if (reqQuery[key] !== value) {
-                setReqQuery(function (previousQuery) {
-                    var _a;
-                    return (__assign(__assign({}, previousQuery), (_a = {}, _a[key] = value, _a)));
-                });
+            if (queryParamsFromString[key] !== value) {
+                queryParamsFromString[key] = value;
             }
         });
+        var tm1 = setTimeout(function () {
+            setReqQuery(function (previousQuery) { return (__assign(__assign({}, previousQuery), queryParamsFromString)); });
+            clearTimeout(tm1);
+        }, 0);
+        var tm = setTimeout(function () {
+            setQueryReady(true);
+            clearTimeout(tm);
+        }, 0);
     }, [JSON.stringify(reqQuery)]);
-    var _s = (0, react_1.useState)(
+    var _w = (0, react_1.useState)(
     // Saved to base url of request without query params
-    memory ? resolvedRequests[resolvedKey] || def : def), data = _s[0], setData = _s[1];
-    var _t = (0, react_1.useState)((typeof FormData !== "undefined"
+    memory ? resolvedRequests[resolvedKey] || def : def), data = _w[0], setData = _w[1];
+    var _x = (0, react_1.useState)((typeof FormData !== "undefined"
         ? config.body instanceof FormData
             ? config.body
             : typeof ctx.body !== "undefined" || typeof config.body !== "undefined"
                 ? __assign(__assign({}, ctx.body), config.body) : undefined
-        : config.body)), requestBody = _t[0], setRequestBody = _t[1];
-    var _u = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _u[0], setRequestHeades = _u[1];
-    var _v = (0, react_1.useState)(), response = _v[0], setResponse = _v[1];
-    var _w = (0, react_1.useState)(), statusCode = _w[0], setStatusCode = _w[1];
-    var _x = (0, react_1.useState)(null), error = _x[0], setError = _x[1];
-    var _y = (0, react_1.useState)(true), loading = _y[0], setLoading = _y[1];
-    var _z = (0, react_1.useState)(0), completedAttemps = _z[0], setCompletedAttempts = _z[1];
-    var _0 = (0, react_1.useState)(new AbortController()), requestAbortController = _0[0], setRequestAbortController = _0[1];
+        : config.body)), requestBody = _x[0], setRequestBody = _x[1];
+    var _y = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _y[0], setRequestHeades = _y[1];
+    var _z = (0, react_1.useState)(), response = _z[0], setResponse = _z[1];
+    var _0 = (0, react_1.useState)(), statusCode = _0[0], setStatusCode = _0[1];
+    var _1 = (0, react_1.useState)(null), error = _1[0], setError = _1[1];
+    var _2 = (0, react_1.useState)(true), loading = _2[0], setLoading = _2[1];
+    var _3 = (0, react_1.useState)(0), completedAttemps = _3[0], setCompletedAttempts = _3[1];
+    var _4 = (0, react_1.useState)(new AbortController()), requestAbortController = _4[0], setRequestAbortController = _4[1];
     function fetchData(c) {
         var _a;
         if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var newAbortController, json, code, _data, err_2, errorString;
+            var newAbortController, json, code, _data, err_3, errorString;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -312,13 +411,13 @@ var useFetcher = function (init, options) {
                         }
                         return [3 /*break*/, 6];
                     case 4:
-                        err_2 = _b.sent();
-                        errorString = err_2 === null || err_2 === void 0 ? void 0 : err_2.toString();
+                        err_3 = _b.sent();
+                        errorString = err_3 === null || err_3 === void 0 ? void 0 : err_3.toString();
                         // Only set error if no abort
                         if (!errorString.match(/abort/i)) {
                             setData(undefined);
-                            setError(new Error(err_2));
-                            onError(err_2);
+                            setError(new Error(err_3));
+                            onError(err_3);
                         }
                         else {
                             if (!resolvedRequests[resolvedKey]) {
@@ -368,6 +467,41 @@ var useFetcher = function (init, options) {
         });
     }
     (0, react_1.useEffect)(function () {
+        function backOnline() {
+            var willCancel = false;
+            function cancelReconectionAttempt() {
+                willCancel = true;
+            }
+            onOnline({ cancel: cancelReconectionAttempt });
+            if (!willCancel) {
+                reValidate();
+            }
+        }
+        if (typeof window !== "undefined") {
+            if ("addEventListener" in window) {
+                if (retryOnReconnect) {
+                    window.addEventListener("online", backOnline);
+                    return function () {
+                        window.removeEventListener("online", backOnline);
+                    };
+                }
+            }
+        }
+    }, [onOnline, retryOnReconnect]);
+    (0, react_1.useEffect)(function () {
+        function wentOffline() {
+            onOffline();
+        }
+        if (typeof window !== "undefined") {
+            if ("addEventListener" in window) {
+                window.addEventListener("offline", wentOffline);
+                return function () {
+                    window.removeEventListener("offline", wentOffline);
+                };
+            }
+        }
+    }, [onOnline]);
+    (0, react_1.useEffect)(function () {
         setRequestHeades(function (r) { return (__assign(__assign({}, r), ctx.headers)); });
     }, [ctx.headers]);
     (0, react_1.useEffect)(function () {
@@ -394,23 +528,32 @@ var useFetcher = function (init, options) {
     Object.assign(ctx, { children: undefined }, { resolver: undefined }, { reqQuery: reqQuery }));
     (0, react_1.useEffect)(function () {
         var tm = setTimeout(function () {
-            if (auto) {
-                setLoading(true);
-                fetchData();
-            }
-            else {
-                if (typeof data === "undefined") {
-                    setData(def);
+            if (queryReady) {
+                if (auto) {
+                    setLoading(true);
+                    fetchData();
                 }
-                setError(null);
-                setLoading(false);
+                else {
+                    if (typeof data === "undefined") {
+                        setData(def);
+                    }
+                    setError(null);
+                    setLoading(false);
+                }
             }
         }, 0);
         return function () {
             clearTimeout(tm);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [url, stringDeps, ctx.children, refresh, JSON.stringify(config)]);
+    }, [
+        url,
+        stringDeps,
+        ctx.children,
+        refresh,
+        JSON.stringify(config),
+        queryReady,
+    ]);
     (0, react_1.useEffect)(function () {
         if (revalidateOnFocus) {
             if (typeof window !== "undefined") {
@@ -452,16 +595,16 @@ var useFetcher = function (init, options) {
 };
 exports.useFetcher = useFetcher;
 // Create a method for each request
-useFetcher.get = (0, shared_1.createRequestFn)("GET", "", {});
-useFetcher.delete = (0, shared_1.createRequestFn)("DELETE", "", {});
-useFetcher.head = (0, shared_1.createRequestFn)("HEAD", "", {});
-useFetcher.options = (0, shared_1.createRequestFn)("OPTIONS", "", {});
-useFetcher.post = (0, shared_1.createRequestFn)("POST", "", {});
-useFetcher.put = (0, shared_1.createRequestFn)("PUT", "", {});
-useFetcher.patch = (0, shared_1.createRequestFn)("PATCH", "", {});
-useFetcher.purge = (0, shared_1.createRequestFn)("PURGE", "", {});
-useFetcher.link = (0, shared_1.createRequestFn)("LINK", "", {});
-useFetcher.unlink = (0, shared_1.createRequestFn)("UNLINK", "", {});
+useFetcher.get = createRequestFn("GET", "", {});
+useFetcher.delete = createRequestFn("DELETE", "", {});
+useFetcher.head = createRequestFn("HEAD", "", {});
+useFetcher.options = createRequestFn("OPTIONS", "", {});
+useFetcher.post = createRequestFn("POST", "", {});
+useFetcher.put = createRequestFn("PUT", "", {});
+useFetcher.patch = createRequestFn("PATCH", "", {});
+useFetcher.purge = createRequestFn("PURGE", "", {});
+useFetcher.link = createRequestFn("LINK", "", {});
+useFetcher.unlink = createRequestFn("UNLINK", "", {});
 /**
  * Extend the useFetcher hook
  */
@@ -497,16 +640,16 @@ useFetcher.extend = function extendFetcher(props) {
         query: query,
     };
     // Creating methods for fetcher.extend
-    useCustomFetcher.get = (0, shared_1.createRequestFn)("GET", baseUrl, headers, query);
-    useCustomFetcher.delete = (0, shared_1.createRequestFn)("DELETE", baseUrl, headers, query);
-    useCustomFetcher.head = (0, shared_1.createRequestFn)("HEAD", baseUrl, headers, query);
-    useCustomFetcher.options = (0, shared_1.createRequestFn)("OPTIONS", baseUrl, headers, query);
-    useCustomFetcher.post = (0, shared_1.createRequestFn)("POST", baseUrl, headers, query);
-    useCustomFetcher.put = (0, shared_1.createRequestFn)("PUT", baseUrl, headers, query);
-    useCustomFetcher.patch = (0, shared_1.createRequestFn)("PATCH", baseUrl, headers, query);
-    useCustomFetcher.purge = (0, shared_1.createRequestFn)("PURGE", baseUrl, headers, query);
-    useCustomFetcher.link = (0, shared_1.createRequestFn)("LINK", baseUrl, headers, query);
-    useCustomFetcher.unlink = (0, shared_1.createRequestFn)("UNLINK", baseUrl, headers, query);
+    useCustomFetcher.get = createRequestFn("GET", baseUrl, headers, query);
+    useCustomFetcher.delete = createRequestFn("DELETE", baseUrl, headers, query);
+    useCustomFetcher.head = createRequestFn("HEAD", baseUrl, headers, query);
+    useCustomFetcher.options = createRequestFn("OPTIONS", baseUrl, headers, query);
+    useCustomFetcher.post = createRequestFn("POST", baseUrl, headers, query);
+    useCustomFetcher.put = createRequestFn("PUT", baseUrl, headers, query);
+    useCustomFetcher.patch = createRequestFn("PATCH", baseUrl, headers, query);
+    useCustomFetcher.purge = createRequestFn("PURGE", baseUrl, headers, query);
+    useCustomFetcher.link = createRequestFn("LINK", baseUrl, headers, query);
+    useCustomFetcher.unlink = createRequestFn("UNLINK", baseUrl, headers, query);
     useCustomFetcher.Config = FetcherConfig;
     return useCustomFetcher;
 };
