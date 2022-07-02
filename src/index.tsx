@@ -153,6 +153,7 @@ type FetcherContextType = {
   attemptInterval?: number;
   revalidateOnFocus?: boolean;
   query?: any;
+  params?: any;
   onOnline?: (e: { cancel: () => void }) => void;
   onOffline?: () => void;
   online?: boolean;
@@ -166,6 +167,7 @@ const FetcherContext = createContext<FetcherContextType>({
   attemptInterval: 5,
   revalidateOnFocus: false,
   query: {},
+  params: {},
   onOffline() {},
   onOnline() {},
   online: true,
@@ -264,6 +266,10 @@ type FetcherType<FetchDataType, BodyType> = {
       | "UNLINK";
     headers?: Headers | object;
     query?: any;
+    /**
+     * URL params
+     */
+    params?: any;
     body?: BodyType;
     /**
      * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -373,6 +379,10 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
      * Request query params
      */
     query?: any;
+    /**
+     * URL params
+     */
+    params?: any;
     body?: BodyType;
     /**
      * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -523,6 +533,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     default: def,
     config = {
       query: {},
+      params: {},
       baseUrl: undefined,
       method: "GET",
       headers: {} as Headers,
@@ -556,6 +567,18 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     ...config.query,
   });
 
+  const [reqParams, setReqParams] = useState({
+    ...ctx.params,
+    ...config.params,
+  });
+
+  useEffect(() => {
+    setReqParams({
+      ...ctx.params,
+      ...config.params,
+    });
+  }, [JSON.stringify({ ...ctx.params, ...config.params })]);
+
   useEffect(() => {
     setReqQuery({
       ...ctx.query,
@@ -570,13 +593,44 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         : ctx.baseUrl
       : config.baseUrl) + url;
 
+  const urlWithParams = React.useMemo(
+    () =>
+      rawUrl
+        .split("/")
+        .map((segment) => {
+          if (segment.startsWith("[") && segment.endsWith("]")) {
+            const paramName = segment.replace(/\[|\]/g, "");
+            if (!(paramName in reqParams)) {
+              console.warn(
+                `Para '${paramName}' does not exist in request configuration for '${url}'`
+              );
+              return paramName;
+            }
+            return reqParams[segment.replace(/\[|\]/g, "")];
+          } else if (segment.startsWith(":")) {
+            const paramName = segment.split("").slice(1).join("");
+            if (!(paramName in reqParams)) {
+              console.warn(
+                `Para '${paramName}' does not exist in request configuration for '${url}'`
+              );
+              return paramName;
+            }
+            return reqParams[paramName];
+          } else {
+            return segment;
+          }
+        })
+        .join("/"),
+    [JSON.stringify(reqParams), config.baseUrl, ctx.baseUrl, url]
+  );
+
   const reqQueryString = Object.keys(reqQuery)
     .map((q) => [q, reqQuery[q]].join("="))
     .join("&");
 
   const realUrl =
-    rawUrl +
-    (rawUrl.includes("?") ? `&${reqQueryString}` : "?" + reqQueryString);
+    urlWithParams +
+    (urlWithParams.includes("?") ? `&${reqQueryString}` : "?" + reqQueryString);
 
   const [resolvedKey, qp] = realUrl.split("?");
   const [queryReady, setQueryReady] = useState(false);
@@ -812,7 +866,8 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       ctx,
       { children: undefined },
       { resolver: undefined },
-      { reqQuery }
+      { reqQuery },
+      { reqParams }
     )
   );
 
@@ -884,6 +939,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     },
     config: {
       ...config,
+      params: reqParams,
       headers: requestHeaders,
       body: requestBody,
       url: resolvedKey,

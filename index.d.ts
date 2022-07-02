@@ -41,6 +41,7 @@ declare type FetcherContextType = {
     attemptInterval?: number;
     revalidateOnFocus?: boolean;
     query?: any;
+    params?: any;
     onOnline?: (e: {
         cancel: () => void;
     }) => void;
@@ -132,6 +133,10 @@ declare type FetcherType<FetchDataType, BodyType> = {
         method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
         headers?: Headers | object;
         query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
         body?: BodyType;
         /**
          * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -230,6 +235,10 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
          * Request query params
          */
         query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
         body?: BodyType;
         /**
          * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -277,6 +286,10 @@ declare const useFetcher: {
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
             headers?: object | Headers | undefined;
             query?: any;
+            /**
+             * URL params
+             */
+            params?: any;
             body?: BodyType | undefined;
             /**
              * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -326,6 +339,10 @@ declare const useFetcher: {
                 method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
                 headers?: object | Headers | undefined;
                 query?: any;
+                /**
+                 * URL params
+                 */
+                params?: any;
                 body?: BodyType_1 | undefined;
                 /**
                  * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -382,6 +399,10 @@ export declare const fetcher: {
             method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
             headers?: object | Headers | undefined;
             query?: any;
+            /**
+             * URL params
+             */
+            params?: any;
             body?: BodyType | undefined;
             /**
              * Customize how body is formated for the request. By default it will be sent in JSON format
@@ -431,6 +452,10 @@ export declare const fetcher: {
                 method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
                 headers?: object | Headers | undefined;
                 query?: any;
+                /**
+                 * URL params
+                 */
+                params?: any;
                 body?: BodyType_1 | undefined;
                 /**
                  * Customize how body is formated for the request. By default it will be sent in JSON format
