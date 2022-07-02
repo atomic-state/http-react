@@ -177,7 +177,6 @@
       return t;
     };
 
-  void 0;
   var react_1 = React;
   /**
    * Creates a new request function. This is for usage with fetcher and fetcher.extend
@@ -375,6 +374,7 @@
     attemptInterval: 5,
     revalidateOnFocus: false,
     query: {},
+    params: {},
     onOffline: function () {},
     onOnline: function () {},
     online: true,
@@ -566,6 +566,7 @@
         _f === void 0
           ? {
               query: {},
+              params: {},
               baseUrl: undefined,
               method: "GET",
               headers: {},
@@ -627,6 +628,17 @@
       ),
       reqQuery = _t[0],
       setReqQuery = _t[1];
+    var _u = (0, react_1.useState)(
+        __assign(__assign({}, ctx.params), config.params)
+      ),
+      reqParams = _u[0],
+      setReqParams = _u[1];
+    (0, react_1.useEffect)(
+      function () {
+        setReqParams(__assign(__assign({}, ctx.params), config.params));
+      },
+      [JSON.stringify(__assign(__assign({}, ctx.params), config.params))]
+    );
     (0, react_1.useEffect)(
       function () {
         setReqQuery(__assign(__assign({}, ctx.query), config.query));
@@ -639,22 +651,63 @@
           ? ""
           : ctx.baseUrl
         : config.baseUrl) + url;
+    var urlWithParams = React.useMemo(
+      function () {
+        return rawUrl
+          .split("/")
+          .map(function (segment) {
+            if (segment.startsWith("[") && segment.endsWith("]")) {
+              var paramName = segment.replace(/\[|\]/g, "");
+              if (!(paramName in reqParams)) {
+                console.warn(
+                  "Para '"
+                    .concat(
+                      paramName,
+                      "' does not exist in request configuration for '"
+                    )
+                    .concat(url, "'")
+                );
+                return paramName;
+              }
+              return reqParams[segment.replace(/\[|\]/g, "")];
+            } else if (segment.startsWith(":")) {
+              var paramName = segment.split("").slice(1).join("");
+              if (!(paramName in reqParams)) {
+                console.warn(
+                  "Para '"
+                    .concat(
+                      paramName,
+                      "' does not exist in request configuration for '"
+                    )
+                    .concat(url, "'")
+                );
+                return paramName;
+              }
+              return reqParams[paramName];
+            } else {
+              return segment;
+            }
+          })
+          .join("/");
+      },
+      [JSON.stringify(reqParams), config.baseUrl, ctx.baseUrl, url]
+    );
     var reqQueryString = Object.keys(reqQuery)
       .map(function (q) {
         return [q, reqQuery[q]].join("=");
       })
       .join("&");
     var realUrl =
-      rawUrl +
-      (rawUrl.includes("?")
+      urlWithParams +
+      (urlWithParams.includes("?")
         ? "&".concat(reqQueryString)
         : "?" + reqQueryString);
-    var _u = realUrl.split("?"),
-      resolvedKey = _u[0],
-      qp = _u[1];
-    var _v = (0, react_1.useState)(false),
-      queryReady = _v[0],
-      setQueryReady = _v[1];
+    var _v = realUrl.split("?"),
+      resolvedKey = _v[0],
+      qp = _v[1];
+    var _w = (0, react_1.useState)(false),
+      queryReady = _w[0],
+      setQueryReady = _w[1];
     (0, react_1.useEffect)(
       function () {
         setQueryReady(false);
@@ -682,13 +735,13 @@
       },
       [JSON.stringify(reqQuery)]
     );
-    var _w = (0, react_1.useState)(
+    var _x = (0, react_1.useState)(
         // Saved to base url of request without query params
         memory ? resolvedRequests[resolvedKey] || def : def
       ),
-      data = _w[0],
-      setData = _w[1];
-    var _x = (0, react_1.useState)(
+      data = _x[0],
+      setData = _x[1];
+    var _y = (0, react_1.useState)(
         typeof FormData !== "undefined"
           ? config.body instanceof FormData
             ? config.body
@@ -698,31 +751,31 @@
             : undefined
           : config.body
       ),
-      requestBody = _x[0],
-      setRequestBody = _x[1];
-    var _y = (0, react_1.useState)(
+      requestBody = _y[0],
+      setRequestBody = _y[1];
+    var _z = (0, react_1.useState)(
         __assign(__assign({}, ctx.headers), config.headers)
       ),
-      requestHeaders = _y[0],
-      setRequestHeades = _y[1];
-    var _z = (0, react_1.useState)(),
-      response = _z[0],
-      setResponse = _z[1];
+      requestHeaders = _z[0],
+      setRequestHeades = _z[1];
     var _0 = (0, react_1.useState)(),
-      statusCode = _0[0],
-      setStatusCode = _0[1];
-    var _1 = (0, react_1.useState)(null),
-      error = _1[0],
-      setError = _1[1];
-    var _2 = (0, react_1.useState)(true),
-      loading = _2[0],
-      setLoading = _2[1];
-    var _3 = (0, react_1.useState)(0),
-      completedAttemps = _3[0],
-      setCompletedAttempts = _3[1];
-    var _4 = (0, react_1.useState)(new AbortController()),
-      requestAbortController = _4[0],
-      setRequestAbortController = _4[1];
+      response = _0[0],
+      setResponse = _0[1];
+    var _1 = (0, react_1.useState)(),
+      statusCode = _1[0],
+      setStatusCode = _1[1];
+    var _2 = (0, react_1.useState)(null),
+      error = _2[0],
+      setError = _2[1];
+    var _3 = (0, react_1.useState)(true),
+      loading = _3[0],
+      setLoading = _3[1];
+    var _4 = (0, react_1.useState)(0),
+      completedAttemps = _4[0],
+      setCompletedAttempts = _4[1];
+    var _5 = (0, react_1.useState)(new AbortController()),
+      requestAbortController = _5[0],
+      setRequestAbortController = _5[1];
     function fetchData(c) {
       var _a;
       if (c === void 0) {
@@ -965,7 +1018,8 @@
         ctx,
         { children: undefined },
         { resolver: undefined },
-        { reqQuery: reqQuery }
+        { reqQuery: reqQuery },
+        { reqParams: reqParams }
       )
     );
     (0, react_1.useEffect)(
@@ -1037,6 +1091,7 @@
         }
       },
       config: __assign(__assign({}, config), {
+        params: reqParams,
         headers: requestHeaders,
         body: requestBody,
         url: resolvedKey,
@@ -1261,6 +1316,7 @@
     return new HttpClient(url);
   }
 
+  window.createHttpClient = createHttpClient;
   window.fetcher = useFetcher;
   window.FetcherConfig = FetcherConfig;
   window.useFetcher = useFetcher;
