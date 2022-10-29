@@ -660,7 +660,7 @@
               var paramName = segment.replace(/\[|\]/g, "");
               if (!(paramName in reqParams)) {
                 console.warn(
-                  "Para '"
+                  "Param '"
                     .concat(
                       paramName,
                       "' does not exist in request configuration for '"
@@ -674,7 +674,7 @@
               var paramName = segment.split("").slice(1).join("");
               if (!(paramName in reqParams)) {
                 console.warn(
-                  "Para '"
+                  "Param '"
                     .concat(
                       paramName,
                       "' does not exist in request configuration for '"

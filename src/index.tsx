@@ -602,7 +602,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
             const paramName = segment.replace(/\[|\]/g, "");
             if (!(paramName in reqParams)) {
               console.warn(
-                `Para '${paramName}' does not exist in request configuration for '${url}'`
+                `Param '${paramName}' does not exist in request configuration for '${url}'`
               );
               return paramName;
             }
@@ -611,7 +611,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
             const paramName = segment.split("").slice(1).join("");
             if (!(paramName in reqParams)) {
               console.warn(
-                `Para '${paramName}' does not exist in request configuration for '${url}'`
+                `Param '${paramName}' does not exist in request configuration for '${url}'`
               );
               return paramName;
             }
