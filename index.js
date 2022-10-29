@@ -316,7 +316,7 @@ var useFetcher = function (init, options) {
             if (segment.startsWith("[") && segment.endsWith("]")) {
                 var paramName = segment.replace(/\[|\]/g, "");
                 if (!(paramName in reqParams)) {
-                    console.warn("Para '".concat(paramName, "' does not exist in request configuration for '").concat(url, "'"));
+                    console.warn("Param '".concat(paramName, "' does not exist in request configuration for '").concat(url, "'"));
                     return paramName;
                 }
                 return reqParams[segment.replace(/\[|\]/g, "")];
@@ -324,7 +324,7 @@ var useFetcher = function (init, options) {
             else if (segment.startsWith(":")) {
                 var paramName = segment.split("").slice(1).join("");
                 if (!(paramName in reqParams)) {
-                    console.warn("Para '".concat(paramName, "' does not exist in request configuration for '").concat(url, "'"));
+                    console.warn("Param '".concat(paramName, "' does not exist in request configuration for '").concat(url, "'"));
                     return paramName;
                 }
                 return reqParams[paramName];
