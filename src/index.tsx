@@ -787,32 +787,31 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     )
   );
 
-  const reValidate = React.useMemo(
-    () =>
-      async function reValidate(c: { headers?: any; body?: BodyType } = {}) {
-        // Only revalidate if request was already completed
-        if (c.body) {
-          setRequestBody(c.body);
-        } else {
-          if (config?.body) {
-            setRequestBody(config.body as any);
-          }
+  const reValidate = React.useCallback(
+    async function reValidate(c: { headers?: any; body?: BodyType } = {}) {
+      // Only revalidate if request was already completed
+      if (c.body) {
+        setRequestBody(c.body);
+      } else {
+        if (config?.body) {
+          setRequestBody(config.body as any);
         }
-        if (c.headers) {
-          setRequestHeades((p) => ({ ...p, ...c.headers }));
-        } else {
-          setRequestHeades((previousHeaders) => ({
-            ...previousHeaders,
-            ...config.headers,
-          }));
-        }
+      }
+      if (c.headers) {
+        setRequestHeades((p) => ({ ...p, ...c.headers }));
+      } else {
+        setRequestHeades((previousHeaders) => ({
+          ...previousHeaders,
+          ...config.headers,
+        }));
+      }
 
-        if (!loading) {
-          setLoading(true);
-          fetchData(c);
-        }
-      },
-    [stringDeps]
+      if (!loading) {
+        setLoading(true);
+        fetchData(c);
+      }
+    },
+    [stringDeps, loading]
   );
 
   useEffect(() => {

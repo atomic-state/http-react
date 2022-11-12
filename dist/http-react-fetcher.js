@@ -523,32 +523,31 @@
         { reqParams }
       )
     );
-    const reValidate = React.useMemo(
-      () =>
-        async function reValidate(c = {}) {
-          // Only revalidate if request was already completed
-          if (c.body) {
-            setRequestBody(c.body);
-          } else {
-            if (config === null || config === void 0 ? void 0 : config.body) {
-              setRequestBody(config.body);
-            }
+    const reValidate = React.useCallback(
+      async function reValidate(c = {}) {
+        // Only revalidate if request was already completed
+        if (c.body) {
+          setRequestBody(c.body);
+        } else {
+          if (config === null || config === void 0 ? void 0 : config.body) {
+            setRequestBody(config.body);
           }
-          if (c.headers) {
-            setRequestHeades((p) =>
-              Object.assign(Object.assign({}, p), c.headers)
-            );
-          } else {
-            setRequestHeades((previousHeaders) =>
-              Object.assign(Object.assign({}, previousHeaders), config.headers)
-            );
-          }
-          if (!loading) {
-            setLoading(true);
-            fetchData(c);
-          }
-        },
-      [stringDeps]
+        }
+        if (c.headers) {
+          setRequestHeades((p) =>
+            Object.assign(Object.assign({}, p), c.headers)
+          );
+        } else {
+          setRequestHeades((previousHeaders) =>
+            Object.assign(Object.assign({}, previousHeaders), config.headers)
+          );
+        }
+        if (!loading) {
+          setLoading(true);
+          fetchData(c);
+        }
+      },
+      [stringDeps, loading]
     );
     useEffect(() => {
       function backOnline() {
