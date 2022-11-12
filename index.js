@@ -477,35 +477,33 @@ var useFetcher = function (init, options) {
     var stringDeps = JSON.stringify(
     // We ignore children and resolver
     Object.assign(ctx, { children: undefined }, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
-    var reValidate = React.useMemo(function () {
-        return function reValidate(c) {
-            if (c === void 0) { c = {}; }
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    // Only revalidate if request was already completed
-                    if (c.body) {
-                        setRequestBody(c.body);
+    var reValidate = React.useCallback(function reValidate(c) {
+        if (c === void 0) { c = {}; }
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                // Only revalidate if request was already completed
+                if (c.body) {
+                    setRequestBody(c.body);
+                }
+                else {
+                    if (config === null || config === void 0 ? void 0 : config.body) {
+                        setRequestBody(config.body);
                     }
-                    else {
-                        if (config === null || config === void 0 ? void 0 : config.body) {
-                            setRequestBody(config.body);
-                        }
-                    }
-                    if (c.headers) {
-                        setRequestHeades(function (p) { return (__assign(__assign({}, p), c.headers)); });
-                    }
-                    else {
-                        setRequestHeades(function (previousHeaders) { return (__assign(__assign({}, previousHeaders), config.headers)); });
-                    }
-                    if (!loading) {
-                        setLoading(true);
-                        fetchData(c);
-                    }
-                    return [2 /*return*/];
-                });
+                }
+                if (c.headers) {
+                    setRequestHeades(function (p) { return (__assign(__assign({}, p), c.headers)); });
+                }
+                else {
+                    setRequestHeades(function (previousHeaders) { return (__assign(__assign({}, previousHeaders), config.headers)); });
+                }
+                if (!loading) {
+                    setLoading(true);
+                    fetchData(c);
+                }
+                return [2 /*return*/];
             });
-        };
-    }, [stringDeps]);
+        });
+    }, [stringDeps, loading]);
     (0, react_1.useEffect)(function () {
         function backOnline() {
             var willCancel = false;
