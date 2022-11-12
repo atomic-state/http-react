@@ -25,12 +25,12 @@ yarn add http-react-fetcher
 With React
 
 ```html
-<script src="https://unpkg.com/http-react-fetcher@1.5.7/dist/http-react-fetcher.min.js"></script>
+<script src="https://unpkg.com/http-react-fetcher@1.5.8/dist/http-react-fetcher.min.js"></script>
 ```
 Without React
 
 ```html
-<script src="https://unpkg.com/http-react-fetcher@1.5.7/dist/vanilla.min.js"></script>
+<script src="https://unpkg.com/http-react-fetcher@1.5.8/dist/vanilla.min.js"></script>
 ```
 
 #### Basic usage

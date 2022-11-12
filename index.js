@@ -267,12 +267,7 @@ function FetcherConfig(props) {
     for (var defaultKey in defaults) {
         resolvedRequests["".concat(base).concat(defaultKey)] = defaults[defaultKey];
     }
-    var mergedConfig = __assign(__assign({}, previousConfig), props);
-    for (var e in props) {
-        if (e === "headers") {
-            mergedConfig.headers = __assign(__assign({}, previousConfig.headers), props.headers);
-        }
-    }
+    var mergedConfig = __assign(__assign(__assign({}, previousConfig), props), { headers: __assign(__assign({}, previousConfig.headers), props.headers) });
     return (React.createElement(FetcherContext.Provider, { value: mergedConfig }, children));
 }
 exports.FetcherConfig = FetcherConfig;
@@ -398,11 +393,11 @@ var useFetcher = function (init, options) {
                         return [4 /*yield*/, fetch(realUrl, {
                                 signal: newAbortController.signal,
                                 method: config.method,
-                                headers: __assign(__assign({ "Content-Type": 
+                                headers: __assign(__assign(__assign({ "Content-Type": 
                                     // If body is form-data, set Content-Type header to 'multipart/form-data'
                                     typeof FormData !== "undefined" && config.body instanceof FormData
                                         ? "multipart/form-data"
-                                        : "application/json" }, config.headers), c.headers),
+                                        : "application/json" }, ctx.headers), config.headers), c.headers),
                                 body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE|PATCH)/))
                                     ? typeof config.formatBody === "function"
                                         ? config.formatBody((typeof FormData !== "undefined" &&
@@ -479,25 +474,38 @@ var useFetcher = function (init, options) {
             signal === null || signal === void 0 ? void 0 : signal.removeEventListener("abort", abortCallback);
         };
     }, [requestAbortController, onAbort]);
-    function reValidate(c) {
-        if (c === void 0) { c = {}; }
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                // Only revalidate if request was already completed
-                if (c.body) {
-                    setRequestBody(function (p) { return (__assign(__assign({}, p), c.body)); });
-                }
-                if (c.headers) {
-                    setRequestHeades(function (p) { return (__assign(__assign({}, p), c.headers)); });
-                }
-                if (!loading) {
-                    setLoading(true);
-                    fetchData(c);
-                }
-                return [2 /*return*/];
+    var stringDeps = JSON.stringify(
+    // We ignore children and resolver
+    Object.assign(ctx, { children: undefined }, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
+    var reValidate = React.useMemo(function () {
+        return function reValidate(c) {
+            if (c === void 0) { c = {}; }
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    // Only revalidate if request was already completed
+                    if (c.body) {
+                        setRequestBody(c.body);
+                    }
+                    else {
+                        if (config === null || config === void 0 ? void 0 : config.body) {
+                            setRequestBody(config.body);
+                        }
+                    }
+                    if (c.headers) {
+                        setRequestHeades(function (p) { return (__assign(__assign({}, p), c.headers)); });
+                    }
+                    else {
+                        setRequestHeades(function (previousHeaders) { return (__assign(__assign({}, previousHeaders), config.headers)); });
+                    }
+                    if (!loading) {
+                        setLoading(true);
+                        fetchData(c);
+                    }
+                    return [2 /*return*/];
+                });
             });
-        });
-    }
+        };
+    }, [stringDeps]);
     (0, react_1.useEffect)(function () {
         function backOnline() {
             var willCancel = false;
@@ -555,9 +563,6 @@ var useFetcher = function (init, options) {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, loading, error, data, config]);
-    var stringDeps = JSON.stringify(
-    // We ignore children and resolver
-    Object.assign(ctx, { children: undefined }, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
     (0, react_1.useEffect)(function () {
         var tm = setTimeout(function () {
             if (queryReady) {
@@ -606,6 +611,7 @@ var useFetcher = function (init, options) {
         refresh,
         JSON.stringify(config),
     ]);
+    var __config = __assign(__assign({}, config), { params: reqParams, headers: requestHeaders, body: requestBody, url: resolvedKey, query: reqQuery });
     return {
         data: data,
         loading: loading,
@@ -621,7 +627,7 @@ var useFetcher = function (init, options) {
                 setData(resolvedRequests[resolvedKey]);
             }
         },
-        config: __assign(__assign({}, config), { params: reqParams, headers: requestHeaders, body: requestBody, url: resolvedKey, query: reqQuery }),
+        config: __config,
         response: response,
     };
 };
