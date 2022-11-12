@@ -498,16 +498,11 @@ export function FetcherConfig(props: FetcherContextType) {
   let mergedConfig = {
     ...previousConfig,
     ...props,
+    headers: {
+      ...previousConfig.headers,
+      ...props.headers,
+    },
   };
-
-  for (let e in props) {
-    if (e === "headers") {
-      mergedConfig.headers = {
-        ...previousConfig.headers,
-        ...props.headers,
-      };
-    }
-  }
 
   return (
     <FetcherContext.Provider value={mergedConfig}>
@@ -709,6 +704,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
             typeof FormData !== "undefined" && config.body instanceof FormData
               ? "multipart/form-data"
               : "application/json",
+          ...ctx.headers,
           ...config.headers,
           ...c.headers,
         } as Headers,
@@ -780,20 +776,44 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     };
   }, [requestAbortController, onAbort]);
 
-  async function reValidate(c: { headers?: any; body?: BodyType } = {}) {
-    // Only revalidate if request was already completed
-    if (c.body) {
-      setRequestBody((p) => ({ ...p, ...c.body }));
-    }
-    if (c.headers) {
-      setRequestHeades((p) => ({ ...p, ...c.headers }));
-    }
+  const stringDeps = JSON.stringify(
+    // We ignore children and resolver
+    Object.assign(
+      ctx,
+      { children: undefined },
+      { resolver: undefined },
+      { reqQuery },
+      { reqParams }
+    )
+  );
 
-    if (!loading) {
-      setLoading(true);
-      fetchData(c);
-    }
-  }
+  const reValidate = React.useMemo(
+    () =>
+      async function reValidate(c: { headers?: any; body?: BodyType } = {}) {
+        // Only revalidate if request was already completed
+        if (c.body) {
+          setRequestBody(c.body);
+        } else {
+          if (config?.body) {
+            setRequestBody(config.body as any);
+          }
+        }
+        if (c.headers) {
+          setRequestHeades((p) => ({ ...p, ...c.headers }));
+        } else {
+          setRequestHeades((previousHeaders) => ({
+            ...previousHeaders,
+            ...config.headers,
+          }));
+        }
+
+        if (!loading) {
+          setLoading(true);
+          fetchData(c);
+        }
+      },
+    [stringDeps]
+  );
 
   useEffect(() => {
     function backOnline() {
@@ -860,17 +880,6 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, loading, error, data, config]);
 
-  const stringDeps = JSON.stringify(
-    // We ignore children and resolver
-    Object.assign(
-      ctx,
-      { children: undefined },
-      { resolver: undefined },
-      { reqQuery },
-      { reqParams }
-    )
-  );
-
   useEffect(() => {
     const tm = setTimeout(() => {
       if (queryReady) {
@@ -922,6 +931,15 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     JSON.stringify(config),
   ]);
 
+  const __config = {
+    ...config,
+    params: reqParams,
+    headers: requestHeaders,
+    body: requestBody,
+    url: resolvedKey,
+    query: reqQuery,
+  };
+
   return {
     data,
     loading,
@@ -937,14 +955,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         setData(resolvedRequests[resolvedKey]);
       }
     },
-    config: {
-      ...config,
-      params: reqParams,
-      headers: requestHeaders,
-      body: requestBody,
-      url: resolvedKey,
-      query: reqQuery,
-    },
+    config: __config,
     response,
   } as unknown as {
     data: FetchDataType;
