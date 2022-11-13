@@ -442,7 +442,12 @@ var useFetcher = function (init, options) {
                         errorString = err_3 === null || err_3 === void 0 ? void 0 : err_3.toString();
                         // Only set error if no abort
                         if (!errorString.match(/abort/i)) {
-                            setData(undefined);
+                            if (!resolvedRequests[resolvedKey]) {
+                                setData(def);
+                            }
+                            else {
+                                setData(resolvedRequests[resolvedKey]);
+                            }
                             setError(new Error(err_3));
                             onError(err_3);
                         }
