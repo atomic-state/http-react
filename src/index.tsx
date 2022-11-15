@@ -8,6 +8,7 @@
 
 import * as React from "react";
 import { useState, useEffect, useRef, createContext, useContext } from "react";
+import { EventEmitter } from "events";
 
 type CustomResponse<T> = Omit<Response, "json"> & {
   json(): Promise<T>;
@@ -139,6 +140,24 @@ function createRequestFn(
   } as RequestWithBody;
 }
 
+const runningRequests: any = {};
+
+const createRequestEmitter = () => {
+  const emitter = new EventEmitter();
+
+  emitter.setMaxListeners(10e10);
+
+  return emitter;
+};
+
+const requestEmitter = createRequestEmitter();
+
+export type CacheStoreType = {
+  get(k?: any): any;
+  set(k?: any, v?: any): any;
+  delete(k?: any): any;
+};
+
 type FetcherContextType = {
   headers?: any;
   baseUrl?: string;
@@ -158,6 +177,7 @@ type FetcherContextType = {
   onOffline?: () => void;
   online?: boolean;
   retryOnReconnect?: boolean;
+  cache?: CacheStoreType;
 };
 
 const FetcherContext = createContext<FetcherContextType>({
@@ -175,6 +195,10 @@ const FetcherContext = createContext<FetcherContextType>({
 });
 
 type FetcherType<FetchDataType, BodyType> = {
+  /**
+   * Any serializable id. This is optional.
+   */
+  id?: any;
   /**
    * url of the resource to fetch
    */
@@ -289,6 +313,10 @@ type FetcherType<FetchDataType, BodyType> = {
 // If first argument is a string
 type FetcherConfigOptions<FetchDataType, BodyType = any> = {
   /**
+   * Any serializable id. This is optional.
+   */
+  id?: any;
+  /**
    * Default data value
    */
   default?: FetchDataType;
@@ -399,90 +427,29 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
   }>;
 };
 
-/**
- * @deprecated Use the `useFetcher` hook instead
- */
-const Fetcher = <FetchDataType extends unknown>({
-  url = "/",
-  default: def,
-  config = { method: "GET", headers: {} as Headers, body: {} as Body },
-  children: Children,
-  onError = () => {},
-  onResolve = () => {},
-  refresh = 0,
-}: FetcherType<FetchDataType, any>) => {
-  const [data, setData] = useState<FetchDataType | undefined>(def);
-  const [error, setError] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  async function fetchData() {
-    try {
-      const json = await fetch(url, {
-        method: config.method,
-        headers: {
-          "Content-Type": "application/json",
-          ...config.headers,
-        } as Headers,
-        body: config.method?.match(/(POST|PUT|DELETE|PATCH)/)
-          ? JSON.stringify(config.body)
-          : undefined,
-      });
-      const _data = await json.json();
-      const code = json.status;
-      if (code >= 200 && code < 300) {
-        setData(_data);
-        setError(null);
-        onResolve(_data, json);
-      } else {
-        if (def) {
-          setData(def);
-        }
-        setError(true);
-        onError(_data);
-      }
-    } catch (err) {
-      setData(undefined);
-      setError(new Error(err));
-      onError(err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    async function reValidate() {
-      if ((data || error) && !loading) {
-        setLoading(true);
-        fetchData();
-      }
-    }
-    if (refresh > 0) {
-      const interval = setTimeout(reValidate, refresh * 1000);
-      return () => clearTimeout(interval);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refresh, loading, error, data, config]);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, refresh, config]);
-  if (typeof Children !== "undefined") {
-    return <Children data={data} error={error} loading={loading} />;
-  } else {
-    return null;
-  }
-};
-
-export default Fetcher;
-
 const resolvedRequests: any = {};
+
+/**
+ * Default store cache
+ */
+const defaultCache: CacheStoreType = {
+  get(k) {
+    return resolvedRequests[k];
+  },
+  set(k, v) {
+    resolvedRequests[k] = v;
+  },
+  delete(k) {
+    delete resolvedRequests[k];
+  },
+};
 
 export function FetcherConfig(props: FetcherContextType) {
   const { children, defaults = {}, baseUrl } = props;
 
   const previousConfig = useContext(FetcherContext);
+
+  const { cache = defaultCache } = previousConfig;
 
   let base =
     typeof baseUrl === "undefined"
@@ -492,7 +459,7 @@ export function FetcherConfig(props: FetcherContextType) {
       : baseUrl;
 
   for (let defaultKey in defaults) {
-    resolvedRequests[`${base}${defaultKey}`] = defaults[defaultKey];
+    cache.set(`${base}${defaultKey}`, defaults[defaultKey]);
   }
 
   let mergedConfig = {
@@ -512,6 +479,25 @@ export function FetcherConfig(props: FetcherContextType) {
 }
 
 /**
+ * Revalidate requests that match an id or ids
+ */
+export function revalidate(id: any | any[]) {
+  if (Array.isArray(id)) {
+    id.map((reqId) => {
+      if (typeof reqId !== "undefined") {
+        const key = JSON.stringify(reqId);
+        requestEmitter.emit(key);
+      }
+    });
+  } else {
+    if (typeof id !== "undefined") {
+      const key = JSON.stringify(id);
+      requestEmitter.emit(key);
+    }
+  }
+}
+
+/**
  * Fetcher available as a hook
  */
 
@@ -520,11 +506,15 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   options?: FetcherConfigOptions<FetchDataType, BodyType>
 ) => {
   const ctx = useContext(FetcherContext);
+
+  const { cache = defaultCache } = ctx;
+
   const {
     onOnline = ctx.onOnline,
     onOffline = ctx.onOffline,
     retryOnReconnect = ctx.retryOnReconnect,
     url = "/",
+    id = "",
     default: def,
     config = {
       query: {},
@@ -582,7 +572,9 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   }, [JSON.stringify(ctx.query), JSON.stringify(config.query), url]);
 
   const rawUrl =
-    (typeof config.baseUrl === "undefined"
+    (url.startsWith("http://") || url.startsWith("https://")
+      ? ""
+      : typeof config.baseUrl === "undefined"
       ? typeof ctx.baseUrl === "undefined"
         ? ""
         : ctx.baseUrl
@@ -627,7 +619,18 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     urlWithParams +
     (urlWithParams.includes("?") ? `&${reqQueryString}` : "?" + reqQueryString);
 
-  const [resolvedKey, qp] = realUrl.split("?");
+  const [resKey, qp] = realUrl.split("?");
+  const resolvedKey = JSON.stringify({
+    key: rawUrl,
+    config: {
+      headers: config?.headers,
+      query: reqQuery,
+      method: config?.method,
+      body: config?.method,
+      formatBody: undefined,
+    },
+  });
+
   const [queryReady, setQueryReady] = useState(false);
 
   useEffect(() => {
@@ -656,11 +659,12 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     }, 0);
   }, [JSON.stringify(reqQuery)]);
 
+  const requestCache = cache.get(resolvedKey);
+
   const [data, setData] = useState<FetchDataType | undefined>(
     // Saved to base url of request without query params
-    memory ? resolvedRequests[resolvedKey] || def : def
+    memory ? requestCache || def : def
   );
-
   const [requestBody, setRequestBody] = useState<BodyType>(
     (typeof FormData !== "undefined"
       ? config.body instanceof FormData
@@ -683,17 +687,80 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   const [statusCode, setStatusCode] = useState<number>();
   const [error, setError] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [completedAttemps, setCompletedAttempts] = useState(0);
+  const [completedAttempts, setCompletedAttempts] = useState(0);
   const [requestAbortController, setRequestAbortController] =
     useState<AbortController>(new AbortController());
 
+  const requestCallId = React.useMemo(
+    () => `${Math.random()}`.split(".")[1],
+    []
+  );
+
+  useEffect(() => {
+    async function waitFormUpdates(v: any) {
+      if (v.requestCallId !== requestCallId) {
+        const {
+          isMutating,
+          data,
+          error,
+          loading,
+          response,
+          requestAbortController,
+          code,
+          completedAttempts,
+        } = v;
+        if (typeof completedAttempts !== "undefined") {
+          setCompletedAttempts(completedAttempts);
+        }
+        if (typeof code !== "undefined") {
+          setStatusCode(code);
+        }
+        if (typeof requestAbortController !== "undefined") {
+          setRequestAbortController(requestAbortController);
+        }
+        if (typeof response !== "undefined") {
+          setResponse(response);
+        }
+        if (typeof loading !== "undefined") {
+          setLoading(loading);
+        }
+        if (typeof data !== "undefined") {
+          setData(data);
+          if (!isMutating) {
+            onResolve(data);
+          }
+          setError(null);
+        }
+        if (typeof error !== "undefined") {
+          setError(error);
+          if (error !== null && error !== false) {
+            onError(error);
+          }
+        }
+      }
+    }
+
+    requestEmitter.addListener(resolvedKey, waitFormUpdates);
+
+    return () => {
+      requestEmitter.removeListener(resolvedKey, waitFormUpdates);
+    };
+  }, [resolvedKey]);
+
   async function fetchData(c: { headers?: any; body?: BodyType } = {}) {
+    runningRequests[resolvedKey] = true;
     if (cancelOnChange) {
       requestAbortController?.abort();
     }
     let newAbortController = new AbortController();
     setRequestAbortController(newAbortController);
     setError(null);
+    requestEmitter.emit(resolvedKey, {
+      requestCallId,
+      loading,
+      requestAbortController: newAbortController,
+      error: null,
+    });
     try {
       const json = await fetch(realUrl, {
         signal: newAbortController.signal,
@@ -723,45 +790,94 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
             : JSON.stringify({ ...config.body, ...c.body })
           : undefined,
       });
-      setResponse(json);
+      requestEmitter.emit(resolvedKey, {
+        requestCallId,
+        response: json,
+      });
       const code = json.status;
       setStatusCode(code);
+      requestEmitter.emit(resolvedKey, {
+        requestCallId,
+        code,
+      });
       const _data = await resolver(json);
       if (code >= 200 && code < 400) {
         if (memory) {
-          resolvedRequests[resolvedKey] = _data;
+          cache.set(resolvedKey, _data);
         }
         setData(_data);
         setError(null);
+        requestEmitter.emit(resolvedKey, {
+          requestCallId,
+          data: _data,
+          error: null,
+        });
         onResolve(_data, json);
+        runningRequests[resolvedKey] = undefined;
 
         // If a request completes succesfuly, we reset the error attempts to 0
         setCompletedAttempts(0);
+        requestEmitter.emit(resolvedKey, {
+          requestCallId,
+          completedAttempts: 0,
+        });
       } else {
         if (def) {
           setData(def);
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            data: def,
+          });
         }
         setError(true);
+        requestEmitter.emit(resolvedKey, {
+          requestCallId,
+          error: true,
+        });
         onError(_data, json);
+        runningRequests[resolvedKey] = undefined;
       }
     } catch (err) {
       const errorString = err?.toString();
       // Only set error if no abort
       if (!errorString.match(/abort/i)) {
-        if (!resolvedRequests[resolvedKey]) {
+        if (typeof requestCache === "undefined") {
           setData(def);
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            data: def,
+          });
         } else {
-          setData(resolvedRequests[resolvedKey]);
+          setData(requestCache);
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            data: requestCache,
+          });
         }
-        setError(new Error(err));
+        let _error = new Error(err);
+        setError(_error);
+        requestEmitter.emit(resolvedKey, {
+          requestCallId,
+          error: _error,
+        });
         onError(err);
       } else {
-        if (!resolvedRequests[resolvedKey]) {
-          setData(def);
+        if (typeof requestCache === "undefined") {
+          if (typeof def !== "undefined") {
+            setData(def);
+          }
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            data: def,
+          });
         }
       }
     } finally {
       setLoading(false);
+      requestEmitter.emit(resolvedKey, {
+        requestCallId,
+        loading: false,
+      });
     }
   }
 
@@ -811,12 +927,38 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       }
 
       if (!loading) {
-        setLoading(true);
-        fetchData(c);
+        if (!runningRequests[resolvedKey]) {
+          setLoading(true);
+          fetchData(c);
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            loading: true,
+          });
+        }
       }
     },
     [stringDeps, loading]
   );
+
+  useEffect(() => {
+    async function forceRefresh() {
+      setLoading(true);
+      setError(null);
+      if (!runningRequests[resolvedKey]) {
+        requestEmitter.emit(resolvedKey, {
+          requestCallId,
+          loading: true,
+          error: null,
+        });
+        fetchData();
+      }
+    }
+    let idString = JSON.stringify(id);
+    requestEmitter.addListener(idString, forceRefresh);
+    return () => {
+      requestEmitter.removeListener(idString, forceRefresh);
+    };
+  }, [resolvedKey, stringDeps, id]);
 
   useEffect(() => {
     function backOnline() {
@@ -864,31 +1006,50 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
   useEffect(() => {
     // Attempts will be made after a request fails
-    if (error) {
-      if (completedAttemps < (attempts as number)) {
-        const tm = setTimeout(() => {
+    const tm = setTimeout(() => {
+      if (error) {
+        if (completedAttempts < (attempts as number)) {
           reValidate();
-          setCompletedAttempts((previousAttempts) => previousAttempts + 1);
-          clearTimeout(tm);
-        }, (attemptInterval as number) * 1000);
+          setCompletedAttempts((previousAttempts) => {
+            let newAttemptsValue = previousAttempts + 1;
+
+            requestEmitter.emit(resolvedKey, {
+              requestCallId,
+              completedAttempts: newAttemptsValue,
+            });
+
+            return newAttemptsValue;
+          });
+        }
+        clearTimeout(tm);
       }
-    }
-  }, [error, attempts, attemptInterval, completedAttemps]);
+    }, (attemptInterval as number) * 1000);
+
+    return () => {
+      clearInterval(tm);
+    };
+  }, [error, attempts, data, attemptInterval, completedAttempts]);
 
   useEffect(() => {
-    if (refresh > 0 && auto) {
-      const interval = setTimeout(reValidate, refresh * 1000);
-      return () => clearTimeout(interval);
+    // if (error === false) {
+    if (completedAttempts === 0) {
+      if (refresh > 0 && auto) {
+        const interval = setTimeout(reValidate, refresh * 1000);
+        return () => clearTimeout(interval);
+      }
     }
+    // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refresh, loading, error, data, config]);
+  }, [refresh, loading, error, data, completedAttempts, config]);
 
   useEffect(() => {
     const tm = setTimeout(() => {
       if (queryReady) {
         if (auto) {
           setLoading(true);
-          fetchData();
+          if (!runningRequests[resolvedKey]) {
+            fetchData();
+          }
         } else {
           if (typeof data === "undefined") {
             setData(def);
@@ -943,19 +1104,51 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     query: reqQuery,
   };
 
+  function forceMutate(
+    newValue: FetchDataType | ((prev: FetchDataType) => FetchDataType)
+  ) {
+    if (typeof newValue !== "function") {
+      cache.set(resolvedKey, newValue);
+      requestEmitter.emit(resolvedKey, {
+        requestCallId,
+        isMutating: true,
+        data: newValue,
+      });
+      setData(() => {
+        return newValue;
+      });
+    } else {
+      setData((prev) => {
+        let newVal = (newValue as any)(prev);
+        cache.set(resolvedKey, newVal);
+        requestEmitter.emit(resolvedKey, {
+          requestCallId,
+          data: newVal,
+        });
+        return newVal;
+      });
+    }
+  }
+
   return {
     data,
     loading,
     error,
     code: statusCode,
     reFetch: reValidate,
-    mutate: setData,
+    mutate: forceMutate,
     abort: () => {
       requestAbortController.abort();
       if (loading) {
         setError(false);
         setLoading(false);
-        setData(resolvedRequests[resolvedKey]);
+        setData(requestCache);
+        requestEmitter.emit(resolvedKey, {
+          requestCallId,
+          error: false,
+          loading: false,
+          data: requestCache,
+        });
       }
     },
     config: __config,

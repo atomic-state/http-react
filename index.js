@@ -65,9 +65,10 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.FetcherConfig = void 0;
+exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.revalidate = exports.FetcherConfig = void 0;
 var React = require("react");
 var react_1 = require("react");
+var events_1 = require("events");
 /**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
  */
@@ -155,6 +156,13 @@ function createRequestFn(method, baseUrl, $headers, q) {
         });
     };
 }
+var runningRequests = {};
+var createRequestEmitter = function () {
+    var emitter = new events_1.EventEmitter();
+    emitter.setMaxListeners(10e10);
+    return emitter;
+};
+var requestEmitter = createRequestEmitter();
 var FetcherContext = (0, react_1.createContext)({
     defaults: {},
     attempts: 0,
@@ -168,119 +176,68 @@ var FetcherContext = (0, react_1.createContext)({
     online: true,
     retryOnReconnect: true,
 });
-/**
- * @deprecated Use the `useFetcher` hook instead
- */
-var Fetcher = function (_a) {
-    var _b = _a.url, url = _b === void 0 ? "/" : _b, def = _a.default, _c = _a.config, config = _c === void 0 ? { method: "GET", headers: {}, body: {} } : _c, Children = _a.children, _d = _a.onError, onError = _d === void 0 ? function () { } : _d, _e = _a.onResolve, onResolve = _e === void 0 ? function () { } : _e, _f = _a.refresh, refresh = _f === void 0 ? 0 : _f;
-    var _g = (0, react_1.useState)(def), data = _g[0], setData = _g[1];
-    var _h = (0, react_1.useState)(null), error = _h[0], setError = _h[1];
-    var _j = (0, react_1.useState)(true), loading = _j[0], setLoading = _j[1];
-    function fetchData() {
-        var _a;
-        return __awaiter(this, void 0, void 0, function () {
-            var json, _data, code, err_2;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 3, 4, 5]);
-                        return [4 /*yield*/, fetch(url, {
-                                method: config.method,
-                                headers: __assign({ "Content-Type": "application/json" }, config.headers),
-                                body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE|PATCH)/))
-                                    ? JSON.stringify(config.body)
-                                    : undefined,
-                            })];
-                    case 1:
-                        json = _b.sent();
-                        return [4 /*yield*/, json.json()];
-                    case 2:
-                        _data = _b.sent();
-                        code = json.status;
-                        if (code >= 200 && code < 300) {
-                            setData(_data);
-                            setError(null);
-                            onResolve(_data, json);
-                        }
-                        else {
-                            if (def) {
-                                setData(def);
-                            }
-                            setError(true);
-                            onError(_data);
-                        }
-                        return [3 /*break*/, 5];
-                    case 3:
-                        err_2 = _b.sent();
-                        setData(undefined);
-                        setError(new Error(err_2));
-                        onError(err_2);
-                        return [3 /*break*/, 5];
-                    case 4:
-                        setLoading(false);
-                        return [7 /*endfinally*/];
-                    case 5: return [2 /*return*/];
-                }
-            });
-        });
-    }
-    (0, react_1.useEffect)(function () {
-        function reValidate() {
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    if ((data || error) && !loading) {
-                        setLoading(true);
-                        fetchData();
-                    }
-                    return [2 /*return*/];
-                });
-            });
-        }
-        if (refresh > 0) {
-            var interval_1 = setTimeout(reValidate, refresh * 1000);
-            return function () { return clearTimeout(interval_1); };
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [refresh, loading, error, data, config]);
-    (0, react_1.useEffect)(function () {
-        setLoading(true);
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [url, refresh, config]);
-    if (typeof Children !== "undefined") {
-        return React.createElement(Children, { data: data, error: error, loading: loading });
-    }
-    else {
-        return null;
-    }
-};
-exports.default = Fetcher;
 var resolvedRequests = {};
+/**
+ * Default store cache
+ */
+var defaultCache = {
+    get: function (k) {
+        return resolvedRequests[k];
+    },
+    set: function (k, v) {
+        resolvedRequests[k] = v;
+    },
+    delete: function (k) {
+        delete resolvedRequests[k];
+    },
+};
 function FetcherConfig(props) {
     var children = props.children, _a = props.defaults, defaults = _a === void 0 ? {} : _a, baseUrl = props.baseUrl;
     var previousConfig = (0, react_1.useContext)(FetcherContext);
+    var _b = previousConfig.cache, cache = _b === void 0 ? defaultCache : _b;
     var base = typeof baseUrl === "undefined"
         ? typeof previousConfig.baseUrl === "undefined"
             ? ""
             : previousConfig.baseUrl
         : baseUrl;
     for (var defaultKey in defaults) {
-        resolvedRequests["".concat(base).concat(defaultKey)] = defaults[defaultKey];
+        cache.set("".concat(base).concat(defaultKey), defaults[defaultKey]);
     }
     var mergedConfig = __assign(__assign(__assign({}, previousConfig), props), { headers: __assign(__assign({}, previousConfig.headers), props.headers) });
     return (React.createElement(FetcherContext.Provider, { value: mergedConfig }, children));
 }
 exports.FetcherConfig = FetcherConfig;
 /**
+ * Revalidate requests that match an id or ids
+ */
+function revalidate(id) {
+    if (Array.isArray(id)) {
+        id.map(function (reqId) {
+            if (typeof reqId !== "undefined") {
+                var key = JSON.stringify(reqId);
+                requestEmitter.emit(key);
+            }
+        });
+    }
+    else {
+        if (typeof id !== "undefined") {
+            var key = JSON.stringify(id);
+            requestEmitter.emit(key);
+        }
+    }
+}
+exports.revalidate = revalidate;
+/**
  * Fetcher available as a hook
  */
 var useFetcher = function (init, options) {
     var ctx = (0, react_1.useContext)(FetcherContext);
-    var _a = typeof init === "string"
+    var _a = ctx.cache, cache = _a === void 0 ? defaultCache : _a;
+    var _b = typeof init === "string"
         ? __assign({ 
             // Pass init as the url if init is a string
             url: init }, options) : // `url` will be required in init if it is an object
-        init, _b = _a.onOnline, onOnline = _b === void 0 ? ctx.onOnline : _b, _c = _a.onOffline, onOffline = _c === void 0 ? ctx.onOffline : _c, _d = _a.retryOnReconnect, retryOnReconnect = _d === void 0 ? ctx.retryOnReconnect : _d, _e = _a.url, url = _e === void 0 ? "/" : _e, def = _a.default, _f = _a.config, config = _f === void 0 ? {
+        init, _c = _b.onOnline, onOnline = _c === void 0 ? ctx.onOnline : _c, _d = _b.onOffline, onOffline = _d === void 0 ? ctx.onOffline : _d, _e = _b.retryOnReconnect, retryOnReconnect = _e === void 0 ? ctx.retryOnReconnect : _e, _f = _b.url, url = _f === void 0 ? "/" : _f, _g = _b.id, id = _g === void 0 ? "" : _g, def = _b.default, _h = _b.config, config = _h === void 0 ? {
         query: {},
         params: {},
         baseUrl: undefined,
@@ -288,22 +245,24 @@ var useFetcher = function (init, options) {
         headers: {},
         body: undefined,
         formatBody: false,
-    } : _f, _g = _a.resolver, resolver = _g === void 0 ? typeof ctx.resolver === "function"
+    } : _h, _j = _b.resolver, resolver = _j === void 0 ? typeof ctx.resolver === "function"
         ? ctx.resolver
-        : function (d) { return d.json(); } : _g, _h = _a.onError, onError = _h === void 0 ? function () { } : _h, _j = _a.auto, auto = _j === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.memory : _j, _k = _a.memory, memory = _k === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _k, _l = _a.onResolve, onResolve = _l === void 0 ? function () { } : _l, _m = _a.onAbort, onAbort = _m === void 0 ? function () { } : _m, _o = _a.refresh, refresh = _o === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _o, _p = _a.cancelOnChange, cancelOnChange = _p === void 0 ? typeof ctx.refresh === "undefined" ? false : ctx.refresh : _p, _q = _a.attempts, attempts = _q === void 0 ? ctx.attempts : _q, _r = _a.attemptInterval, attemptInterval = _r === void 0 ? ctx.attemptInterval : _r, _s = _a.revalidateOnFocus, revalidateOnFocus = _s === void 0 ? ctx.revalidateOnFocus : _s;
-    var _t = (0, react_1.useState)(__assign(__assign({}, ctx.query), config.query)), reqQuery = _t[0], setReqQuery = _t[1];
-    var _u = (0, react_1.useState)(__assign(__assign({}, ctx.params), config.params)), reqParams = _u[0], setReqParams = _u[1];
+        : function (d) { return d.json(); } : _j, _k = _b.onError, onError = _k === void 0 ? function () { } : _k, _l = _b.auto, auto = _l === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.memory : _l, _m = _b.memory, memory = _m === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _m, _o = _b.onResolve, onResolve = _o === void 0 ? function () { } : _o, _p = _b.onAbort, onAbort = _p === void 0 ? function () { } : _p, _q = _b.refresh, refresh = _q === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _q, _r = _b.cancelOnChange, cancelOnChange = _r === void 0 ? typeof ctx.refresh === "undefined" ? false : ctx.refresh : _r, _s = _b.attempts, attempts = _s === void 0 ? ctx.attempts : _s, _t = _b.attemptInterval, attemptInterval = _t === void 0 ? ctx.attemptInterval : _t, _u = _b.revalidateOnFocus, revalidateOnFocus = _u === void 0 ? ctx.revalidateOnFocus : _u;
+    var _v = (0, react_1.useState)(__assign(__assign({}, ctx.query), config.query)), reqQuery = _v[0], setReqQuery = _v[1];
+    var _w = (0, react_1.useState)(__assign(__assign({}, ctx.params), config.params)), reqParams = _w[0], setReqParams = _w[1];
     (0, react_1.useEffect)(function () {
         setReqParams(__assign(__assign({}, ctx.params), config.params));
     }, [JSON.stringify(__assign(__assign({}, ctx.params), config.params))]);
     (0, react_1.useEffect)(function () {
         setReqQuery(__assign(__assign({}, ctx.query), config.query));
     }, [JSON.stringify(ctx.query), JSON.stringify(config.query), url]);
-    var rawUrl = (typeof config.baseUrl === "undefined"
-        ? typeof ctx.baseUrl === "undefined"
-            ? ""
-            : ctx.baseUrl
-        : config.baseUrl) + url;
+    var rawUrl = (url.startsWith("http://") || url.startsWith("https://")
+        ? ""
+        : typeof config.baseUrl === "undefined"
+            ? typeof ctx.baseUrl === "undefined"
+                ? ""
+                : ctx.baseUrl
+            : config.baseUrl) + url;
     var urlWithParams = React.useMemo(function () {
         return rawUrl
             .split("/")
@@ -335,8 +294,18 @@ var useFetcher = function (init, options) {
         .join("&");
     var realUrl = urlWithParams +
         (urlWithParams.includes("?") ? "&".concat(reqQueryString) : "?" + reqQueryString);
-    var _v = realUrl.split("?"), resolvedKey = _v[0], qp = _v[1];
-    var _w = (0, react_1.useState)(false), queryReady = _w[0], setQueryReady = _w[1];
+    var _x = realUrl.split("?"), resKey = _x[0], qp = _x[1];
+    var resolvedKey = JSON.stringify({
+        key: rawUrl,
+        config: {
+            headers: config === null || config === void 0 ? void 0 : config.headers,
+            query: reqQuery,
+            method: config === null || config === void 0 ? void 0 : config.method,
+            body: config === null || config === void 0 ? void 0 : config.method,
+            formatBody: undefined,
+        },
+    });
+    var _y = (0, react_1.useState)(false), queryReady = _y[0], setQueryReady = _y[1];
     (0, react_1.useEffect)(function () {
         setQueryReady(false);
         var queryParamsFromString = {};
@@ -357,36 +326,90 @@ var useFetcher = function (init, options) {
             clearTimeout(tm);
         }, 0);
     }, [JSON.stringify(reqQuery)]);
-    var _x = (0, react_1.useState)(
+    var requestCache = cache.get(resolvedKey);
+    var _z = (0, react_1.useState)(
     // Saved to base url of request without query params
-    memory ? resolvedRequests[resolvedKey] || def : def), data = _x[0], setData = _x[1];
-    var _y = (0, react_1.useState)((typeof FormData !== "undefined"
+    memory ? requestCache || def : def), data = _z[0], setData = _z[1];
+    var _0 = (0, react_1.useState)((typeof FormData !== "undefined"
         ? config.body instanceof FormData
             ? config.body
             : typeof ctx.body !== "undefined" || typeof config.body !== "undefined"
                 ? __assign(__assign({}, ctx.body), config.body) : undefined
-        : config.body)), requestBody = _y[0], setRequestBody = _y[1];
-    var _z = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _z[0], setRequestHeades = _z[1];
-    var _0 = (0, react_1.useState)(), response = _0[0], setResponse = _0[1];
-    var _1 = (0, react_1.useState)(), statusCode = _1[0], setStatusCode = _1[1];
-    var _2 = (0, react_1.useState)(null), error = _2[0], setError = _2[1];
-    var _3 = (0, react_1.useState)(true), loading = _3[0], setLoading = _3[1];
-    var _4 = (0, react_1.useState)(0), completedAttemps = _4[0], setCompletedAttempts = _4[1];
-    var _5 = (0, react_1.useState)(new AbortController()), requestAbortController = _5[0], setRequestAbortController = _5[1];
+        : config.body)), requestBody = _0[0], setRequestBody = _0[1];
+    var _1 = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _1[0], setRequestHeades = _1[1];
+    var _2 = (0, react_1.useState)(), response = _2[0], setResponse = _2[1];
+    var _3 = (0, react_1.useState)(), statusCode = _3[0], setStatusCode = _3[1];
+    var _4 = (0, react_1.useState)(null), error = _4[0], setError = _4[1];
+    var _5 = (0, react_1.useState)(true), loading = _5[0], setLoading = _5[1];
+    var _6 = (0, react_1.useState)(0), completedAttempts = _6[0], setCompletedAttempts = _6[1];
+    var _7 = (0, react_1.useState)(new AbortController()), requestAbortController = _7[0], setRequestAbortController = _7[1];
+    var requestCallId = React.useMemo(function () { return "".concat(Math.random()).split(".")[1]; }, []);
+    (0, react_1.useEffect)(function () {
+        function waitFormUpdates(v) {
+            return __awaiter(this, void 0, void 0, function () {
+                var isMutating, data_1, error_1, loading_1, response_1, requestAbortController_1, code, completedAttempts_1;
+                return __generator(this, function (_a) {
+                    if (v.requestCallId !== requestCallId) {
+                        isMutating = v.isMutating, data_1 = v.data, error_1 = v.error, loading_1 = v.loading, response_1 = v.response, requestAbortController_1 = v.requestAbortController, code = v.code, completedAttempts_1 = v.completedAttempts;
+                        if (typeof completedAttempts_1 !== "undefined") {
+                            setCompletedAttempts(completedAttempts_1);
+                        }
+                        if (typeof code !== "undefined") {
+                            setStatusCode(code);
+                        }
+                        if (typeof requestAbortController_1 !== "undefined") {
+                            setRequestAbortController(requestAbortController_1);
+                        }
+                        if (typeof response_1 !== "undefined") {
+                            setResponse(response_1);
+                        }
+                        if (typeof loading_1 !== "undefined") {
+                            setLoading(loading_1);
+                        }
+                        if (typeof data_1 !== "undefined") {
+                            setData(data_1);
+                            if (!isMutating) {
+                                onResolve(data_1);
+                            }
+                            setError(null);
+                        }
+                        if (typeof error_1 !== "undefined") {
+                            setError(error_1);
+                            if (error_1 !== null && error_1 !== false) {
+                                onError(error_1);
+                            }
+                        }
+                    }
+                    return [2 /*return*/];
+                });
+            });
+        }
+        requestEmitter.addListener(resolvedKey, waitFormUpdates);
+        return function () {
+            requestEmitter.removeListener(resolvedKey, waitFormUpdates);
+        };
+    }, [resolvedKey]);
     function fetchData(c) {
         var _a;
         if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var newAbortController, json, code, _data, err_3, errorString;
+            var newAbortController, json, code, _data, err_2, errorString, _error;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        runningRequests[resolvedKey] = true;
                         if (cancelOnChange) {
                             requestAbortController === null || requestAbortController === void 0 ? void 0 : requestAbortController.abort();
                         }
                         newAbortController = new AbortController();
                         setRequestAbortController(newAbortController);
                         setError(null);
+                        requestEmitter.emit(resolvedKey, {
+                            requestCallId: requestCallId,
+                            loading: loading,
+                            requestAbortController: newAbortController,
+                            error: null,
+                        });
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 4, 5, 6]);
@@ -413,52 +436,101 @@ var useFetcher = function (init, options) {
                             })];
                     case 2:
                         json = _b.sent();
-                        setResponse(json);
+                        requestEmitter.emit(resolvedKey, {
+                            requestCallId: requestCallId,
+                            response: json,
+                        });
                         code = json.status;
                         setStatusCode(code);
+                        requestEmitter.emit(resolvedKey, {
+                            requestCallId: requestCallId,
+                            code: code,
+                        });
                         return [4 /*yield*/, resolver(json)];
                     case 3:
                         _data = _b.sent();
                         if (code >= 200 && code < 400) {
                             if (memory) {
-                                resolvedRequests[resolvedKey] = _data;
+                                cache.set(resolvedKey, _data);
                             }
                             setData(_data);
                             setError(null);
+                            requestEmitter.emit(resolvedKey, {
+                                requestCallId: requestCallId,
+                                data: _data,
+                                error: null,
+                            });
                             onResolve(_data, json);
+                            runningRequests[resolvedKey] = undefined;
                             // If a request completes succesfuly, we reset the error attempts to 0
                             setCompletedAttempts(0);
+                            requestEmitter.emit(resolvedKey, {
+                                requestCallId: requestCallId,
+                                completedAttempts: 0,
+                            });
                         }
                         else {
                             if (def) {
                                 setData(def);
+                                requestEmitter.emit(resolvedKey, {
+                                    requestCallId: requestCallId,
+                                    data: def,
+                                });
                             }
                             setError(true);
+                            requestEmitter.emit(resolvedKey, {
+                                requestCallId: requestCallId,
+                                error: true,
+                            });
                             onError(_data, json);
+                            runningRequests[resolvedKey] = undefined;
                         }
                         return [3 /*break*/, 6];
                     case 4:
-                        err_3 = _b.sent();
-                        errorString = err_3 === null || err_3 === void 0 ? void 0 : err_3.toString();
+                        err_2 = _b.sent();
+                        errorString = err_2 === null || err_2 === void 0 ? void 0 : err_2.toString();
                         // Only set error if no abort
                         if (!errorString.match(/abort/i)) {
-                            if (!resolvedRequests[resolvedKey]) {
+                            if (typeof requestCache === "undefined") {
                                 setData(def);
+                                requestEmitter.emit(resolvedKey, {
+                                    requestCallId: requestCallId,
+                                    data: def,
+                                });
                             }
                             else {
-                                setData(resolvedRequests[resolvedKey]);
+                                setData(requestCache);
+                                requestEmitter.emit(resolvedKey, {
+                                    requestCallId: requestCallId,
+                                    data: requestCache,
+                                });
                             }
-                            setError(new Error(err_3));
-                            onError(err_3);
+                            _error = new Error(err_2);
+                            setError(_error);
+                            requestEmitter.emit(resolvedKey, {
+                                requestCallId: requestCallId,
+                                error: _error,
+                            });
+                            onError(err_2);
                         }
                         else {
-                            if (!resolvedRequests[resolvedKey]) {
-                                setData(def);
+                            if (typeof requestCache === "undefined") {
+                                if (typeof def !== "undefined") {
+                                    setData(def);
+                                }
+                                requestEmitter.emit(resolvedKey, {
+                                    requestCallId: requestCallId,
+                                    data: def,
+                                });
                             }
                         }
                         return [3 /*break*/, 6];
                     case 5:
                         setLoading(false);
+                        requestEmitter.emit(resolvedKey, {
+                            requestCallId: requestCallId,
+                            loading: false,
+                        });
                         return [7 /*endfinally*/];
                     case 6: return [2 /*return*/];
                 }
@@ -502,13 +574,43 @@ var useFetcher = function (init, options) {
                     setRequestHeades(function (previousHeaders) { return (__assign(__assign({}, previousHeaders), config.headers)); });
                 }
                 if (!loading) {
-                    setLoading(true);
-                    fetchData(c);
+                    if (!runningRequests[resolvedKey]) {
+                        setLoading(true);
+                        fetchData(c);
+                        requestEmitter.emit(resolvedKey, {
+                            requestCallId: requestCallId,
+                            loading: true,
+                        });
+                    }
                 }
                 return [2 /*return*/];
             });
         });
     }, [stringDeps, loading]);
+    (0, react_1.useEffect)(function () {
+        function forceRefresh() {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    setLoading(true);
+                    setError(null);
+                    if (!runningRequests[resolvedKey]) {
+                        requestEmitter.emit(resolvedKey, {
+                            requestCallId: requestCallId,
+                            loading: true,
+                            error: null,
+                        });
+                        fetchData();
+                    }
+                    return [2 /*return*/];
+                });
+            });
+        }
+        var idString = JSON.stringify(id);
+        requestEmitter.addListener(idString, forceRefresh);
+        return function () {
+            requestEmitter.removeListener(idString, forceRefresh);
+        };
+    }, [resolvedKey, stringDeps, id]);
     (0, react_1.useEffect)(function () {
         function backOnline() {
             var willCancel = false;
@@ -549,29 +651,45 @@ var useFetcher = function (init, options) {
     }, [ctx.headers]);
     (0, react_1.useEffect)(function () {
         // Attempts will be made after a request fails
-        if (error) {
-            if (completedAttemps < attempts) {
-                var tm_1 = setTimeout(function () {
+        var tm = setTimeout(function () {
+            if (error) {
+                if (completedAttempts < attempts) {
                     reValidate();
-                    setCompletedAttempts(function (previousAttempts) { return previousAttempts + 1; });
-                    clearTimeout(tm_1);
-                }, attemptInterval * 1000);
+                    setCompletedAttempts(function (previousAttempts) {
+                        var newAttemptsValue = previousAttempts + 1;
+                        requestEmitter.emit(resolvedKey, {
+                            requestCallId: requestCallId,
+                            completedAttempts: newAttemptsValue,
+                        });
+                        return newAttemptsValue;
+                    });
+                }
+                clearTimeout(tm);
+            }
+        }, attemptInterval * 1000);
+        return function () {
+            clearInterval(tm);
+        };
+    }, [error, attempts, data, attemptInterval, completedAttempts]);
+    (0, react_1.useEffect)(function () {
+        // if (error === false) {
+        if (completedAttempts === 0) {
+            if (refresh > 0 && auto) {
+                var interval_1 = setTimeout(reValidate, refresh * 1000);
+                return function () { return clearTimeout(interval_1); };
             }
         }
-    }, [error, attempts, attemptInterval, completedAttemps]);
-    (0, react_1.useEffect)(function () {
-        if (refresh > 0 && auto) {
-            var interval_2 = setTimeout(reValidate, refresh * 1000);
-            return function () { return clearTimeout(interval_2); };
-        }
+        // }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [refresh, loading, error, data, config]);
+    }, [refresh, loading, error, data, completedAttempts, config]);
     (0, react_1.useEffect)(function () {
         var tm = setTimeout(function () {
             if (queryReady) {
                 if (auto) {
                     setLoading(true);
-                    fetchData();
+                    if (!runningRequests[resolvedKey]) {
+                        fetchData();
+                    }
                 }
                 else {
                     if (typeof data === "undefined") {
@@ -615,19 +733,49 @@ var useFetcher = function (init, options) {
         JSON.stringify(config),
     ]);
     var __config = __assign(__assign({}, config), { params: reqParams, headers: requestHeaders, body: requestBody, url: resolvedKey, query: reqQuery });
+    function forceMutate(newValue) {
+        if (typeof newValue !== "function") {
+            cache.set(resolvedKey, newValue);
+            requestEmitter.emit(resolvedKey, {
+                requestCallId: requestCallId,
+                isMutating: true,
+                data: newValue,
+            });
+            setData(function () {
+                return newValue;
+            });
+        }
+        else {
+            setData(function (prev) {
+                var newVal = newValue(prev);
+                cache.set(resolvedKey, newVal);
+                requestEmitter.emit(resolvedKey, {
+                    requestCallId: requestCallId,
+                    data: newVal,
+                });
+                return newVal;
+            });
+        }
+    }
     return {
         data: data,
         loading: loading,
         error: error,
         code: statusCode,
         reFetch: reValidate,
-        mutate: setData,
+        mutate: forceMutate,
         abort: function () {
             requestAbortController.abort();
             if (loading) {
                 setError(false);
                 setLoading(false);
-                setData(resolvedRequests[resolvedKey]);
+                setData(requestCache);
+                requestEmitter.emit(resolvedKey, {
+                    requestCallId: requestCallId,
+                    error: false,
+                    loading: false,
+                    data: requestCache,
+                });
             }
         },
         config: __config,
