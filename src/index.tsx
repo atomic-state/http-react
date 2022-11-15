@@ -696,57 +696,6 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     []
   );
 
-  useEffect(() => {
-    async function waitFormUpdates(v: any) {
-      if (v.requestCallId !== requestCallId) {
-        const {
-          isMutating,
-          data,
-          error,
-          loading,
-          response,
-          requestAbortController,
-          code,
-          completedAttempts,
-        } = v;
-        if (typeof completedAttempts !== "undefined") {
-          setCompletedAttempts(completedAttempts);
-        }
-        if (typeof code !== "undefined") {
-          setStatusCode(code);
-        }
-        if (typeof requestAbortController !== "undefined") {
-          setRequestAbortController(requestAbortController);
-        }
-        if (typeof response !== "undefined") {
-          setResponse(response);
-        }
-        if (typeof loading !== "undefined") {
-          setLoading(loading);
-        }
-        if (typeof data !== "undefined") {
-          setData(data);
-          if (!isMutating) {
-            onResolve(data);
-          }
-          setError(null);
-        }
-        if (typeof error !== "undefined") {
-          setError(error);
-          if (error !== null && error !== false) {
-            onError(error);
-          }
-        }
-      }
-    }
-
-    requestEmitter.addListener(resolvedKey, waitFormUpdates);
-
-    return () => {
-      requestEmitter.removeListener(resolvedKey, waitFormUpdates);
-    };
-  }, [resolvedKey]);
-
   async function fetchData(c: { headers?: any; body?: BodyType } = {}) {
     runningRequests[resolvedKey] = true;
     if (cancelOnChange) {
@@ -901,11 +850,68 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     Object.assign(
       ctx,
       { children: undefined },
+      config?.body,
+      config?.query,
       { resolver: undefined },
       { reqQuery },
       { reqParams }
     )
   );
+
+  useEffect(() => {
+    setRequestBody(config?.body as any);
+  }, [config?.body]);
+
+  useEffect(() => {
+    function waitFormUpdates(v: any) {
+      if (v.requestCallId !== requestCallId) {
+        const {
+          isMutating,
+          data,
+          error,
+          loading,
+          response,
+          requestAbortController,
+          code,
+          completedAttempts,
+        } = v;
+        if (typeof completedAttempts !== "undefined") {
+          setCompletedAttempts(completedAttempts);
+        }
+        if (typeof code !== "undefined") {
+          setStatusCode(code);
+        }
+        if (typeof requestAbortController !== "undefined") {
+          setRequestAbortController(requestAbortController);
+        }
+        if (typeof response !== "undefined") {
+          setResponse(response);
+        }
+        if (typeof loading !== "undefined") {
+          setLoading(loading);
+        }
+        if (typeof data !== "undefined") {
+          setData(data);
+          if (!isMutating) {
+            onResolve(data);
+          }
+          setError(null);
+        }
+        if (typeof error !== "undefined") {
+          setError(error);
+          if (error !== null && error !== false) {
+            onError(error);
+          }
+        }
+      }
+    }
+
+    requestEmitter.addListener(resolvedKey, waitFormUpdates);
+
+    return () => {
+      requestEmitter.removeListener(resolvedKey, waitFormUpdates);
+    };
+  }, [resolvedKey, stringDeps]);
 
   const reValidate = React.useCallback(
     async function reValidate(c: { headers?: any; body?: BodyType } = {}) {
