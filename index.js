@@ -510,41 +510,44 @@ var useFetcher = function (init, options) {
     // We ignore children and resolver
     Object.assign(ctx, { children: undefined }, config === null || config === void 0 ? void 0 : config.body, config === null || config === void 0 ? void 0 : config.query, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
     (0, react_1.useEffect)(function () {
-        setRequestBody(config === null || config === void 0 ? void 0 : config.body);
-    }, [config === null || config === void 0 ? void 0 : config.body]);
-    (0, react_1.useEffect)(function () {
         function waitFormUpdates(v) {
-            if (v.requestCallId !== requestCallId) {
-                var isMutating = v.isMutating, data_1 = v.data, error_1 = v.error, loading_1 = v.loading, response_1 = v.response, requestAbortController_1 = v.requestAbortController, code = v.code, completedAttempts_1 = v.completedAttempts;
-                if (typeof completedAttempts_1 !== "undefined") {
-                    setCompletedAttempts(completedAttempts_1);
-                }
-                if (typeof code !== "undefined") {
-                    setStatusCode(code);
-                }
-                if (typeof requestAbortController_1 !== "undefined") {
-                    setRequestAbortController(requestAbortController_1);
-                }
-                if (typeof response_1 !== "undefined") {
-                    setResponse(response_1);
-                }
-                if (typeof loading_1 !== "undefined") {
-                    setLoading(loading_1);
-                }
-                if (typeof data_1 !== "undefined") {
-                    setData(data_1);
-                    if (!isMutating) {
-                        onResolve(data_1);
+            return __awaiter(this, void 0, void 0, function () {
+                var isMutating, data_1, error_1, loading_1, response_1, requestAbortController_1, code, completedAttempts_1;
+                return __generator(this, function (_a) {
+                    if (v.requestCallId !== requestCallId) {
+                        isMutating = v.isMutating, data_1 = v.data, error_1 = v.error, loading_1 = v.loading, response_1 = v.response, requestAbortController_1 = v.requestAbortController, code = v.code, completedAttempts_1 = v.completedAttempts;
+                        if (typeof completedAttempts_1 !== "undefined") {
+                            setCompletedAttempts(completedAttempts_1);
+                        }
+                        if (typeof code !== "undefined") {
+                            setStatusCode(code);
+                        }
+                        if (typeof requestAbortController_1 !== "undefined") {
+                            setRequestAbortController(requestAbortController_1);
+                        }
+                        if (typeof response_1 !== "undefined") {
+                            setResponse(response_1);
+                        }
+                        if (typeof loading_1 !== "undefined") {
+                            setLoading(loading_1);
+                        }
+                        if (typeof data_1 !== "undefined") {
+                            setData(data_1);
+                            if (!isMutating) {
+                                onResolve(data_1);
+                            }
+                            setError(null);
+                        }
+                        if (typeof error_1 !== "undefined") {
+                            setError(error_1);
+                            if (error_1 !== null && error_1 !== false) {
+                                onError(error_1);
+                            }
+                        }
                     }
-                    setError(null);
-                }
-                if (typeof error_1 !== "undefined") {
-                    setError(error_1);
-                    if (error_1 !== null && error_1 !== false) {
-                        onError(error_1);
-                    }
-                }
-            }
+                    return [2 /*return*/];
+                });
+            });
         }
         requestEmitter.addListener(resolvedKey, waitFormUpdates);
         return function () {
@@ -729,7 +732,7 @@ var useFetcher = function (init, options) {
         refresh,
         JSON.stringify(config),
     ]);
-    var __config = __assign(__assign({}, config), { params: reqParams, headers: requestHeaders, body: requestBody, url: resolvedKey, query: reqQuery });
+    var __config = __assign(__assign({}, config), { params: reqParams, headers: requestHeaders, body: config.body, url: resolvedKey, query: reqQuery });
     function forceMutate(newValue) {
         if (typeof newValue !== "function") {
             cache.set(resolvedKey, newValue);

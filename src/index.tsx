@@ -859,11 +859,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   );
 
   useEffect(() => {
-    setRequestBody(config?.body as any);
-  }, [config?.body]);
-
-  useEffect(() => {
-    function waitFormUpdates(v: any) {
+    async function waitFormUpdates(v: any) {
       if (v.requestCallId !== requestCallId) {
         const {
           isMutating,
@@ -1105,7 +1101,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     ...config,
     params: reqParams,
     headers: requestHeaders,
-    body: requestBody,
+    body: config.body,
     url: resolvedKey,
     query: reqQuery,
   };
