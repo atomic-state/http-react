@@ -1,6 +1,6 @@
 {
   "name": "http-react-fetcher",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Data fetching hook for React apps",
   "main": "index.js",
   "scripts": {
@@ -39,5 +39,8 @@
   },
   "peerDependencies": {
     "react": ">=16.13.1"
+  },
+  "dependencies": {
+    "events": "^3.3.0"
   }
 }

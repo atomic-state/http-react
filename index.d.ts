@@ -27,6 +27,11 @@ declare type RequestWithBody = <R = any, BodyType = any>(url: string, reqConfig?
     code: number;
     res: CustomResponse<R>;
 }>;
+export declare type CacheStoreType = {
+    get(k?: any): any;
+    set(k?: any, v?: any): any;
+    delete(k?: any): any;
+};
 declare type FetcherContextType = {
     headers?: any;
     baseUrl?: string;
@@ -48,8 +53,13 @@ declare type FetcherContextType = {
     onOffline?: () => void;
     online?: boolean;
     retryOnReconnect?: boolean;
+    cache?: CacheStoreType;
 };
 declare type FetcherType<FetchDataType, BodyType> = {
+    /**
+     * Any serializable id. This is optional.
+     */
+    id?: any;
     /**
      * url of the resource to fetch
      */
@@ -154,6 +164,10 @@ declare type FetcherType<FetchDataType, BodyType> = {
 };
 declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
     /**
+     * Any serializable id. This is optional.
+     */
+    id?: any;
+    /**
      * Default data value
      */
     default?: FetchDataType;
@@ -254,12 +268,11 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
         loading: boolean;
     }>;
 };
-/**
- * @deprecated Use the `useFetcher` hook instead
- */
-declare const Fetcher: <FetchDataType extends unknown>({ url, default: def, config, children: Children, onError, onResolve, refresh, }: FetcherType<FetchDataType, any>) => JSX.Element | null;
-export default Fetcher;
 export declare function FetcherConfig(props: FetcherContextType): JSX.Element;
+/**
+ * Revalidate requests that match an id or ids
+ */
+export declare function revalidate(id: any | any[]): void;
 /**
  * Fetcher available as a hook
  */

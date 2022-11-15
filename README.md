@@ -816,3 +816,83 @@ function App() {
 }
 
 ```
+
+### Cache
+
+The library provides a basic in-memory caching system that saves requests between pages (assuming you are using a SPA or something like Next.js).
+You can add a cache object inside `FetcherConfig`. The cache object should be something like this
+
+```tsx
+type CacheStoreType = {
+  get(k?: any): any;
+  set(k?: any, v?: any): any;
+  delete(k?: any): any;
+}
+```
+
+And here's how you would use it:
+
+```tsx
+import { FetcherConfig } from "http-react-fetcher"
+
+const myCacheProvider = {
+  get(){}
+  set(){},
+  delete(){}
+}
+
+export default function MyApp({ children }) {
+  return (
+    <FetcherConfig cache={myCacheProvider}>
+      {children}
+    </FetcherConfig>
+  )
+}
+```
+
+### Forcing refresh on requests
+
+You can force requests to execute again from anywhere using the `revalidate` function added since v1.7.0. With this update, you can also pass an optional `id` to a request that will be used specifically for that purpose.
+
+For example:
+
+```tsx
+import { useFetcher, revalidate } from "http-react-fetcher"
+
+
+function RefreshButton() {
+  
+  function refreshInformation(){
+    // You can pass a string if you only need to revalidate one request
+    // Also, ids can be objects, because they are serialized to JSON under the hood
+    revalidate(['user', 'info'])
+  }
+  
+  return <button onClick={refreshInformation}>Refresh</button>
+}
+
+function User(){
+  const { data } = useFetcher('/user', {
+    id: 'user'
+  })
+
+  return data? null : <p>{user.name}</p>
+}
+
+function Info(){
+  const { data } = useFetcher('/user-info', {
+    id: 'info'
+  })
+
+  return data ? null : <p>Email: {user.email}</p>
+}
+
+export default function App() {
+  return (
+    <>
+      <RefreshButton />
+      <User />
+      <Info />
+    </>
+}
+```
