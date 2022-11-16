@@ -496,6 +496,36 @@ export function revalidate(id: any | any[]) {
     }
   }
 }
+let cacheForMutation: any = {};
+/**
+ * Force mutation in requests from anywhere. This doesn't revalidate requests
+ */
+export function mutateData(
+  ...pairs: [any, any | ((cache: any) => any), boolean?][]
+) {
+  for (let pair of pairs) {
+    try {
+      const [k, v, _revalidate] = pair;
+      const key = JSON.stringify(k);
+      if (typeof v === "function") {
+        let newVal = v(cacheForMutation[key]);
+        requestEmitter.emit(key, {
+          data: newVal,
+        });
+        if (_revalidate) {
+          requestEmitter.emit(key);
+        }
+      } else {
+        requestEmitter.emit(key, {
+          data: v,
+        });
+        if (_revalidate) {
+          requestEmitter.emit(key);
+        }
+      }
+    } catch (err) {}
+  }
+}
 
 /**
  * Fetcher available as a hook
@@ -546,6 +576,8 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       }
     : // `url` will be required in init if it is an object
       init;
+
+  const idString = JSON.stringify(id);
 
   const [reqQuery, setReqQuery] = useState({
     ...ctx.query,
@@ -621,7 +653,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
   const [resKey, qp] = realUrl.split("?");
   const resolvedKey = JSON.stringify({
-    key: rawUrl,
+    uri: rawUrl,
     config: {
       headers: config?.headers,
       query: reqQuery,
@@ -755,6 +787,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
           cache.set(resolvedKey, _data);
         }
         setData(_data);
+        cacheForMutation[idString] = _data;
         setError(null);
         requestEmitter.emit(resolvedKey, {
           requestCallId,
@@ -773,6 +806,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       } else {
         if (def) {
           setData(def);
+          cacheForMutation[idString] = def;
           requestEmitter.emit(resolvedKey, {
             requestCallId,
             data: def,
@@ -792,12 +826,14 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       if (!errorString.match(/abort/i)) {
         if (typeof requestCache === "undefined") {
           setData(def);
+          cacheForMutation[idString] = def;
           requestEmitter.emit(resolvedKey, {
             requestCallId,
             data: def,
           });
         } else {
           setData(requestCache);
+          cacheForMutation[idString] = requestCache;
           requestEmitter.emit(resolvedKey, {
             requestCallId,
             data: requestCache,
@@ -814,6 +850,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         if (typeof requestCache === "undefined") {
           if (typeof def !== "undefined") {
             setData(def);
+            cacheForMutation[idString] = def;
           }
           requestEmitter.emit(resolvedKey, {
             requestCallId,
@@ -823,6 +860,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       }
     } finally {
       setLoading(false);
+      runningRequests[resolvedKey] = undefined;
       requestEmitter.emit(resolvedKey, {
         requestCallId,
         loading: false,
@@ -888,6 +926,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         }
         if (typeof data !== "undefined") {
           setData(data);
+          cacheForMutation[idString] = data;
           if (!isMutating) {
             onResolve(data);
           }
@@ -907,7 +946,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     return () => {
       requestEmitter.removeListener(resolvedKey, waitFormUpdates);
     };
-  }, [resolvedKey, stringDeps]);
+  }, [resolvedKey, id, requestAbortController, stringDeps]);
 
   const reValidate = React.useCallback(
     async function reValidate(c: { headers?: any; body?: BodyType } = {}) {
@@ -943,16 +982,26 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   );
 
   useEffect(() => {
-    async function forceRefresh() {
-      setLoading(true);
-      setError(null);
-      if (!runningRequests[resolvedKey]) {
-        requestEmitter.emit(resolvedKey, {
-          requestCallId,
-          loading: true,
-          error: null,
-        });
-        fetchData();
+    async function forceRefresh(v: any) {
+      if (typeof v?.data !== "undefined") {
+        try {
+          const { data: d } = v;
+          if (typeof data !== "undefined") {
+            setData(d);
+            cacheForMutation[idString] = d;
+          }
+        } catch (err) {}
+      } else {
+        setLoading(true);
+        setError(null);
+        if (!runningRequests[resolvedKey]) {
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            loading: true,
+            error: null,
+          });
+          fetchData();
+        }
       }
     }
     let idString = JSON.stringify(id);
@@ -1055,6 +1104,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         } else {
           if (typeof data === "undefined") {
             setData(def);
+            cacheForMutation[idString] = def;
           }
           setError(null);
           setLoading(false);
@@ -1102,7 +1152,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     params: reqParams,
     headers: requestHeaders,
     body: config.body,
-    url: resolvedKey,
+    url: resKey,
     query: reqQuery,
   };
 
@@ -1111,6 +1161,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   ) {
     if (typeof newValue !== "function") {
       cache.set(resolvedKey, newValue);
+      cacheForMutation[idString] = newValue;
       requestEmitter.emit(resolvedKey, {
         requestCallId,
         isMutating: true,
@@ -1123,6 +1174,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       setData((prev) => {
         let newVal = (newValue as any)(prev);
         cache.set(resolvedKey, newVal);
+        cacheForMutation[idString] = newVal;
         requestEmitter.emit(resolvedKey, {
           requestCallId,
           data: newVal,
@@ -1155,6 +1207,11 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     },
     config: __config,
     response,
+    id,
+    /**
+     * The request key
+     */
+    key: resolvedKey,
   } as unknown as {
     data: FetchDataType;
     loading: boolean;
@@ -1165,6 +1222,8 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     abort: () => void;
     config: FetcherType<FetchDataType, BodyType>["config"] & { url: string };
     response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
   };
 };
 

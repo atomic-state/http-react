@@ -22,11 +22,6 @@ yarn add http-react-fetcher
 
 ### Browser
 
-With React
-
-```html
-<script src="https://unpkg.com/http-react-fetcher@1.7.3/dist/http-react-fetcher.min.js"></script>
-```
 Without React
 
 ```html
@@ -57,7 +52,7 @@ function App() {
 }
 ```
 
-**(New):** You can pass a string to `useFetcher` or a configuration object. If you pass a string as the first argument, that will be used as the url to fetch and the config will be taken from the second argument (optional)
+You can pass a string to `useFetcher` or a configuration object. If you pass a string as the first argument, that will be used as the url to fetch and the config will be taken from the second argument (optional)
 
 ```tsx
 import { useFetcher } from "http-react-fetcher";
@@ -896,3 +891,4 @@ export default function App() {
     </>
 }
 ```
+

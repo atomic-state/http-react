@@ -65,7 +65,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.revalidate = exports.FetcherConfig = void 0;
+exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
 var React = require("react");
 var react_1 = require("react");
 var events_1 = require("events");
@@ -227,6 +227,42 @@ function revalidate(id) {
     }
 }
 exports.revalidate = revalidate;
+var cacheForMutation = {};
+/**
+ * Force mutation in requests from anywhere. This doesn't revalidate requests
+ */
+function mutateData() {
+    var pairs = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        pairs[_i] = arguments[_i];
+    }
+    for (var _a = 0, pairs_1 = pairs; _a < pairs_1.length; _a++) {
+        var pair = pairs_1[_a];
+        try {
+            var k = pair[0], v = pair[1], _revalidate = pair[2];
+            var key = JSON.stringify(k);
+            if (typeof v === "function") {
+                var newVal = v(cacheForMutation[key]);
+                requestEmitter.emit(key, {
+                    data: newVal,
+                });
+                if (_revalidate) {
+                    requestEmitter.emit(key);
+                }
+            }
+            else {
+                requestEmitter.emit(key, {
+                    data: v,
+                });
+                if (_revalidate) {
+                    requestEmitter.emit(key);
+                }
+            }
+        }
+        catch (err) { }
+    }
+}
+exports.mutateData = mutateData;
 /**
  * Fetcher available as a hook
  */
@@ -248,6 +284,7 @@ var useFetcher = function (init, options) {
     } : _h, _j = _b.resolver, resolver = _j === void 0 ? typeof ctx.resolver === "function"
         ? ctx.resolver
         : function (d) { return d.json(); } : _j, _k = _b.onError, onError = _k === void 0 ? function () { } : _k, _l = _b.auto, auto = _l === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.memory : _l, _m = _b.memory, memory = _m === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _m, _o = _b.onResolve, onResolve = _o === void 0 ? function () { } : _o, _p = _b.onAbort, onAbort = _p === void 0 ? function () { } : _p, _q = _b.refresh, refresh = _q === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _q, _r = _b.cancelOnChange, cancelOnChange = _r === void 0 ? typeof ctx.refresh === "undefined" ? false : ctx.refresh : _r, _s = _b.attempts, attempts = _s === void 0 ? ctx.attempts : _s, _t = _b.attemptInterval, attemptInterval = _t === void 0 ? ctx.attemptInterval : _t, _u = _b.revalidateOnFocus, revalidateOnFocus = _u === void 0 ? ctx.revalidateOnFocus : _u;
+    var idString = JSON.stringify(id);
     var _v = (0, react_1.useState)(__assign(__assign({}, ctx.query), config.query)), reqQuery = _v[0], setReqQuery = _v[1];
     var _w = (0, react_1.useState)(__assign(__assign({}, ctx.params), config.params)), reqParams = _w[0], setReqParams = _w[1];
     (0, react_1.useEffect)(function () {
@@ -296,7 +333,7 @@ var useFetcher = function (init, options) {
         (urlWithParams.includes("?") ? "&".concat(reqQueryString) : "?" + reqQueryString);
     var _x = realUrl.split("?"), resKey = _x[0], qp = _x[1];
     var resolvedKey = JSON.stringify({
-        key: rawUrl,
+        uri: rawUrl,
         config: {
             headers: config === null || config === void 0 ? void 0 : config.headers,
             query: reqQuery,
@@ -409,6 +446,7 @@ var useFetcher = function (init, options) {
                                 cache.set(resolvedKey, _data);
                             }
                             setData(_data);
+                            cacheForMutation[idString] = _data;
                             setError(null);
                             requestEmitter.emit(resolvedKey, {
                                 requestCallId: requestCallId,
@@ -427,6 +465,7 @@ var useFetcher = function (init, options) {
                         else {
                             if (def) {
                                 setData(def);
+                                cacheForMutation[idString] = def;
                                 requestEmitter.emit(resolvedKey, {
                                     requestCallId: requestCallId,
                                     data: def,
@@ -448,6 +487,7 @@ var useFetcher = function (init, options) {
                         if (!errorString.match(/abort/i)) {
                             if (typeof requestCache === "undefined") {
                                 setData(def);
+                                cacheForMutation[idString] = def;
                                 requestEmitter.emit(resolvedKey, {
                                     requestCallId: requestCallId,
                                     data: def,
@@ -455,6 +495,7 @@ var useFetcher = function (init, options) {
                             }
                             else {
                                 setData(requestCache);
+                                cacheForMutation[idString] = requestCache;
                                 requestEmitter.emit(resolvedKey, {
                                     requestCallId: requestCallId,
                                     data: requestCache,
@@ -472,6 +513,7 @@ var useFetcher = function (init, options) {
                             if (typeof requestCache === "undefined") {
                                 if (typeof def !== "undefined") {
                                     setData(def);
+                                    cacheForMutation[idString] = def;
                                 }
                                 requestEmitter.emit(resolvedKey, {
                                     requestCallId: requestCallId,
@@ -482,6 +524,7 @@ var useFetcher = function (init, options) {
                         return [3 /*break*/, 6];
                     case 5:
                         setLoading(false);
+                        runningRequests[resolvedKey] = undefined;
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
                             loading: false,
@@ -533,6 +576,7 @@ var useFetcher = function (init, options) {
                         }
                         if (typeof data_1 !== "undefined") {
                             setData(data_1);
+                            cacheForMutation[idString] = data_1;
                             if (!isMutating) {
                                 onResolve(data_1);
                             }
@@ -553,7 +597,7 @@ var useFetcher = function (init, options) {
         return function () {
             requestEmitter.removeListener(resolvedKey, waitFormUpdates);
         };
-    }, [resolvedKey, stringDeps]);
+    }, [resolvedKey, id, requestAbortController, stringDeps]);
     var reValidate = React.useCallback(function reValidate(c) {
         if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
@@ -588,18 +632,31 @@ var useFetcher = function (init, options) {
         });
     }, [stringDeps, loading]);
     (0, react_1.useEffect)(function () {
-        function forceRefresh() {
+        function forceRefresh(v) {
             return __awaiter(this, void 0, void 0, function () {
+                var d;
                 return __generator(this, function (_a) {
-                    setLoading(true);
-                    setError(null);
-                    if (!runningRequests[resolvedKey]) {
-                        requestEmitter.emit(resolvedKey, {
-                            requestCallId: requestCallId,
-                            loading: true,
-                            error: null,
-                        });
-                        fetchData();
+                    if (typeof (v === null || v === void 0 ? void 0 : v.data) !== "undefined") {
+                        try {
+                            d = v.data;
+                            if (typeof data !== "undefined") {
+                                setData(d);
+                                cacheForMutation[idString] = d;
+                            }
+                        }
+                        catch (err) { }
+                    }
+                    else {
+                        setLoading(true);
+                        setError(null);
+                        if (!runningRequests[resolvedKey]) {
+                            requestEmitter.emit(resolvedKey, {
+                                requestCallId: requestCallId,
+                                loading: true,
+                                error: null,
+                            });
+                            fetchData();
+                        }
                     }
                     return [2 /*return*/];
                 });
@@ -694,6 +751,7 @@ var useFetcher = function (init, options) {
                 else {
                     if (typeof data === "undefined") {
                         setData(def);
+                        cacheForMutation[idString] = def;
                     }
                     setError(null);
                     setLoading(false);
@@ -732,10 +790,11 @@ var useFetcher = function (init, options) {
         refresh,
         JSON.stringify(config),
     ]);
-    var __config = __assign(__assign({}, config), { params: reqParams, headers: requestHeaders, body: config.body, url: resolvedKey, query: reqQuery });
+    var __config = __assign(__assign({}, config), { params: reqParams, headers: requestHeaders, body: config.body, url: resKey, query: reqQuery });
     function forceMutate(newValue) {
         if (typeof newValue !== "function") {
             cache.set(resolvedKey, newValue);
+            cacheForMutation[idString] = newValue;
             requestEmitter.emit(resolvedKey, {
                 requestCallId: requestCallId,
                 isMutating: true,
@@ -749,6 +808,7 @@ var useFetcher = function (init, options) {
             setData(function (prev) {
                 var newVal = newValue(prev);
                 cache.set(resolvedKey, newVal);
+                cacheForMutation[idString] = newVal;
                 requestEmitter.emit(resolvedKey, {
                     requestCallId: requestCallId,
                     data: newVal,
@@ -780,6 +840,11 @@ var useFetcher = function (init, options) {
         },
         config: __config,
         response: response,
+        id: id,
+        /**
+         * The request key
+         */
+        key: resolvedKey,
     };
 };
 exports.useFetcher = useFetcher;
