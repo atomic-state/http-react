@@ -274,6 +274,10 @@ export declare function FetcherConfig(props: FetcherContextType): JSX.Element;
  */
 export declare function revalidate(id: any | any[]): void;
 /**
+ * Force mutation in requests from anywhere. This doesn't revalidate requests
+ */
+export declare function mutateData(...pairs: [any, any | ((cache: any) => any), boolean?][]): void;
+/**
  * Fetcher available as a hook
  */
 declare const useFetcher: {
@@ -315,6 +319,8 @@ declare const useFetcher: {
             url: string;
         };
         response: CustomResponse<FetchDataType>;
+        id: any;
+        key: string;
     };
     get: RequestWithBody;
     delete: RequestWithBody;
@@ -368,6 +374,8 @@ declare const useFetcher: {
                 url: string;
             };
             response: CustomResponse<T>;
+            id: any;
+            key: string;
         };
         config: {
             baseUrl: any;
@@ -428,6 +436,8 @@ export declare const fetcher: {
             url: string;
         };
         response: CustomResponse<FetchDataType>;
+        id: any;
+        key: string;
     };
     get: RequestWithBody;
     delete: RequestWithBody;
@@ -481,6 +491,8 @@ export declare const fetcher: {
                 url: string;
             };
             response: CustomResponse<T>;
+            id: any;
+            key: string;
         };
         config: {
             baseUrl: any;
