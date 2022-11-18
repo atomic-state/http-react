@@ -338,7 +338,7 @@ var useFetcher = function (init, options) {
             headers: config === null || config === void 0 ? void 0 : config.headers,
             query: reqQuery,
             method: config === null || config === void 0 ? void 0 : config.method,
-            body: config === null || config === void 0 ? void 0 : config.body,
+            body: id ? idString : config === null || config === void 0 ? void 0 : config.body,
             formatBody: undefined,
         },
     });
@@ -390,9 +390,6 @@ var useFetcher = function (init, options) {
                 switch (_b.label) {
                     case 0:
                         runningRequests[resolvedKey] = true;
-                        if (cancelOnChange) {
-                            requestAbortController === null || requestAbortController === void 0 ? void 0 : requestAbortController.abort();
-                        }
                         newAbortController = new AbortController();
                         setRequestAbortController(newAbortController);
                         setError(null);
@@ -630,7 +627,12 @@ var useFetcher = function (init, options) {
                 return [2 /*return*/];
             });
         });
-    }, [stringDeps, loading]);
+    }, [stringDeps, cancelOnChange, loading]);
+    (0, react_1.useEffect)(function () {
+        if (cancelOnChange) {
+            requestAbortController === null || requestAbortController === void 0 ? void 0 : requestAbortController.abort();
+        }
+    }, [stringDeps, cancelOnChange]);
     (0, react_1.useEffect)(function () {
         function forceRefresh(v) {
             return __awaiter(this, void 0, void 0, function () {
