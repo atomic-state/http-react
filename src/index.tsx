@@ -658,7 +658,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       headers: config?.headers,
       query: reqQuery,
       method: config?.method,
-      body: config?.method,
+      body: config?.body,
       formatBody: undefined,
     },
   });
@@ -989,6 +989,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
           if (typeof data !== "undefined") {
             setData(d);
             cacheForMutation[idString] = d;
+            cache.set(resolvedKey, d);
           }
         } catch (err) {}
       } else {
