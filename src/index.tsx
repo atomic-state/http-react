@@ -658,7 +658,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       headers: config?.headers,
       query: reqQuery,
       method: config?.method,
-      body: config?.body,
+      body: id ? idString : config?.body,
       formatBody: undefined,
     },
   });
@@ -730,9 +730,6 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
   async function fetchData(c: { headers?: any; body?: BodyType } = {}) {
     runningRequests[resolvedKey] = true;
-    if (cancelOnChange) {
-      requestAbortController?.abort();
-    }
     let newAbortController = new AbortController();
     setRequestAbortController(newAbortController);
     setError(null);
@@ -978,8 +975,14 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         }
       }
     },
-    [stringDeps, loading]
+    [stringDeps, cancelOnChange, loading]
   );
+
+  useEffect(() => {
+    if (cancelOnChange) {
+      requestAbortController?.abort();
+    }
+  }, [stringDeps, cancelOnChange]);
 
   useEffect(() => {
     async function forceRefresh(v: any) {
