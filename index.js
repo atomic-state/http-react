@@ -338,7 +338,7 @@ var useFetcher = function (init, options) {
             headers: config === null || config === void 0 ? void 0 : config.headers,
             query: reqQuery,
             method: config === null || config === void 0 ? void 0 : config.method,
-            body: config === null || config === void 0 ? void 0 : config.method,
+            body: config === null || config === void 0 ? void 0 : config.body,
             formatBody: undefined,
         },
     });
@@ -642,6 +642,7 @@ var useFetcher = function (init, options) {
                             if (typeof data !== "undefined") {
                                 setData(d);
                                 cacheForMutation[idString] = d;
+                                cache.set(resolvedKey, d);
                             }
                         }
                         catch (err) { }
