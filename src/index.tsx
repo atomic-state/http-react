@@ -184,7 +184,7 @@ const FetcherContext = createContext<FetcherContextType>({
   defaults: {},
   attempts: 0,
   // By default its 5 seconds
-  attemptInterval: 5,
+  attemptInterval: 2,
   revalidateOnFocus: false,
   query: {},
   params: {},
@@ -701,6 +701,8 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     memory ? requestCache || def : def
   );
 
+  const [online, setOnline] = useState(true);
+
   const [requestBody, setRequestBody] = useState<BodyType>(
     (typeof FormData !== "undefined"
       ? config.body instanceof FormData
@@ -904,6 +906,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
           isMutating,
           data,
           error,
+          online,
           loading,
           response,
           requestAbortController,
@@ -938,6 +941,9 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
           if (error !== null && error !== false) {
             onError(error);
           }
+        }
+        if (typeof online !== "undefined") {
+          setOnline(online);
         }
       }
     }
@@ -1025,6 +1031,11 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       function cancelReconectionAttempt() {
         willCancel = true;
       }
+      requestEmitter.emit(resolvedKey, {
+        requestCallId,
+        online: true,
+      });
+      setOnline(true);
       (onOnline as any)({ cancel: cancelReconectionAttempt });
       if (!willCancel) {
         reValidate();
@@ -1040,10 +1051,16 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         }
       }
     }
-  }, [onOnline, retryOnReconnect]);
+  }, [onOnline, reValidate, resolvedKey, retryOnReconnect]);
 
   useEffect(() => {
     function wentOffline() {
+      runningRequests[resolvedKey] = false;
+      setOnline(false);
+      requestEmitter.emit(resolvedKey, {
+        requestCallId,
+        online: false,
+      });
       (onOffline as any)();
     }
     if (typeof window !== "undefined") {
@@ -1054,7 +1071,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         };
       }
     }
-  }, [onOnline]);
+  }, [onOffline, reValidate, resolvedKey, retryOnReconnect]);
 
   useEffect(() => {
     setRequestHeades((r) => ({
@@ -1079,6 +1096,12 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
             return newAttemptsValue;
           });
+        } else if (completedAttempts === attempts) {
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            online: false,
+          });
+          setOnline(false);
         }
         clearTimeout(tm);
       }
@@ -1150,6 +1173,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     revalidateOnFocus,
     stringDeps,
     loading,
+    reValidate,
     ctx.children,
     refresh,
     JSON.stringify(config),
@@ -1161,6 +1185,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     headers: requestHeaders,
     body: config.body,
     url: resKey,
+    rawUrl: realUrl,
     query: reqQuery,
   };
 
@@ -1196,6 +1221,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     data,
     loading,
     error,
+    online,
     code: statusCode,
     reFetch: reValidate,
     mutate: forceMutate,
@@ -1224,11 +1250,15 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
+    online: boolean;
     code: number;
     reFetch: (c?: { headers?: any; body?: BodyType } | object) => Promise<void>;
     mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
     abort: () => void;
-    config: FetcherType<FetchDataType, BodyType>["config"] & { url: string };
+    config: FetcherType<FetchDataType, BodyType>["config"] & {
+      url: string;
+      rawUrl: string;
+    };
     response: CustomResponse<FetchDataType>;
     id: any;
     key: string;

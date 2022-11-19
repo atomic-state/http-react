@@ -285,6 +285,7 @@ declare const useFetcher: {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
+        online: boolean;
         code: number;
         reFetch: (c?: object | {
             headers?: any;
@@ -317,6 +318,7 @@ declare const useFetcher: {
             formatBody?: boolean | ((b: BodyType) => any) | undefined;
         } & {
             url: string;
+            rawUrl: string;
         };
         response: CustomResponse<FetchDataType>;
         id: any;
@@ -340,6 +342,7 @@ declare const useFetcher: {
             data: T;
             loading: boolean;
             error: Error | null;
+            online: boolean;
             code: number;
             reFetch: (c?: object | {
                 headers?: any;
@@ -372,6 +375,7 @@ declare const useFetcher: {
                 formatBody?: boolean | ((b: BodyType_1) => any) | undefined;
             } & {
                 url: string;
+                rawUrl: string;
             };
             response: CustomResponse<T>;
             id: any;
@@ -402,6 +406,7 @@ export declare const fetcher: {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
+        online: boolean;
         code: number;
         reFetch: (c?: object | {
             headers?: any;
@@ -434,6 +439,7 @@ export declare const fetcher: {
             formatBody?: boolean | ((b: BodyType) => any) | undefined;
         } & {
             url: string;
+            rawUrl: string;
         };
         response: CustomResponse<FetchDataType>;
         id: any;
@@ -457,6 +463,7 @@ export declare const fetcher: {
             data: T;
             loading: boolean;
             error: Error | null;
+            online: boolean;
             code: number;
             reFetch: (c?: object | {
                 headers?: any;
@@ -489,6 +496,7 @@ export declare const fetcher: {
                 formatBody?: boolean | ((b: BodyType_1) => any) | undefined;
             } & {
                 url: string;
+                rawUrl: string;
             };
             response: CustomResponse<T>;
             id: any;

@@ -167,7 +167,7 @@ var FetcherContext = (0, react_1.createContext)({
     defaults: {},
     attempts: 0,
     // By default its 5 seconds
-    attemptInterval: 5,
+    attemptInterval: 2,
     revalidateOnFocus: false,
     query: {},
     params: {},
@@ -368,19 +368,20 @@ var useFetcher = function (init, options) {
     var _z = (0, react_1.useState)(
     // Saved to base url of request without query params
     memory ? requestCache || def : def), data = _z[0], setData = _z[1];
-    var _0 = (0, react_1.useState)((typeof FormData !== "undefined"
+    var _0 = (0, react_1.useState)(true), online = _0[0], setOnline = _0[1];
+    var _1 = (0, react_1.useState)((typeof FormData !== "undefined"
         ? config.body instanceof FormData
             ? config.body
             : typeof ctx.body !== "undefined" || typeof config.body !== "undefined"
                 ? __assign(__assign({}, ctx.body), config.body) : undefined
-        : config.body)), requestBody = _0[0], setRequestBody = _0[1];
-    var _1 = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _1[0], setRequestHeades = _1[1];
-    var _2 = (0, react_1.useState)(), response = _2[0], setResponse = _2[1];
-    var _3 = (0, react_1.useState)(), statusCode = _3[0], setStatusCode = _3[1];
-    var _4 = (0, react_1.useState)(null), error = _4[0], setError = _4[1];
-    var _5 = (0, react_1.useState)(true), loading = _5[0], setLoading = _5[1];
-    var _6 = (0, react_1.useState)(0), completedAttempts = _6[0], setCompletedAttempts = _6[1];
-    var _7 = (0, react_1.useState)(new AbortController()), requestAbortController = _7[0], setRequestAbortController = _7[1];
+        : config.body)), requestBody = _1[0], setRequestBody = _1[1];
+    var _2 = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _2[0], setRequestHeades = _2[1];
+    var _3 = (0, react_1.useState)(), response = _3[0], setResponse = _3[1];
+    var _4 = (0, react_1.useState)(), statusCode = _4[0], setStatusCode = _4[1];
+    var _5 = (0, react_1.useState)(null), error = _5[0], setError = _5[1];
+    var _6 = (0, react_1.useState)(true), loading = _6[0], setLoading = _6[1];
+    var _7 = (0, react_1.useState)(0), completedAttempts = _7[0], setCompletedAttempts = _7[1];
+    var _8 = (0, react_1.useState)(new AbortController()), requestAbortController = _8[0], setRequestAbortController = _8[1];
     var requestCallId = React.useMemo(function () { return "".concat(Math.random()).split(".")[1]; }, []);
     function fetchData(c) {
         var _a;
@@ -553,10 +554,10 @@ var useFetcher = function (init, options) {
     (0, react_1.useEffect)(function () {
         function waitFormUpdates(v) {
             return __awaiter(this, void 0, void 0, function () {
-                var isMutating, data_1, error_1, loading_1, response_1, requestAbortController_1, code, completedAttempts_1;
+                var isMutating, data_1, error_1, online_1, loading_1, response_1, requestAbortController_1, code, completedAttempts_1;
                 return __generator(this, function (_a) {
                     if (v.requestCallId !== requestCallId) {
-                        isMutating = v.isMutating, data_1 = v.data, error_1 = v.error, loading_1 = v.loading, response_1 = v.response, requestAbortController_1 = v.requestAbortController, code = v.code, completedAttempts_1 = v.completedAttempts;
+                        isMutating = v.isMutating, data_1 = v.data, error_1 = v.error, online_1 = v.online, loading_1 = v.loading, response_1 = v.response, requestAbortController_1 = v.requestAbortController, code = v.code, completedAttempts_1 = v.completedAttempts;
                         if (typeof completedAttempts_1 !== "undefined") {
                             setCompletedAttempts(completedAttempts_1);
                         }
@@ -585,6 +586,9 @@ var useFetcher = function (init, options) {
                             if (error_1 !== null && error_1 !== false) {
                                 onError(error_1);
                             }
+                        }
+                        if (typeof online_1 !== "undefined") {
+                            setOnline(online_1);
                         }
                     }
                     return [2 /*return*/];
@@ -678,6 +682,11 @@ var useFetcher = function (init, options) {
             function cancelReconectionAttempt() {
                 willCancel = true;
             }
+            requestEmitter.emit(resolvedKey, {
+                requestCallId: requestCallId,
+                online: true,
+            });
+            setOnline(true);
             onOnline({ cancel: cancelReconectionAttempt });
             if (!willCancel) {
                 reValidate();
@@ -693,9 +702,15 @@ var useFetcher = function (init, options) {
                 }
             }
         }
-    }, [onOnline, retryOnReconnect]);
+    }, [onOnline, reValidate, resolvedKey, retryOnReconnect]);
     (0, react_1.useEffect)(function () {
         function wentOffline() {
+            runningRequests[resolvedKey] = false;
+            setOnline(false);
+            requestEmitter.emit(resolvedKey, {
+                requestCallId: requestCallId,
+                online: false,
+            });
             onOffline();
         }
         if (typeof window !== "undefined") {
@@ -706,7 +721,7 @@ var useFetcher = function (init, options) {
                 };
             }
         }
-    }, [onOnline]);
+    }, [onOffline, reValidate, resolvedKey, retryOnReconnect]);
     (0, react_1.useEffect)(function () {
         setRequestHeades(function (r) { return (__assign(__assign({}, r), ctx.headers)); });
     }, [ctx.headers]);
@@ -724,6 +739,13 @@ var useFetcher = function (init, options) {
                         });
                         return newAttemptsValue;
                     });
+                }
+                else if (completedAttempts === attempts) {
+                    requestEmitter.emit(resolvedKey, {
+                        requestCallId: requestCallId,
+                        online: false,
+                    });
+                    setOnline(false);
                 }
                 clearTimeout(tm);
             }
@@ -790,11 +812,12 @@ var useFetcher = function (init, options) {
         revalidateOnFocus,
         stringDeps,
         loading,
+        reValidate,
         ctx.children,
         refresh,
         JSON.stringify(config),
     ]);
-    var __config = __assign(__assign({}, config), { params: reqParams, headers: requestHeaders, body: config.body, url: resKey, query: reqQuery });
+    var __config = __assign(__assign({}, config), { params: reqParams, headers: requestHeaders, body: config.body, url: resKey, rawUrl: realUrl, query: reqQuery });
     function forceMutate(newValue) {
         if (typeof newValue !== "function") {
             cache.set(resolvedKey, newValue);
@@ -825,6 +848,7 @@ var useFetcher = function (init, options) {
         data: data,
         loading: loading,
         error: error,
+        online: online,
         code: statusCode,
         reFetch: reValidate,
         mutate: forceMutate,
