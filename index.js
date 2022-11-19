@@ -285,7 +285,7 @@ var useFetcher = function (init, options) {
         ? ctx.resolver
         : function (d) { return d.json(); } : _j, _k = _b.onError, onError = _k === void 0 ? function () { } : _k, _l = _b.auto, auto = _l === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.memory : _l, _m = _b.memory, memory = _m === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _m, _o = _b.onResolve, onResolve = _o === void 0 ? function () { } : _o, _p = _b.onAbort, onAbort = _p === void 0 ? function () { } : _p, _q = _b.refresh, refresh = _q === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _q, _r = _b.cancelOnChange, cancelOnChange = _r === void 0 ? typeof ctx.refresh === "undefined" ? false : ctx.refresh : _r, _s = _b.attempts, attempts = _s === void 0 ? ctx.attempts : _s, _t = _b.attemptInterval, attemptInterval = _t === void 0 ? ctx.attemptInterval : _t, _u = _b.revalidateOnFocus, revalidateOnFocus = _u === void 0 ? ctx.revalidateOnFocus : _u;
     var idString = JSON.stringify(id);
-    var _v = (0, react_1.useState)(__assign(__assign({}, ctx.query), config.query)), reqQuery = _v[0], setReqQuery = _v[1];
+    var _v = (0, react_1.useState)(__assign(__assign({}, ctx.query), Object.fromEntries(Object.keys((config === null || config === void 0 ? void 0 : config.query) || {}).map(function (k) { var _a; return [k, "".concat((_a = config === null || config === void 0 ? void 0 : config.query) === null || _a === void 0 ? void 0 : _a[k])]; })))), reqQuery = _v[0], setReqQuery = _v[1];
     var _w = (0, react_1.useState)(__assign(__assign({}, ctx.params), config.params)), reqParams = _w[0], setReqParams = _w[1];
     (0, react_1.useEffect)(function () {
         setReqParams(__assign(__assign({}, ctx.params), config.params));
@@ -336,6 +336,7 @@ var useFetcher = function (init, options) {
         uri: rawUrl,
         config: {
             headers: config === null || config === void 0 ? void 0 : config.headers,
+            params: config === null || config === void 0 ? void 0 : config.params,
             query: reqQuery,
             method: config === null || config === void 0 ? void 0 : config.method,
             body: id ? idString : config === null || config === void 0 ? void 0 : config.body,
@@ -351,7 +352,7 @@ var useFetcher = function (init, options) {
         queryParts.forEach(function (q, i) {
             var _a = q.split("="), key = _a[0], value = _a[1];
             if (queryParamsFromString[key] !== value) {
-                queryParamsFromString[key] = value;
+                queryParamsFromString[key] = "".concat(value);
             }
         });
         var tm1 = setTimeout(function () {
@@ -670,7 +671,7 @@ var useFetcher = function (init, options) {
         return function () {
             requestEmitter.removeListener(idString, forceRefresh);
         };
-    }, [resolvedKey, stringDeps, id]);
+    }, [resolvedKey, stringDeps, data, idString, id]);
     (0, react_1.useEffect)(function () {
         function backOnline() {
             var willCancel = false;

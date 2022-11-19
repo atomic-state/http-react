@@ -581,7 +581,9 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
   const [reqQuery, setReqQuery] = useState({
     ...ctx.query,
-    ...config.query,
+    ...Object.fromEntries(
+      Object.keys(config?.query || {}).map((k) => [k, `${config?.query?.[k]}`])
+    ),
   });
 
   const [reqParams, setReqParams] = useState({
@@ -656,6 +658,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     uri: rawUrl,
     config: {
       headers: config?.headers,
+      params: config?.params,
       query: reqQuery,
       method: config?.method,
       body: id ? idString : config?.body,
@@ -673,7 +676,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     queryParts.forEach((q, i) => {
       const [key, value] = q.split("=");
       if (queryParamsFromString[key] !== value) {
-        queryParamsFromString[key] = value;
+        queryParamsFromString[key] = `${value}`;
       }
     });
 
@@ -697,6 +700,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     // Saved to base url of request without query params
     memory ? requestCache || def : def
   );
+
   const [requestBody, setRequestBody] = useState<BodyType>(
     (typeof FormData !== "undefined"
       ? config.body instanceof FormData
@@ -1013,7 +1017,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     return () => {
       requestEmitter.removeListener(idString, forceRefresh);
     };
-  }, [resolvedKey, stringDeps, id]);
+  }, [resolvedKey, stringDeps, data, idString, id]);
 
   useEffect(() => {
     function backOnline() {
