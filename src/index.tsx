@@ -528,6 +528,13 @@ export function mutateData(
 }
 
 /**
+ * Get the current fetcher config
+ */
+export function useFetcherConfig() {
+  return useContext(FetcherContext);
+}
+
+/**
  * Fetcher available as a hook
  */
 

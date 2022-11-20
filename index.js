@@ -65,7 +65,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
+exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
 var React = require("react");
 var react_1 = require("react");
 var events_1 = require("events");
@@ -263,6 +263,13 @@ function mutateData() {
     }
 }
 exports.mutateData = mutateData;
+/**
+ * Get the current fetcher config
+ */
+function useFetcherConfig() {
+    return (0, react_1.useContext)(FetcherContext);
+}
+exports.useFetcherConfig = useFetcherConfig;
 /**
  * Fetcher available as a hook
  */

@@ -278,6 +278,10 @@ export declare function revalidate(id: any | any[]): void;
  */
 export declare function mutateData(...pairs: [any, any | ((cache: any) => any), boolean?][]): void;
 /**
+ * Get the current fetcher config
+ */
+export declare function useFetcherConfig(): FetcherContextType;
+/**
  * Fetcher available as a hook
  */
 declare const useFetcher: {
