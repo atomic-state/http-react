@@ -7,7 +7,7 @@
  */
 
 import * as React from "react";
-import { useState, useEffect, useRef, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { EventEmitter } from "events";
 
 type CustomResponse<T> = Omit<Response, "json"> & {
@@ -701,6 +701,9 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     memory ? requestCache || def : def
   );
 
+  // Used JSON as deppendency instead of directly using a reference to data
+  const rawJSON = JSON.stringify(data);
+
   const [online, setOnline] = useState(true);
 
   const [requestBody, setRequestBody] = useState<BodyType>(
@@ -863,7 +866,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       }
     } finally {
       setLoading(false);
-      runningRequests[resolvedKey] = undefined;
+      runningRequests[resolvedKey] = false;
       requestEmitter.emit(resolvedKey, {
         requestCallId,
         loading: false,
@@ -893,6 +896,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       { children: undefined },
       config?.body,
       config?.query,
+      config?.params,
       { resolver: undefined },
       { reqQuery },
       { reqParams }
@@ -1023,7 +1027,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     return () => {
       requestEmitter.removeListener(idString, forceRefresh);
     };
-  }, [resolvedKey, stringDeps, data, idString, id]);
+  }, [resolvedKey, stringDeps, rawJSON, idString, id]);
 
   useEffect(() => {
     function backOnline() {
@@ -1110,7 +1114,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     return () => {
       clearInterval(tm);
     };
-  }, [error, attempts, data, attemptInterval, completedAttempts]);
+  }, [error, attempts, rawJSON, attemptInterval, completedAttempts]);
 
   useEffect(() => {
     // if (error === false) {
@@ -1122,7 +1126,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     }
     // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refresh, loading, error, data, completedAttempts, config]);
+  }, [refresh, loading, error, rawJSON, completedAttempts, config]);
 
   useEffect(() => {
     const tm = setTimeout(() => {
@@ -1161,7 +1165,6 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       if (typeof window !== "undefined") {
         if ("addEventListener" in window) {
           window.addEventListener("focus", reValidate as any);
-
           return () => {
             window.removeEventListener("focus", reValidate as any);
           };
@@ -1200,9 +1203,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         isMutating: true,
         data: newValue,
       });
-      setData(() => {
-        return newValue;
-      });
+      setData(newValue);
     } else {
       setData((prev) => {
         let newVal = (newValue as any)(prev);
@@ -1217,8 +1218,10 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     }
   }
 
+  const resolvedData = React.useMemo(() => data, [rawJSON]);
+
   return {
-    data,
+    data: resolvedData,
     loading,
     error,
     online,
