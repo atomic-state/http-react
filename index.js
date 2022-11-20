@@ -368,6 +368,8 @@ var useFetcher = function (init, options) {
     var _z = (0, react_1.useState)(
     // Saved to base url of request without query params
     memory ? requestCache || def : def), data = _z[0], setData = _z[1];
+    // Used JSON as deppendency instead of directly using a reference to data
+    var rawJSON = JSON.stringify(data);
     var _0 = (0, react_1.useState)(true), online = _0[0], setOnline = _0[1];
     var _1 = (0, react_1.useState)((typeof FormData !== "undefined"
         ? config.body instanceof FormData
@@ -523,7 +525,7 @@ var useFetcher = function (init, options) {
                         return [3 /*break*/, 6];
                     case 5:
                         setLoading(false);
-                        runningRequests[resolvedKey] = undefined;
+                        runningRequests[resolvedKey] = false;
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
                             loading: false,
@@ -550,7 +552,7 @@ var useFetcher = function (init, options) {
     }, [requestAbortController, onAbort]);
     var stringDeps = JSON.stringify(
     // We ignore children and resolver
-    Object.assign(ctx, { children: undefined }, config === null || config === void 0 ? void 0 : config.body, config === null || config === void 0 ? void 0 : config.query, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
+    Object.assign(ctx, { children: undefined }, config === null || config === void 0 ? void 0 : config.body, config === null || config === void 0 ? void 0 : config.query, config === null || config === void 0 ? void 0 : config.params, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
     (0, react_1.useEffect)(function () {
         function waitFormUpdates(v) {
             return __awaiter(this, void 0, void 0, function () {
@@ -675,7 +677,7 @@ var useFetcher = function (init, options) {
         return function () {
             requestEmitter.removeListener(idString, forceRefresh);
         };
-    }, [resolvedKey, stringDeps, data, idString, id]);
+    }, [resolvedKey, stringDeps, rawJSON, idString, id]);
     (0, react_1.useEffect)(function () {
         function backOnline() {
             var willCancel = false;
@@ -753,7 +755,7 @@ var useFetcher = function (init, options) {
         return function () {
             clearInterval(tm);
         };
-    }, [error, attempts, data, attemptInterval, completedAttempts]);
+    }, [error, attempts, rawJSON, attemptInterval, completedAttempts]);
     (0, react_1.useEffect)(function () {
         // if (error === false) {
         if (completedAttempts === 0) {
@@ -764,7 +766,7 @@ var useFetcher = function (init, options) {
         }
         // }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [refresh, loading, error, data, completedAttempts, config]);
+    }, [refresh, loading, error, rawJSON, completedAttempts, config]);
     (0, react_1.useEffect)(function () {
         var tm = setTimeout(function () {
             if (queryReady) {
@@ -827,9 +829,7 @@ var useFetcher = function (init, options) {
                 isMutating: true,
                 data: newValue,
             });
-            setData(function () {
-                return newValue;
-            });
+            setData(newValue);
         }
         else {
             setData(function (prev) {
@@ -844,8 +844,9 @@ var useFetcher = function (init, options) {
             });
         }
     }
+    var resolvedData = React.useMemo(function () { return data; }, [rawJSON]);
     return {
-        data: data,
+        data: resolvedData,
         loading: loading,
         error: error,
         online: online,
