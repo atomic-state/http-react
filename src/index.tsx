@@ -656,13 +656,13 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   const [resKey, qp] = realUrl.split("?");
   const resolvedKey = JSON.stringify({
     uri: rawUrl,
+    idString,
     config: {
-      headers: config?.headers,
-      params: config?.params,
-      query: reqQuery,
+      // headers: config?.headers,
+      // query: reqQuery,
       method: config?.method,
-      body: id ? idString : config?.body,
-      formatBody: undefined,
+      // body: id ? idString : config?.body,
+      // formatBody: undefined
     },
   });
 
@@ -894,6 +894,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     Object.assign(
       ctx,
       { children: undefined },
+      config?.headers,
       config?.body,
       config?.query,
       config?.params,
@@ -961,6 +962,9 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
   const reValidate = React.useCallback(
     async function reValidate(c: { headers?: any; body?: BodyType } = {}) {
+      if (cancelOnChange) {
+        requestAbortController?.abort();
+      }
       // Only revalidate if request was already completed
       if (c.body) {
         setRequestBody(c.body);
@@ -989,14 +993,8 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         }
       }
     },
-    [stringDeps, cancelOnChange, loading]
+    [stringDeps, cancelOnChange, requestAbortController, loading]
   );
-
-  useEffect(() => {
-    if (cancelOnChange) {
-      requestAbortController?.abort();
-    }
-  }, [stringDeps, cancelOnChange]);
 
   useEffect(() => {
     async function forceRefresh(v: any) {

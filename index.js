@@ -334,13 +334,13 @@ var useFetcher = function (init, options) {
     var _x = realUrl.split("?"), resKey = _x[0], qp = _x[1];
     var resolvedKey = JSON.stringify({
         uri: rawUrl,
+        idString: idString,
         config: {
-            headers: config === null || config === void 0 ? void 0 : config.headers,
-            params: config === null || config === void 0 ? void 0 : config.params,
-            query: reqQuery,
+            // headers: config?.headers,
+            // query: reqQuery,
             method: config === null || config === void 0 ? void 0 : config.method,
-            body: id ? idString : config === null || config === void 0 ? void 0 : config.body,
-            formatBody: undefined,
+            // body: id ? idString : config?.body,
+            // formatBody: undefined
         },
     });
     var _y = (0, react_1.useState)(false), queryReady = _y[0], setQueryReady = _y[1];
@@ -552,7 +552,7 @@ var useFetcher = function (init, options) {
     }, [requestAbortController, onAbort]);
     var stringDeps = JSON.stringify(
     // We ignore children and resolver
-    Object.assign(ctx, { children: undefined }, config === null || config === void 0 ? void 0 : config.body, config === null || config === void 0 ? void 0 : config.query, config === null || config === void 0 ? void 0 : config.params, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
+    Object.assign(ctx, { children: undefined }, config === null || config === void 0 ? void 0 : config.headers, config === null || config === void 0 ? void 0 : config.body, config === null || config === void 0 ? void 0 : config.query, config === null || config === void 0 ? void 0 : config.params, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
     (0, react_1.useEffect)(function () {
         function waitFormUpdates(v) {
             return __awaiter(this, void 0, void 0, function () {
@@ -606,6 +606,9 @@ var useFetcher = function (init, options) {
         if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
+                if (cancelOnChange) {
+                    requestAbortController === null || requestAbortController === void 0 ? void 0 : requestAbortController.abort();
+                }
                 // Only revalidate if request was already completed
                 if (c.body) {
                     setRequestBody(c.body);
@@ -634,12 +637,7 @@ var useFetcher = function (init, options) {
                 return [2 /*return*/];
             });
         });
-    }, [stringDeps, cancelOnChange, loading]);
-    (0, react_1.useEffect)(function () {
-        if (cancelOnChange) {
-            requestAbortController === null || requestAbortController === void 0 ? void 0 : requestAbortController.abort();
-        }
-    }, [stringDeps, cancelOnChange]);
+    }, [stringDeps, cancelOnChange, requestAbortController, loading]);
     (0, react_1.useEffect)(function () {
         function forceRefresh(v) {
             return __awaiter(this, void 0, void 0, function () {
