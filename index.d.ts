@@ -36,7 +36,13 @@ declare type FetcherContextType = {
     headers?: any;
     baseUrl?: string;
     body?: object | FormData;
-    defaults?: any;
+    defaults?: {
+        [key: string]: {
+            id?: any;
+            value?: any;
+            config?: any;
+        };
+    };
     resolver?: (r: Response) => any;
     children?: any;
     auto?: boolean;
@@ -63,7 +69,7 @@ declare type FetcherType<FetchDataType, BodyType> = {
     /**
      * url of the resource to fetch
      */
-    url: string;
+    url?: string;
     /**
      * Default data value
      */
@@ -282,7 +288,19 @@ export declare function mutateData(...pairs: [any, any | ((cache: any) => any), 
  */
 export declare function useFetcherConfig(): FetcherContextType;
 /**
- * Fetcher available as a hook
+ * Get the data state of a request using its id
+ */
+export declare function useFetcherData<T = any>(id: any): T;
+/**
+ * Get the loading state of a request using its id
+ */
+export declare function useFetcherLoading(id: any): boolean;
+/**
+ * Get the error state of a request using its id
+ */
+export declare function useFetcherError(id: any): Error | null;
+/**
+ * Fetcher hook
  */
 declare const useFetcher: {
     <FetchDataType extends unknown, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {

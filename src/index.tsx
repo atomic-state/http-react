@@ -162,7 +162,13 @@ type FetcherContextType = {
   headers?: any;
   baseUrl?: string;
   body?: object | FormData;
-  defaults?: any;
+  defaults?: {
+    [key: string]: {
+      id?: any;
+      value?: any;
+      config?: any;
+    };
+  };
   resolver?: (r: Response) => any;
   children?: any;
   auto?: boolean;
@@ -202,7 +208,7 @@ type FetcherType<FetchDataType, BodyType> = {
   /**
    * url of the resource to fetch
    */
-  url: string;
+  url?: string;
   /**
    * Default data value
    */
@@ -444,6 +450,8 @@ const defaultCache: CacheStoreType = {
   },
 };
 
+const valuesMemory: any = {};
+
 export function FetcherConfig(props: FetcherContextType) {
   const { children, defaults = {}, baseUrl } = props;
 
@@ -459,7 +467,23 @@ export function FetcherConfig(props: FetcherContextType) {
       : baseUrl;
 
   for (let defaultKey in defaults) {
-    cache.set(`${base}${defaultKey}`, defaults[defaultKey]);
+    const { id } = defaults[defaultKey];
+    const resolvedKey = JSON.stringify({
+      uri: typeof id === "undefined" ? `${base}${defaultKey}` : undefined,
+      idString: typeof id === "undefined" ? undefined : JSON.stringify(id),
+      config:
+        typeof id === "undefined"
+          ? {
+              method: defaults[defaultKey]?.config?.method,
+            }
+          : undefined,
+    });
+
+    if (typeof id !== "undefined") {
+      valuesMemory[JSON.stringify(id)] = defaults[defaultKey]?.value;
+    }
+
+    cache.set(resolvedKey, defaults[defaultKey]?.value);
   }
 
   let mergedConfig = {
@@ -535,7 +559,44 @@ export function useFetcherConfig() {
 }
 
 /**
- * Fetcher available as a hook
+ * Get the data state of a request using its id
+ */
+export function useFetcherData<T = any>(id: any) {
+  const { data } = useFetcher<T>({
+    id: id,
+  });
+
+  return data;
+}
+
+/**
+ * Get the loading state of a request using its id
+ */
+export function useFetcherLoading(id: any): boolean {
+  const idString = JSON.stringify({ idString: JSON.stringify(id) });
+
+  const { data } = useFetcher({
+    id: id,
+  });
+
+  return typeof runningRequests[idString] === "undefined"
+    ? true
+    : runningRequests[idString];
+}
+
+/**
+ * Get the error state of a request using its id
+ */
+export function useFetcherError(id: any) {
+  const { error } = useFetcher({
+    id: id,
+  });
+
+  return error;
+}
+
+/**
+ * Fetcher hook
  */
 
 const useFetcher = <FetchDataType extends unknown, BodyType = any>(
@@ -544,14 +605,14 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 ) => {
   const ctx = useContext(FetcherContext);
 
-  const { cache = defaultCache } = ctx;
+  const { cache = defaultCache } = {};
 
   const {
     onOnline = ctx.onOnline,
     onOffline = ctx.onOffline,
     retryOnReconnect = ctx.retryOnReconnect,
-    url = "/",
-    id = "",
+    url = "",
+    id,
     default: def,
     config = {
       query: {},
@@ -662,16 +723,21 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
   const [resKey, qp] = realUrl.split("?");
   const resolvedKey = JSON.stringify({
-    uri: rawUrl,
-    idString,
-    config: {
-      // headers: config?.headers,
-      // query: reqQuery,
-      method: config?.method,
-      // body: id ? idString : config?.body,
-      // formatBody: undefined
-    },
+    uri: typeof id === "undefined" ? rawUrl : undefined,
+    idString: typeof id === "undefined" ? undefined : idString,
+    config:
+      typeof id === "undefined"
+        ? {
+            method: config?.method,
+          }
+        : undefined,
   });
+
+  useEffect(() => {
+    if (!auto) {
+      runningRequests[resolvedKey] = false;
+    }
+  }, []);
 
   const [queryReady, setQueryReady] = useState(false);
 
@@ -705,7 +771,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
   const [data, setData] = useState<FetchDataType | undefined>(
     // Saved to base url of request without query params
-    memory ? requestCache || def : def
+    memory ? requestCache || valuesMemory[rawUrl] || def : def
   );
 
   // Used JSON as deppendency instead of directly using a reference to data
@@ -798,6 +864,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       if (code >= 200 && code < 400) {
         if (memory) {
           cache.set(resolvedKey, _data);
+          valuesMemory[idString] = _data;
         }
         setData(_data);
         cacheForMutation[idString] = _data;
@@ -808,7 +875,12 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
           error: null,
         });
         onResolve(_data, json);
-        runningRequests[resolvedKey] = undefined;
+
+        requestEmitter.emit(idString + "value", {
+          data: _data,
+        });
+
+        runningRequests[resolvedKey] = false;
 
         // If a request completes succesfuly, we reset the error attempts to 0
         setCompletedAttempts(0);
@@ -831,7 +903,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
           error: true,
         });
         onError(_data, json);
-        runningRequests[resolvedKey] = undefined;
+        runningRequests[resolvedKey] = false;
       }
     } catch (err) {
       const errorString = err?.toString();
@@ -1012,6 +1084,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
             setData(d);
             cacheForMutation[idString] = d;
             cache.set(resolvedKey, d);
+            valuesMemory[idString] = d;
           }
         } catch (err) {}
       } else {
@@ -1137,9 +1210,11 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     const tm = setTimeout(() => {
       if (queryReady) {
         if (auto) {
-          setLoading(true);
-          if (!runningRequests[resolvedKey]) {
-            fetchData();
+          if (url !== "") {
+            setLoading(true);
+            if (!runningRequests[resolvedKey]) {
+              fetchData();
+            }
           }
         } else {
           if (typeof data === "undefined") {
@@ -1202,6 +1277,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   ) {
     if (typeof newValue !== "function") {
       cache.set(resolvedKey, newValue);
+      valuesMemory[idString] = newValue;
       cacheForMutation[idString] = newValue;
       requestEmitter.emit(resolvedKey, {
         requestCallId,
@@ -1213,6 +1289,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       setData((prev) => {
         let newVal = (newValue as any)(prev);
         cache.set(resolvedKey, newVal);
+        valuesMemory[idString] = newVal;
         cacheForMutation[idString] = newVal;
         requestEmitter.emit(resolvedKey, {
           requestCallId,
