@@ -1091,12 +1091,16 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
         setLoading(true);
         setError(null);
         if (!runningRequests[resolvedKey]) {
-          requestEmitter.emit(resolvedKey, {
-            requestCallId,
-            loading: true,
-            error: null,
-          });
-          fetchData();
+          // We are preventing revalidation where we only need updates about
+          // 'loading', 'error' and 'data' because the url can be ommited.
+          if (url !== "") {
+            requestEmitter.emit(resolvedKey, {
+              requestCallId,
+              loading: true,
+              error: null,
+            });
+            fetchData();
+          }
         }
       }
     }

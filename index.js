@@ -721,12 +721,16 @@ var useFetcher = function (init, options) {
                         setLoading(true);
                         setError(null);
                         if (!runningRequests[resolvedKey]) {
-                            requestEmitter.emit(resolvedKey, {
-                                requestCallId: requestCallId,
-                                loading: true,
-                                error: null,
-                            });
-                            fetchData();
+                            // We are preventing revalidation where we only need updates about
+                            // 'loading', 'error' and 'data' because the url can be ommited.
+                            if (url !== "") {
+                                requestEmitter.emit(resolvedKey, {
+                                    requestCallId: requestCallId,
+                                    loading: true,
+                                    error: null,
+                                });
+                                fetchData();
+                            }
                         }
                     }
                     return [2 /*return*/];
