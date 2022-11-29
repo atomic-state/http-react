@@ -338,7 +338,9 @@ var useFetcher = function (init, options) {
         formatBody: false,
     } : _g, _h = _b.resolver, resolver = _h === void 0 ? typeof ctx.resolver === "function"
         ? ctx.resolver
-        : function (d) { return d.json(); } : _h, _j = _b.onError, onError = _j === void 0 ? function () { } : _j, _k = _b.auto, auto = _k === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.memory : _k, _l = _b.memory, memory = _l === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _l, _m = _b.onResolve, onResolve = _m === void 0 ? function () { } : _m, _o = _b.onAbort, onAbort = _o === void 0 ? function () { } : _o, _p = _b.refresh, refresh = _p === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _p, _q = _b.cancelOnChange, cancelOnChange = _q === void 0 ? typeof ctx.refresh === "undefined" ? false : ctx.refresh : _q, _r = _b.attempts, attempts = _r === void 0 ? ctx.attempts : _r, _s = _b.attemptInterval, attemptInterval = _s === void 0 ? ctx.attemptInterval : _s, _t = _b.revalidateOnFocus, revalidateOnFocus = _t === void 0 ? ctx.revalidateOnFocus : _t;
+        : function (d) { return d.json(); } : _h, _j = _b.onError, onError = _j === void 0 ? function () { } : _j, _k = _b.auto, auto = _k === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.auto : _k, _l = _b.memory, memory = _l === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _l, _m = _b.onResolve, onResolve = _m === void 0 ? function () { } : _m, _o = _b.onAbort, onAbort = _o === void 0 ? function () { } : _o, _p = _b.refresh, refresh = _p === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _p, _q = _b.cancelOnChange, cancelOnChange = _q === void 0 ? false : _q, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
+    _r = _b.attempts, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
+    attempts = _r === void 0 ? ctx.attempts : _r, _s = _b.attemptInterval, attemptInterval = _s === void 0 ? ctx.attemptInterval : _s, _t = _b.revalidateOnFocus, revalidateOnFocus = _t === void 0 ? ctx.revalidateOnFocus : _t;
     var idString = JSON.stringify(id);
     var _u = (0, react_1.useState)(__assign(__assign({}, ctx.query), Object.fromEntries(Object.keys((config === null || config === void 0 ? void 0 : config.query) || {}).map(function (k) { var _a; return [k, "".concat((_a = config === null || config === void 0 ? void 0 : config.query) === null || _a === void 0 ? void 0 : _a[k])]; })))), reqQuery = _u[0], setReqQuery = _u[1];
     var _v = (0, react_1.useState)(__assign(__assign({}, ctx.params), config.params)), reqParams = _v[0], setReqParams = _v[1];
@@ -547,7 +549,7 @@ var useFetcher = function (init, options) {
                         err_2 = _b.sent();
                         errorString = err_2 === null || err_2 === void 0 ? void 0 : err_2.toString();
                         // Only set error if no abort
-                        if (!errorString.match(/abort/i)) {
+                        if (!"".concat(errorString).match(/abort/i)) {
                             if (typeof requestCache === "undefined") {
                                 setData(def);
                                 cacheForMutation[idString] = def;
@@ -860,10 +862,11 @@ var useFetcher = function (init, options) {
     }, [
         url,
         stringDeps,
-        ctx.children,
         refresh,
         JSON.stringify(config),
+        ctx.children,
         queryReady,
+        auto,
     ]);
     (0, react_1.useEffect)(function () {
         if (revalidateOnFocus) {
