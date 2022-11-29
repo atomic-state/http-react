@@ -25,7 +25,7 @@ yarn add http-react-fetcher
 Without React
 
 ```html
-<script src="https://unpkg.com/http-react-fetcher@1.8.4/dist/vanilla.min.js"></script>
+<script src="https://unpkg.com/http-react-fetcher@1.8.5/dist/vanilla.min.js"></script>
 ```
 
 #### Basic usage

@@ -128,7 +128,7 @@ function createRequestFn(
         };
       }
     } catch (err) {
-      onError(err);
+      onError(err as any);
       return {
         res: r,
         data: def,
@@ -627,12 +627,12 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
       ? ctx.resolver
       : (d: any) => d.json(),
     onError = () => {},
-    auto = typeof ctx.auto === "undefined" ? true : ctx.memory,
+    auto = typeof ctx.auto === "undefined" ? true : ctx.auto,
     memory = typeof ctx.memory === "undefined" ? true : ctx.memory,
     onResolve = () => {},
     onAbort = () => {},
     refresh = typeof ctx.refresh === "undefined" ? 0 : ctx.refresh,
-    cancelOnChange = typeof ctx.refresh === "undefined" ? false : ctx.refresh,
+    cancelOnChange = false, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
     attempts = ctx.attempts,
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus,
@@ -908,7 +908,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     } catch (err) {
       const errorString = err?.toString();
       // Only set error if no abort
-      if (!errorString.match(/abort/i)) {
+      if (!`${errorString}`.match(/abort/i)) {
         if (typeof requestCache === "undefined") {
           setData(def);
           cacheForMutation[idString] = def;
@@ -924,13 +924,13 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
             data: requestCache,
           });
         }
-        let _error = new Error(err);
+        let _error = new Error(err as any);
         setError(_error);
         requestEmitter.emit(resolvedKey, {
           requestCallId,
           error: _error,
         });
-        onError(err);
+        onError(err as any);
       } else {
         if (typeof requestCache === "undefined") {
           if (typeof def !== "undefined") {
@@ -1238,10 +1238,11 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
   }, [
     url,
     stringDeps,
-    ctx.children,
     refresh,
     JSON.stringify(config),
+    ctx.children,
     queryReady,
+    auto,
   ]);
 
   useEffect(() => {
