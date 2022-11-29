@@ -530,21 +530,24 @@ export function mutateData(
   for (let pair of pairs) {
     try {
       const [k, v, _revalidate] = pair;
-      const key = JSON.stringify(k);
+      const key = JSON.stringify({ idString: JSON.stringify(k) });
+      const requestCallId = "";
       if (typeof v === "function") {
         let newVal = v(cacheForMutation[key]);
         requestEmitter.emit(key, {
           data: newVal,
+          requestCallId,
         });
         if (_revalidate) {
-          requestEmitter.emit(key);
+          requestEmitter.emit(JSON.stringify(k));
         }
       } else {
         requestEmitter.emit(key, {
+          requestCallId,
           data: v,
         });
         if (_revalidate) {
-          requestEmitter.emit(key);
+          requestEmitter.emit(JSON.stringify(k));
         }
       }
     } catch (err) {}
@@ -596,10 +599,18 @@ export function useFetcherError(id: any) {
 }
 
 /**
+ * Get everything from a `useFetcher` call using its id
+ */
+export function useFetcherId<ResponseType = any, BodyType = any>(id: any) {
+  return useFetcher<ResponseType, BodyType>({
+    id,
+  });
+}
+
+/**
  * Fetcher hook
  */
-
-const useFetcher = <FetchDataType extends unknown, BodyType = any>(
+const useFetcher = <FetchDataType = any, BodyType = any>(
   init: FetcherType<FetchDataType, BodyType> | string,
   options?: FetcherConfigOptions<FetchDataType, BodyType>
 ) => {
@@ -607,10 +618,18 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
 
   const { cache = defaultCache } = {};
 
+  const optionsConfig =
+    typeof init === "string"
+      ? {
+          // Pass init as the url if init is a string
+          url: init,
+          ...options,
+        }
+      : init;
+
   const {
     onOnline = ctx.onOnline,
     onOffline = ctx.onOffline,
-    retryOnReconnect = ctx.retryOnReconnect,
     url = "",
     id,
     default: def,
@@ -636,14 +655,14 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     attempts = ctx.attempts,
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus,
-  } = typeof init === "string"
-    ? {
-        // Pass init as the url if init is a string
-        url: init,
-        ...options,
-      }
-    : // `url` will be required in init if it is an object
-      init;
+  } = optionsConfig;
+
+  const retryOnReconnect =
+    optionsConfig.auto === false
+      ? false
+      : typeof optionsConfig.retryOnReconnect !== "undefined"
+      ? optionsConfig.retryOnReconnect
+      : ctx.retryOnReconnect;
 
   const idString = JSON.stringify(id);
 
@@ -1109,7 +1128,7 @@ const useFetcher = <FetchDataType extends unknown, BodyType = any>(
     return () => {
       requestEmitter.removeListener(idString, forceRefresh);
     };
-  }, [resolvedKey, stringDeps, rawJSON, idString, id]);
+  }, [resolvedKey, stringDeps, idString, id]);
 
   useEffect(() => {
     function backOnline() {

@@ -300,10 +300,56 @@ export declare function useFetcherLoading(id: any): boolean;
  */
 export declare function useFetcherError(id: any): Error | null;
 /**
+ * Get everything from a `useFetcher` call using its id
+ */
+export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any): {
+    data: ResponseType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: (c?: object | {
+        headers?: any;
+        body?: BodyType | undefined;
+    } | undefined) => Promise<void>;
+    mutate: React.Dispatch<React.SetStateAction<ResponseType>>;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<ResponseType>;
+    id: any;
+    key: string;
+};
+/**
  * Fetcher hook
  */
 declare const useFetcher: {
-    <FetchDataType extends unknown, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
+    <FetchDataType = any, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
@@ -424,7 +470,7 @@ declare const useFetcher: {
 };
 export { useFetcher };
 export declare const fetcher: {
-    <FetchDataType extends unknown, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
+    <FetchDataType = any, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
