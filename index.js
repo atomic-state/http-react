@@ -749,6 +749,7 @@ var useFetcher = function (init, options) {
                 }
                 if (!loading) {
                     if (!runningRequests[resolvedKey]) {
+                        previousConfig[resolvedKey] = undefined;
                         setLoading(true);
                         fetchData(c);
                         requestEmitter.emit(resolvedKey, {

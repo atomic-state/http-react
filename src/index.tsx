@@ -1145,6 +1145,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
       if (!loading) {
         if (!runningRequests[resolvedKey]) {
+          previousConfig[resolvedKey] = undefined;
           setLoading(true);
           fetchData(c);
           requestEmitter.emit(resolvedKey, {
