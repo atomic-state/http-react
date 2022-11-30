@@ -36,9 +36,18 @@ declare type FetcherContextType = {
     headers?: any;
     baseUrl?: string;
     body?: object | FormData;
+    /**
+     * Keys in `defaults` are just friendly names. Defaults are based on the `id` and `value` passed
+     */
     defaults?: {
         [key: string]: {
+            /**
+             * The `id` passed to the request
+             */
             id?: any;
+            /**
+             * Default value for this request
+             */
             value?: any;
             config?: any;
         };
@@ -344,6 +353,12 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
     response: CustomResponse<ResponseType>;
     id: any;
     key: string;
+};
+/**
+ * Create a configuration object to use in a 'useFetcher'call
+ */
+export declare type FetcherInit<FDT = any, BT = any> = FetcherConfigOptions<FDT, BT> & {
+    url?: string;
 };
 /**
  * Fetcher hook

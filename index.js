@@ -193,10 +193,10 @@ var defaultCache = {
 };
 var valuesMemory = {};
 function FetcherConfig(props) {
-    var _a, _b, _c, _d;
-    var children = props.children, _e = props.defaults, defaults = _e === void 0 ? {} : _e, baseUrl = props.baseUrl;
+    var _a, _b, _c, _d, _e;
+    var children = props.children, _f = props.defaults, defaults = _f === void 0 ? {} : _f, baseUrl = props.baseUrl;
     var previousConfig = (0, react_1.useContext)(FetcherContext);
-    var _f = previousConfig.cache, cache = _f === void 0 ? defaultCache : _f;
+    var _g = previousConfig.cache, cache = _g === void 0 ? defaultCache : _g;
     var base = typeof baseUrl === "undefined"
         ? typeof previousConfig.baseUrl === "undefined"
             ? ""
@@ -215,8 +215,9 @@ function FetcherConfig(props) {
         });
         if (typeof id !== "undefined") {
             valuesMemory[JSON.stringify(id)] = (_c = defaults[defaultKey]) === null || _c === void 0 ? void 0 : _c.value;
+            fetcherDefaults[JSON.stringify(id)] = (_d = defaults[defaultKey]) === null || _d === void 0 ? void 0 : _d.value;
         }
-        cache.set(resolvedKey, (_d = defaults[defaultKey]) === null || _d === void 0 ? void 0 : _d.value);
+        cache.set(resolvedKey, (_e = defaults[defaultKey]) === null || _e === void 0 ? void 0 : _e.value);
     }
     var mergedConfig = __assign(__assign(__assign({}, previousConfig), props), { headers: __assign(__assign({}, previousConfig.headers), props.headers) });
     return (React.createElement(FetcherContext.Provider, { value: mergedConfig }, children));
@@ -242,6 +243,7 @@ function revalidate(id) {
     }
 }
 exports.revalidate = revalidate;
+var fetcherDefaults = {};
 var cacheForMutation = {};
 /**
  * Force mutation in requests from anywhere. This doesn't revalidate requests
@@ -325,8 +327,13 @@ exports.useFetcherError = useFetcherError;
  * Get everything from a `useFetcher` call using its id
  */
 function useFetcherId(id) {
+    var defaultsKey = JSON.stringify({
+        idString: JSON.stringify(id),
+    });
+    var def = fetcherDefaults[defaultsKey];
     return useFetcher({
         id: id,
+        default: def,
     });
 }
 exports.useFetcherId = useFetcherId;
@@ -340,7 +347,7 @@ var useFetcher = function (init, options) {
         ? __assign({ 
             // Pass init as the url if init is a string
             url: init }, options) : init;
-    var _b = optionsConfig.onOnline, onOnline = _b === void 0 ? ctx.onOnline : _b, _c = optionsConfig.onOffline, onOffline = _c === void 0 ? ctx.onOffline : _c, _d = optionsConfig.url, url = _d === void 0 ? "" : _d, id = optionsConfig.id, def = optionsConfig.default, _e = optionsConfig.config, config = _e === void 0 ? {
+    var _b = optionsConfig.onOnline, onOnline = _b === void 0 ? ctx.onOnline : _b, _c = optionsConfig.onOffline, onOffline = _c === void 0 ? ctx.onOffline : _c, _d = optionsConfig.url, url = _d === void 0 ? "" : _d, id = optionsConfig.id, _e = optionsConfig.config, config = _e === void 0 ? {
         query: {},
         params: {},
         baseUrl: undefined,
@@ -353,6 +360,7 @@ var useFetcher = function (init, options) {
         : function (d) { return d.json(); } : _f, _g = optionsConfig.onError, onError = _g === void 0 ? function () { } : _g, _h = optionsConfig.auto, auto = _h === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.auto : _h, _j = optionsConfig.memory, memory = _j === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _j, _k = optionsConfig.onResolve, onResolve = _k === void 0 ? function () { } : _k, _l = optionsConfig.onAbort, onAbort = _l === void 0 ? function () { } : _l, _m = optionsConfig.refresh, refresh = _m === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _m, _o = optionsConfig.cancelOnChange, cancelOnChange = _o === void 0 ? false : _o, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
     _p = optionsConfig.attempts, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
     attempts = _p === void 0 ? ctx.attempts : _p, _q = optionsConfig.attemptInterval, attemptInterval = _q === void 0 ? ctx.attemptInterval : _q, _r = optionsConfig.revalidateOnFocus, revalidateOnFocus = _r === void 0 ? ctx.revalidateOnFocus : _r;
+    var requestCallId = React.useMemo(function () { return "".concat(Math.random()).split(".")[1]; }, []);
     var retryOnReconnect = optionsConfig.auto === false
         ? false
         : typeof optionsConfig.retryOnReconnect !== "undefined"
@@ -415,6 +423,28 @@ var useFetcher = function (init, options) {
             }
             : undefined,
     });
+    // This helps pass default values to other useFetcher calls using the same id
+    (0, react_1.useEffect)(function () {
+        if (typeof optionsConfig.default !== "undefined") {
+            if (typeof fetcherDefaults[idString] === "undefined") {
+                if (url !== "") {
+                    fetcherDefaults[idString] = optionsConfig.default;
+                }
+                else {
+                    requestEmitter.emit(resolvedKey, {
+                        requestCallId: requestCallId,
+                        data: optionsConfig.default,
+                    });
+                }
+            }
+        }
+        else {
+            if (typeof fetcherDefaults[idString] !== "undefined") {
+                setData(fetcherDefaults[idString]);
+            }
+        }
+    }, [idString]);
+    var def = fetcherDefaults[idString];
     (0, react_1.useEffect)(function () {
         if (!auto) {
             runningRequests[resolvedKey] = false;
@@ -461,7 +491,6 @@ var useFetcher = function (init, options) {
     var _3 = (0, react_1.useState)(true), loading = _3[0], setLoading = _3[1];
     var _4 = (0, react_1.useState)(0), completedAttempts = _4[0], setCompletedAttempts = _4[1];
     var _5 = (0, react_1.useState)(new AbortController()), requestAbortController = _5[0], setRequestAbortController = _5[1];
-    var requestCallId = React.useMemo(function () { return "".concat(Math.random()).split(".")[1]; }, []);
     function fetchData(c) {
         var _a;
         if (c === void 0) { c = {}; }
@@ -633,7 +662,7 @@ var useFetcher = function (init, options) {
     }, [requestAbortController, onAbort]);
     var stringDeps = JSON.stringify(
     // We ignore children and resolver
-    Object.assign(ctx, { children: undefined }, config === null || config === void 0 ? void 0 : config.headers, config === null || config === void 0 ? void 0 : config.body, config === null || config === void 0 ? void 0 : config.query, config === null || config === void 0 ? void 0 : config.params, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
+    Object.assign(ctx, { children: undefined }, config === null || config === void 0 ? void 0 : config.headers, config === null || config === void 0 ? void 0 : config.method, config === null || config === void 0 ? void 0 : config.body, config === null || config === void 0 ? void 0 : config.query, config === null || config === void 0 ? void 0 : config.params, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
     (0, react_1.useEffect)(function () {
         function waitFormUpdates(v) {
             return __awaiter(this, void 0, void 0, function () {
@@ -860,6 +889,11 @@ var useFetcher = function (init, options) {
                         if (!runningRequests[resolvedKey]) {
                             fetchData();
                         }
+                    }
+                    // It means a url is not passed
+                    else {
+                        setError(null);
+                        setLoading(false);
                     }
                 }
                 else {
