@@ -162,9 +162,18 @@ type FetcherContextType = {
   headers?: any;
   baseUrl?: string;
   body?: object | FormData;
+  /**
+   * Keys in `defaults` are just friendly names. Defaults are based on the `id` and `value` passed
+   */
   defaults?: {
     [key: string]: {
+      /**
+       * The `id` passed to the request
+       */
       id?: any;
+      /**
+       * Default value for this request
+       */
       value?: any;
       config?: any;
     };
@@ -481,6 +490,8 @@ export function FetcherConfig(props: FetcherContextType) {
 
     if (typeof id !== "undefined") {
       valuesMemory[JSON.stringify(id)] = defaults[defaultKey]?.value;
+
+      fetcherDefaults[JSON.stringify(id)] = defaults[defaultKey]?.value;
     }
 
     cache.set(resolvedKey, defaults[defaultKey]?.value);
@@ -520,7 +531,8 @@ export function revalidate(id: any | any[]) {
     }
   }
 }
-let cacheForMutation: any = {};
+const fetcherDefaults: any = {};
+const cacheForMutation: any = {};
 /**
  * Force mutation in requests from anywhere. This doesn't revalidate requests
  */
@@ -602,10 +614,20 @@ export function useFetcherError(id: any) {
  * Get everything from a `useFetcher` call using its id
  */
 export function useFetcherId<ResponseType = any, BodyType = any>(id: any) {
+  const defaultsKey = JSON.stringify({
+    idString: JSON.stringify(id),
+  });
+  const def = fetcherDefaults[defaultsKey];
+
   return useFetcher<ResponseType, BodyType>({
     id,
+    default: def,
   });
 }
+/**
+ * Create a configuration object to use in a 'useFetcher'call
+ */
+export type FetcherInit<FDT = any, BT = any> = FetcherConfigOptions<FDT, BT>;
 
 /**
  * Fetcher hook
@@ -632,7 +654,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     onOffline = ctx.onOffline,
     url = "",
     id,
-    default: def,
     config = {
       query: {},
       params: {},
@@ -656,6 +677,11 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus,
   } = optionsConfig;
+
+  const requestCallId = React.useMemo(
+    () => `${Math.random()}`.split(".")[1],
+    []
+  );
 
   const retryOnReconnect =
     optionsConfig.auto === false
@@ -752,6 +778,28 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         : undefined,
   });
 
+  // This helps pass default values to other useFetcher calls using the same id
+  useEffect(() => {
+    if (typeof optionsConfig.default !== "undefined") {
+      if (typeof fetcherDefaults[idString] === "undefined") {
+        if (url !== "") {
+          fetcherDefaults[idString] = optionsConfig.default;
+        } else {
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            data: optionsConfig.default,
+          });
+        }
+      }
+    } else {
+      if (typeof fetcherDefaults[idString] !== "undefined") {
+        setData(fetcherDefaults[idString]);
+      }
+    }
+  }, [idString]);
+
+  const def = fetcherDefaults[idString];
+
   useEffect(() => {
     if (!auto) {
       runningRequests[resolvedKey] = false;
@@ -823,11 +871,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   const [completedAttempts, setCompletedAttempts] = useState(0);
   const [requestAbortController, setRequestAbortController] =
     useState<AbortController>(new AbortController());
-
-  const requestCallId = React.useMemo(
-    () => `${Math.random()}`.split(".")[1],
-    []
-  );
 
   async function fetchData(c: { headers?: any; body?: BodyType } = {}) {
     runningRequests[resolvedKey] = true;
@@ -993,6 +1036,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       ctx,
       { children: undefined },
       config?.headers,
+      config?.method,
       config?.body,
       config?.query,
       config?.params,
@@ -1238,6 +1282,11 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             if (!runningRequests[resolvedKey]) {
               fetchData();
             }
+          }
+          // It means a url is not passed
+          else {
+            setError(null);
+            setLoading(false);
           }
         } else {
           if (typeof data === "undefined") {
