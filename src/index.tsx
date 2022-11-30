@@ -627,7 +627,9 @@ export function useFetcherId<ResponseType = any, BodyType = any>(id: any) {
 /**
  * Create a configuration object to use in a 'useFetcher'call
  */
-export type FetcherInit<FDT = any, BT = any> = FetcherConfigOptions<FDT, BT>;
+export type FetcherInit<FDT = any, BT = any> = FetcherConfigOptions<FDT, BT> & {
+  url?: string;
+};
 
 /**
  * Fetcher hook
