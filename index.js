@@ -157,6 +157,7 @@ function createRequestFn(method, baseUrl, $headers, q) {
     };
 }
 var runningRequests = {};
+var previousConfig = {};
 var createRequestEmitter = function () {
     var emitter = new events_1.EventEmitter();
     emitter.setMaxListeners(10e10);
@@ -287,7 +288,14 @@ exports.mutateData = mutateData;
  * Get the current fetcher config
  */
 function useFetcherConfig() {
-    return (0, react_1.useContext)(FetcherContext);
+    var ftxcf = (0, react_1.useContext)(FetcherContext);
+    // Remove the 'method' strings
+    for (var k in ftxcf) {
+        if (k.match(/[0-9]/)) {
+            delete ftxcf[k];
+        }
+    }
+    return ftxcf;
 }
 exports.useFetcherConfig = useFetcherConfig;
 /**
@@ -499,6 +507,10 @@ var useFetcher = function (init, options) {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        if (!(previousConfig[resolvedKey] !== JSON.stringify(optionsConfig))) return [3 /*break*/, 6];
+                        if (!!runningRequests[resolvedKey]) return [3 /*break*/, 6];
+                        setLoading(true);
+                        previousConfig[resolvedKey] = JSON.stringify(optionsConfig);
                         runningRequests[resolvedKey] = true;
                         newAbortController = new AbortController();
                         setRequestAbortController(newAbortController);
@@ -517,7 +529,8 @@ var useFetcher = function (init, options) {
                                 method: config.method,
                                 headers: __assign(__assign(__assign({ "Content-Type": 
                                     // If body is form-data, set Content-Type header to 'multipart/form-data'
-                                    typeof FormData !== "undefined" && config.body instanceof FormData
+                                    typeof FormData !== "undefined" &&
+                                        config.body instanceof FormData
                                         ? "multipart/form-data"
                                         : "application/json" }, ctx.headers), config.headers), c.headers),
                                 body: ((_a = config.method) === null || _a === void 0 ? void 0 : _a.match(/(POST|PUT|DELETE|PATCH)/))
@@ -841,6 +854,9 @@ var useFetcher = function (init, options) {
         setRequestHeades(function (r) { return (__assign(__assign({}, r), ctx.headers)); });
     }, [ctx.headers]);
     (0, react_1.useEffect)(function () {
+        previousConfig[resolvedKey] = undefined;
+    }, [requestCallId]);
+    (0, react_1.useEffect)(function () {
         // Attempts will be made after a request fails
         var tm = setTimeout(function () {
             if (error) {
@@ -880,15 +896,16 @@ var useFetcher = function (init, options) {
         // }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, loading, error, rawJSON, completedAttempts, config]);
+    var initMemo = React.useMemo(function () { return JSON.stringify(optionsConfig); }, []);
     (0, react_1.useEffect)(function () {
         var tm = setTimeout(function () {
             if (queryReady) {
                 if (auto) {
                     if (url !== "") {
-                        setLoading(true);
-                        if (!runningRequests[resolvedKey]) {
-                            fetchData();
+                        if (runningRequests[resolvedKey]) {
+                            setLoading(true);
                         }
+                        fetchData();
                     }
                     // It means a url is not passed
                     else {
@@ -911,11 +928,12 @@ var useFetcher = function (init, options) {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
+        initMemo,
         url,
         stringDeps,
         refresh,
         JSON.stringify(config),
-        ctx.children,
+        // ctx.children,
         queryReady,
         auto,
     ]);
@@ -936,7 +954,7 @@ var useFetcher = function (init, options) {
         stringDeps,
         loading,
         reValidate,
-        ctx.children,
+        // ctx.children,
         refresh,
         JSON.stringify(config),
     ]);
