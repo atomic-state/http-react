@@ -232,6 +232,8 @@ function revalidate(id) {
         id.map(function (reqId) {
             if (typeof reqId !== "undefined") {
                 var key = JSON.stringify(reqId);
+                var resolveKey = JSON.stringify({ idString: key });
+                previousConfig[resolveKey] = undefined;
                 requestEmitter.emit(key);
             }
         });
@@ -239,6 +241,8 @@ function revalidate(id) {
     else {
         if (typeof id !== "undefined") {
             var key = JSON.stringify(id);
+            var resolveKey = JSON.stringify({ idString: key });
+            previousConfig[resolveKey] = undefined;
             requestEmitter.emit(key);
         }
     }
@@ -267,6 +271,7 @@ function mutateData() {
                     requestCallId: requestCallId,
                 });
                 if (_revalidate) {
+                    previousConfig[key] = undefined;
                     requestEmitter.emit(JSON.stringify(k));
                 }
             }
@@ -276,6 +281,7 @@ function mutateData() {
                     data: v,
                 });
                 if (_revalidate) {
+                    previousConfig[key] = undefined;
                     requestEmitter.emit(JSON.stringify(k));
                 }
             }

@@ -523,12 +523,22 @@ export function revalidate(id: any | any[]) {
     id.map((reqId) => {
       if (typeof reqId !== "undefined") {
         const key = JSON.stringify(reqId);
+
+        const resolveKey = JSON.stringify({ idString: key });
+
+        previousConfig[resolveKey] = undefined;
+
         requestEmitter.emit(key);
       }
     });
   } else {
     if (typeof id !== "undefined") {
       const key = JSON.stringify(id);
+
+      const resolveKey = JSON.stringify({ idString: key });
+
+      previousConfig[resolveKey] = undefined;
+
       requestEmitter.emit(key);
     }
   }
@@ -553,6 +563,7 @@ export function mutateData(
           requestCallId,
         });
         if (_revalidate) {
+          previousConfig[key] = undefined;
           requestEmitter.emit(JSON.stringify(k));
         }
       } else {
@@ -561,6 +572,7 @@ export function mutateData(
           data: v,
         });
         if (_revalidate) {
+          previousConfig[key] = undefined;
           requestEmitter.emit(JSON.stringify(k));
         }
       }
