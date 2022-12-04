@@ -458,7 +458,9 @@ var useFetcher = function (init, options) {
             }
         }
     }, [idString]);
-    var def = fetcherDefaults[idString];
+    var def = idString in fetcherDefaults
+        ? fetcherDefaults[idString]
+        : optionsConfig.default;
     (0, react_1.useEffect)(function () {
         if (!auto) {
             runningRequests[resolvedKey] = false;
@@ -929,7 +931,7 @@ var useFetcher = function (init, options) {
                     setLoading(false);
                 }
             }
-        }, 0);
+        }, 10);
         return function () {
             clearTimeout(tm);
         };

@@ -822,7 +822,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     }
   }, [idString]);
 
-  const def = fetcherDefaults[idString];
+  const def =
+    idString in fetcherDefaults
+      ? fetcherDefaults[idString]
+      : optionsConfig.default;
 
   useEffect(() => {
     if (!auto) {
@@ -1335,7 +1338,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           setLoading(false);
         }
       }
-    }, 0);
+    }, 10);
 
     return () => {
       clearTimeout(tm);
