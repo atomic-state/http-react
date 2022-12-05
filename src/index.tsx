@@ -144,6 +144,8 @@ const runningRequests: any = {};
 
 const previousConfig: any = {};
 
+const firstTime: any = {};
+
 const createRequestEmitter = () => {
   const emitter = new EventEmitter();
 
@@ -836,29 +838,24 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   const [queryReady, setQueryReady] = useState(false);
 
   useEffect(() => {
-    setQueryReady(false);
-    let queryParamsFromString: any = {};
-    // getting query params from passed url
-    const queryParts = qp.split("&");
-    queryParts.forEach((q, i) => {
-      const [key, value] = q.split("=");
-      if (queryParamsFromString[key] !== value) {
-        queryParamsFromString[key] = `${value}`;
-      }
-    });
-
-    const tm1 = setTimeout(() => {
+    try {
+      setQueryReady(false);
+      let queryParamsFromString: any = {};
+      // getting query params from passed url
+      const queryParts = qp.split("&");
+      queryParts.forEach((q, i) => {
+        const [key, value] = q.split("=");
+        if (queryParamsFromString[key] !== value) {
+          queryParamsFromString[key] = `${value}`;
+        }
+      });
       setReqQuery((previousQuery: any) => ({
         ...previousQuery,
         ...queryParamsFromString,
       }));
-      clearTimeout(tm1);
-    }, 0);
-
-    const tm = setTimeout(() => {
+    } finally {
       setQueryReady(true);
-      clearTimeout(tm);
-    }, 0);
+    }
   }, [JSON.stringify(reqQuery)]);
 
   const requestCache = cache.get(resolvedKey);
@@ -1315,9 +1312,16 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   const initMemo = React.useMemo(() => JSON.stringify(optionsConfig), []);
 
   useEffect(() => {
-    const tm = setTimeout(() => {
-      if (queryReady) {
-        if (auto) {
+    if (auto) {
+      if (cancelOnChange) {
+        if (!firstTime[resolvedKey]) {
+          firstTime[resolvedKey] = true;
+        } else {
+          requestAbortController.abort();
+        }
+      }
+      const tm = setTimeout(() => {
+        if (queryReady) {
           if (url !== "") {
             if (runningRequests[resolvedKey]) {
               setLoading(true);
@@ -1337,12 +1341,12 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           setError(null);
           setLoading(false);
         }
-      }
-    }, 10);
+      }, 10);
 
-    return () => {
-      clearTimeout(tm);
-    };
+      return () => {
+        clearTimeout(tm);
+      };
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     initMemo,

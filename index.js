@@ -158,6 +158,7 @@ function createRequestFn(method, baseUrl, $headers, q) {
 }
 var runningRequests = {};
 var previousConfig = {};
+var firstTime = {};
 var createRequestEmitter = function () {
     var emitter = new events_1.EventEmitter();
     emitter.setMaxListeners(10e10);
@@ -468,24 +469,22 @@ var useFetcher = function (init, options) {
     }, []);
     var _v = (0, react_1.useState)(false), queryReady = _v[0], setQueryReady = _v[1];
     (0, react_1.useEffect)(function () {
-        setQueryReady(false);
-        var queryParamsFromString = {};
-        // getting query params from passed url
-        var queryParts = qp.split("&");
-        queryParts.forEach(function (q, i) {
-            var _a = q.split("="), key = _a[0], value = _a[1];
-            if (queryParamsFromString[key] !== value) {
-                queryParamsFromString[key] = "".concat(value);
-            }
-        });
-        var tm1 = setTimeout(function () {
-            setReqQuery(function (previousQuery) { return (__assign(__assign({}, previousQuery), queryParamsFromString)); });
-            clearTimeout(tm1);
-        }, 0);
-        var tm = setTimeout(function () {
+        try {
+            setQueryReady(false);
+            var queryParamsFromString_1 = {};
+            // getting query params from passed url
+            var queryParts = qp.split("&");
+            queryParts.forEach(function (q, i) {
+                var _a = q.split("="), key = _a[0], value = _a[1];
+                if (queryParamsFromString_1[key] !== value) {
+                    queryParamsFromString_1[key] = "".concat(value);
+                }
+            });
+            setReqQuery(function (previousQuery) { return (__assign(__assign({}, previousQuery), queryParamsFromString_1)); });
+        }
+        finally {
             setQueryReady(true);
-            clearTimeout(tm);
-        }, 0);
+        }
     }, [JSON.stringify(reqQuery)]);
     var requestCache = cache.get(resolvedKey);
     var _w = (0, react_1.useState)(
@@ -907,9 +906,17 @@ var useFetcher = function (init, options) {
     }, [refresh, loading, error, rawJSON, completedAttempts, config]);
     var initMemo = React.useMemo(function () { return JSON.stringify(optionsConfig); }, []);
     (0, react_1.useEffect)(function () {
-        var tm = setTimeout(function () {
-            if (queryReady) {
-                if (auto) {
+        if (auto) {
+            if (cancelOnChange) {
+                if (!firstTime[resolvedKey]) {
+                    firstTime[resolvedKey] = true;
+                }
+                else {
+                    requestAbortController.abort();
+                }
+            }
+            var tm_1 = setTimeout(function () {
+                if (queryReady) {
                     if (url !== "") {
                         if (runningRequests[resolvedKey]) {
                             setLoading(true);
@@ -930,11 +937,11 @@ var useFetcher = function (init, options) {
                     setError(null);
                     setLoading(false);
                 }
-            }
-        }, 10);
-        return function () {
-            clearTimeout(tm);
-        };
+            }, 10);
+            return function () {
+                clearTimeout(tm_1);
+            };
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         initMemo,
