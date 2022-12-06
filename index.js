@@ -509,6 +509,9 @@ var useFetcher = function (init, options) {
                 switch (_b.label) {
                     case 0:
                         if (!(previousConfig[resolvedKey] !== JSON.stringify(optionsConfig))) return [3 /*break*/, 6];
+                        if (cancelOnChange) {
+                            requestAbortController === null || requestAbortController === void 0 ? void 0 : requestAbortController.abort();
+                        }
                         if (!!runningRequests[resolvedKey]) return [3 /*break*/, 6];
                         setLoading(true);
                         previousConfig[resolvedKey] = JSON.stringify(optionsConfig);
@@ -664,16 +667,17 @@ var useFetcher = function (init, options) {
         var signal = (requestAbortController || {}).signal;
         // Run onAbort callback
         var abortCallback = function () {
-            var timeout = setTimeout(function () {
-                onAbort();
-                clearTimeout(timeout);
-            });
+            if (loading) {
+                if (runningRequests[resolvedKey]) {
+                    onAbort();
+                }
+            }
         };
         signal === null || signal === void 0 ? void 0 : signal.addEventListener("abort", abortCallback);
         return function () {
             signal === null || signal === void 0 ? void 0 : signal.removeEventListener("abort", abortCallback);
         };
-    }, [requestAbortController, onAbort]);
+    }, [requestAbortController, resolvedKey, onAbort, loading]);
     var stringDeps = JSON.stringify(
     // We ignore children and resolver
     Object.assign(ctx, { children: undefined }, config === null || config === void 0 ? void 0 : config.headers, config === null || config === void 0 ? void 0 : config.method, config === null || config === void 0 ? void 0 : config.body, config === null || config === void 0 ? void 0 : config.query, config === null || config === void 0 ? void 0 : config.params, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
@@ -726,33 +730,21 @@ var useFetcher = function (init, options) {
             requestEmitter.removeListener(resolvedKey, waitFormUpdates);
         };
     }, [resolvedKey, id, requestAbortController, stringDeps]);
-    var reValidate = React.useCallback(function reValidate(c) {
-        if (c === void 0) { c = {}; }
+    var reValidate = React.useCallback(function reValidate() {
         return __awaiter(this, void 0, void 0, function () {
+            var reqQ_1;
             return __generator(this, function (_a) {
-                if (cancelOnChange) {
-                    requestAbortController === null || requestAbortController === void 0 ? void 0 : requestAbortController.abort();
-                }
                 // Only revalidate if request was already completed
-                if (c.body) {
-                    setRequestBody(c.body);
-                }
-                else {
-                    if (config === null || config === void 0 ? void 0 : config.body) {
-                        setRequestBody(config.body);
-                    }
-                }
-                if (c.headers) {
-                    setRequestHeades(function (p) { return (__assign(__assign({}, p), c.headers)); });
-                }
-                else {
-                    setRequestHeades(function (previousHeaders) { return (__assign(__assign({}, previousHeaders), config.headers)); });
-                }
                 if (!loading) {
                     if (!runningRequests[resolvedKey]) {
                         previousConfig[resolvedKey] = undefined;
                         setLoading(true);
-                        fetchData(c);
+                        reqQ_1 = __assign(__assign({}, ctx.query), config.query);
+                        fetchData({
+                            query: Object.keys(reqQ_1)
+                                .map(function (q) { return [q, reqQ_1[q]].join("="); })
+                                .join("&"),
+                        });
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
                             loading: true,
@@ -766,7 +758,7 @@ var useFetcher = function (init, options) {
     (0, react_1.useEffect)(function () {
         function forceRefresh(v) {
             return __awaiter(this, void 0, void 0, function () {
-                var d;
+                var d, reqQ_2;
                 return __generator(this, function (_a) {
                     if (typeof (v === null || v === void 0 ? void 0 : v.data) !== "undefined") {
                         try {
@@ -792,7 +784,12 @@ var useFetcher = function (init, options) {
                                     loading: true,
                                     error: null,
                                 });
-                                fetchData();
+                                reqQ_2 = __assign(__assign({}, ctx.query), config.query);
+                                fetchData({
+                                    query: Object.keys(reqQ_2)
+                                        .map(function (q) { return [q, reqQ_2[q]].join("="); })
+                                        .join("&"),
+                                });
                             }
                         }
                     }
@@ -905,10 +902,10 @@ var useFetcher = function (init, options) {
                 if (runningRequests[resolvedKey]) {
                     setLoading(true);
                 }
-                var reqQ_1 = __assign(__assign({}, ctx.query), config.query);
+                var reqQ_3 = __assign(__assign({}, ctx.query), config.query);
                 fetchData({
-                    query: Object.keys(reqQ_1)
-                        .map(function (q) { return [q, reqQ_1[q]].join("="); })
+                    query: Object.keys(reqQ_3)
+                        .map(function (q) { return [q, reqQ_3[q]].join("="); })
                         .join("&"),
                 });
             }
@@ -927,14 +924,7 @@ var useFetcher = function (init, options) {
             setLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
-        initMemo,
-        url,
-        stringDeps,
-        refresh,
-        JSON.stringify(config),
-        auto,
-    ]);
+    }, [initMemo, url, stringDeps, refresh, JSON.stringify(config), auto]);
     (0, react_1.useEffect)(function () {
         if (revalidateOnFocus) {
             if (typeof window !== "undefined") {
