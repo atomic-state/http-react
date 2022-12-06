@@ -22,10 +22,17 @@ yarn add http-react-fetcher
 
 ### Browser
 
+With React
+
+```html
+<script src="https://unpkg.com/http-react-fetcher@1.9.5/dist/http-react-fetcher.min.js"></script>
+```
+
+
 Without React
 
 ```html
-<script src="https://unpkg.com/http-react-fetcher@1.9.4/dist/vanilla.min.js"></script>
+<script src="https://unpkg.com/http-react-fetcher@1.9.5/dist/vanilla.min.js"></script>
 ```
 
 #### Basic usage

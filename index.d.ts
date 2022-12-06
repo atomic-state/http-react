@@ -317,10 +317,7 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
     error: Error | null;
     online: boolean;
     code: number;
-    reFetch: (c?: object | {
-        headers?: any;
-        body?: BodyType | undefined;
-    } | undefined) => Promise<void>;
+    reFetch: () => Promise<void>;
     mutate: React.Dispatch<React.SetStateAction<ResponseType>>;
     abort: () => void;
     config: {
@@ -370,10 +367,7 @@ declare const useFetcher: {
         error: Error | null;
         online: boolean;
         code: number;
-        reFetch: (c?: object | {
-            headers?: any;
-            body?: BodyType | undefined;
-        } | undefined) => Promise<void>;
+        reFetch: () => Promise<void>;
         mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
         abort: () => void;
         config: {
@@ -427,10 +421,7 @@ declare const useFetcher: {
             error: Error | null;
             online: boolean;
             code: number;
-            reFetch: (c?: object | {
-                headers?: any;
-                body?: BodyType_1 | undefined;
-            } | undefined) => Promise<void>;
+            reFetch: () => Promise<void>;
             mutate: React.Dispatch<React.SetStateAction<T>>;
             abort: () => void;
             config: {
@@ -491,10 +482,7 @@ export declare const fetcher: {
         error: Error | null;
         online: boolean;
         code: number;
-        reFetch: (c?: object | {
-            headers?: any;
-            body?: BodyType | undefined;
-        } | undefined) => Promise<void>;
+        reFetch: () => Promise<void>;
         mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
         abort: () => void;
         config: {
@@ -548,10 +536,7 @@ export declare const fetcher: {
             error: Error | null;
             online: boolean;
             code: number;
-            reFetch: (c?: object | {
-                headers?: any;
-                body?: BodyType_1 | undefined;
-            } | undefined) => Promise<void>;
+            reFetch: () => Promise<void>;
             mutate: React.Dispatch<React.SetStateAction<T>>;
             abort: () => void;
             config: {

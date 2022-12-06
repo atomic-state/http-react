@@ -891,6 +891,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     c: { headers?: any; body?: BodyType; query?: any } = {}
   ) {
     if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
+      if (cancelOnChange) {
+        requestAbortController?.abort();
+      }
       if (!runningRequests[resolvedKey]) {
         setLoading(true);
         previousConfig[resolvedKey] = JSON.stringify(optionsConfig);
@@ -1043,16 +1046,17 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     const { signal } = requestAbortController || {};
     // Run onAbort callback
     const abortCallback = () => {
-      const timeout = setTimeout(() => {
-        onAbort();
-        clearTimeout(timeout);
-      });
+      if (loading) {
+        if (runningRequests[resolvedKey]) {
+          onAbort();
+        }
+      }
     };
     signal?.addEventListener("abort", abortCallback);
     return () => {
       signal?.removeEventListener("abort", abortCallback);
     };
-  }, [requestAbortController, onAbort]);
+  }, [requestAbortController, resolvedKey, onAbort, loading]);
 
   const stringDeps = JSON.stringify(
     // We ignore children and resolver
@@ -1127,32 +1131,21 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   }, [resolvedKey, id, requestAbortController, stringDeps]);
 
   const reValidate = React.useCallback(
-    async function reValidate(c: { headers?: any; body?: BodyType } = {}) {
-      if (cancelOnChange) {
-        requestAbortController?.abort();
-      }
+    async function reValidate() {
       // Only revalidate if request was already completed
-      if (c.body) {
-        setRequestBody(c.body);
-      } else {
-        if (config?.body) {
-          setRequestBody(config.body as any);
-        }
-      }
-      if (c.headers) {
-        setRequestHeades((p) => ({ ...p, ...c.headers }));
-      } else {
-        setRequestHeades((previousHeaders) => ({
-          ...previousHeaders,
-          ...config.headers,
-        }));
-      }
-
       if (!loading) {
         if (!runningRequests[resolvedKey]) {
           previousConfig[resolvedKey] = undefined;
           setLoading(true);
-          fetchData(c);
+          const reqQ = {
+            ...ctx.query,
+            ...config.query,
+          };
+          fetchData({
+            query: Object.keys(reqQ)
+              .map((q) => [q, reqQ[q]].join("="))
+              .join("&"),
+          });
           requestEmitter.emit(resolvedKey, {
             requestCallId,
             loading: true,
@@ -1187,7 +1180,15 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               loading: true,
               error: null,
             });
-            fetchData();
+            const reqQ = {
+              ...ctx.query,
+              ...config.query,
+            };
+            fetchData({
+              query: Object.keys(reqQ)
+                .map((q) => [q, reqQ[q]].join("="))
+                .join("&"),
+            });
           }
         }
       }
@@ -1334,14 +1335,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    initMemo,
-    url,
-    stringDeps,
-    refresh,
-    JSON.stringify(config),
-    auto,
-  ]);
+  }, [initMemo, url, stringDeps, refresh, JSON.stringify(config), auto]);
 
   useEffect(() => {
     if (revalidateOnFocus) {
@@ -1440,7 +1434,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     error: Error | null;
     online: boolean;
     code: number;
-    reFetch: (c?: { headers?: any; body?: BodyType } | object) => Promise<void>;
+    reFetch: () => Promise<void>;
     mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
     abort: () => void;
     config: FetcherType<FetchDataType, BodyType>["config"] & {
