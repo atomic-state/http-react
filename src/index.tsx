@@ -144,8 +144,6 @@ const runningRequests: any = {};
 
 const previousConfig: any = {};
 
-const firstTime: any = {};
-
 const createRequestEmitter = () => {
   const emitter = new EventEmitter();
 
@@ -720,9 +718,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   const [reqQuery, setReqQuery] = useState({
     ...ctx.query,
-    ...Object.fromEntries(
-      Object.keys(config?.query || {}).map((k) => [k, `${config?.query?.[k]}`])
-    ),
+    ...config.query,
   });
 
   const [reqParams, setReqParams] = useState({
@@ -784,13 +780,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     [JSON.stringify(reqParams), config.baseUrl, ctx.baseUrl, url]
   );
 
-  const reqQueryString = Object.keys(reqQuery)
-    .map((q) => [q, reqQuery[q]].join("="))
-    .join("&");
-
-  const realUrl =
-    urlWithParams +
-    (urlWithParams.includes("?") ? `&${reqQueryString}` : "?" + reqQueryString);
+  const realUrl = urlWithParams + (urlWithParams.includes("?") ? `&` : "?");
 
   const [resKey, qp] = realUrl.split("?");
   const resolvedKey = JSON.stringify({
@@ -835,27 +825,28 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     }
   }, []);
 
-  const [queryReady, setQueryReady] = useState(false);
-
   useEffect(() => {
-    try {
-      setQueryReady(false);
-      let queryParamsFromString: any = {};
-      // getting query params from passed url
-      const queryParts = qp.split("&");
-      queryParts.forEach((q, i) => {
-        const [key, value] = q.split("=");
-        if (queryParamsFromString[key] !== value) {
-          queryParamsFromString[key] = `${value}`;
-        }
-      });
+    let queryParamsFromString: any = {};
+    // getting query params from passed url
+    const queryParts = qp.split("&");
+    queryParts.forEach((q, i) => {
+      const [key, value] = q.split("=");
+      if (queryParamsFromString[key] !== value) {
+        queryParamsFromString[key] = `${value}`;
+      }
+    });
+
+    const tm1 = setTimeout(() => {
       setReqQuery((previousQuery: any) => ({
         ...previousQuery,
         ...queryParamsFromString,
       }));
-    } finally {
-      setQueryReady(true);
-    }
+      clearTimeout(tm1);
+    }, 0);
+
+    const tm = setTimeout(() => {
+      clearTimeout(tm);
+    }, 0);
   }, [JSON.stringify(reqQuery)]);
 
   const requestCache = cache.get(resolvedKey);
@@ -896,7 +887,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   const [requestAbortController, setRequestAbortController] =
     useState<AbortController>(new AbortController());
 
-  async function fetchData(c: { headers?: any; body?: BodyType } = {}) {
+  async function fetchData(
+    c: { headers?: any; body?: BodyType; query?: any } = {}
+  ) {
     if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
       if (!runningRequests[resolvedKey]) {
         setLoading(true);
@@ -912,7 +905,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           error: null,
         });
         try {
-          const json = await fetch(realUrl, {
+          const json = await fetch(realUrl + c.query, {
             signal: newAbortController.signal,
             method: config.method,
             headers: {
@@ -1313,39 +1306,32 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     if (auto) {
-      if (cancelOnChange) {
-        if (!firstTime[resolvedKey]) {
-          firstTime[resolvedKey] = true;
-        } else {
-          requestAbortController.abort();
+      if (url !== "") {
+        if (runningRequests[resolvedKey]) {
+          setLoading(true);
         }
+        const reqQ = {
+          ...ctx.query,
+          ...config.query,
+        };
+        fetchData({
+          query: Object.keys(reqQ)
+            .map((q) => [q, reqQ[q]].join("="))
+            .join("&"),
+        });
       }
-      const tm = setTimeout(() => {
-        if (queryReady) {
-          if (url !== "") {
-            if (runningRequests[resolvedKey]) {
-              setLoading(true);
-            }
-            fetchData();
-          }
-          // It means a url is not passed
-          else {
-            setError(null);
-            setLoading(false);
-          }
-        } else {
-          if (typeof data === "undefined") {
-            setData(def);
-            cacheForMutation[idString] = def;
-          }
-          setError(null);
-          setLoading(false);
-        }
-      }, 10);
-
-      return () => {
-        clearTimeout(tm);
-      };
+      // It means a url is not passed
+      else {
+        setError(null);
+        setLoading(false);
+      }
+    } else {
+      if (typeof data === "undefined") {
+        setData(def);
+        cacheForMutation[idString] = def;
+      }
+      setError(null);
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -1354,8 +1340,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     stringDeps,
     refresh,
     JSON.stringify(config),
-    // ctx.children,
-    queryReady,
     auto,
   ]);
 
