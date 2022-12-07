@@ -740,11 +740,13 @@ var useFetcher = function (init, options) {
                         previousConfig[resolvedKey] = undefined;
                         setLoading(true);
                         reqQ_1 = __assign(__assign({}, ctx.query), config.query);
-                        fetchData({
-                            query: Object.keys(reqQ_1)
-                                .map(function (q) { return [q, reqQ_1[q]].join("="); })
-                                .join("&"),
-                        });
+                        if (url !== "") {
+                            fetchData({
+                                query: Object.keys(reqQ_1)
+                                    .map(function (q) { return [q, reqQ_1[q]].join("="); })
+                                    .join("&"),
+                            });
+                        }
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
                             loading: true,
@@ -754,7 +756,7 @@ var useFetcher = function (init, options) {
                 return [2 /*return*/];
             });
         });
-    }, [stringDeps, cancelOnChange, requestAbortController, loading]);
+    }, [stringDeps, cancelOnChange, url, requestAbortController, loading]);
     (0, react_1.useEffect)(function () {
         function forceRefresh(v) {
             return __awaiter(this, void 0, void 0, function () {

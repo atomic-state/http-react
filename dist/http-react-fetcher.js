@@ -31,31 +31,25 @@
   const { useState, useEffect, createContext, useContext } = React;
 
   class EventEmitter {
-    constructor() {
-      this.suscribers = {};
+    listeners = [];
+    emit(eventName, data) {
+      this.listeners
+        .filter(({ name }) => name === eventName)
+        .forEach(({ callback }) => callback(data));
     }
-    async addListener(messageName, subscriber) {
-      if (!(messageName in this.suscribers)) {
-        this.suscribers[messageName] = {};
-      }
-      let subscriberId = Object.keys(this.suscribers[messageName]).length + 1;
-      if (messageName !== "__proto__" && messageName !== "prototype") {
-        this.suscribers[messageName][subscriberId] = subscriber;
-      } else {
-        console.warn('"prototype" and "__proto__" are not valid message names');
+    addListener(name, callback) {
+      if (typeof callback === "function" && typeof name === "string") {
+        this.listeners.push({ name, callback });
       }
     }
-    async removeListener(messageName, subscriber) {
-      for (let observer in this.suscribers[messageName]) {
-        if (this.suscribers[messageName][observer] === subscriber) {
-          delete this.suscribers[messageName][observer];
-        }
-      }
+    removeListener(eventName, callback) {
+      this.listeners = this.listeners.filter(
+        (listener) =>
+          !(listener.name === eventName && listener.callback === callback)
+      );
     }
-    emit(messageName, payload) {
-      for (let subscribers in this.suscribers[messageName]) {
-        this.suscribers[messageName][subscribers](payload);
-      }
+    destroy() {
+      this.listener.length = 0;
     }
   }
 
@@ -827,11 +821,13 @@
               Object.assign({}, ctx.query),
               config.query
             );
-            fetchData({
-              query: Object.keys(reqQ)
-                .map((q) => [q, reqQ[q]].join("="))
-                .join("&"),
-            });
+            if (url !== "") {
+              fetchData({
+                query: Object.keys(reqQ)
+                  .map((q) => [q, reqQ[q]].join("="))
+                  .join("&"),
+              });
+            }
             requestEmitter.emit(resolvedKey, {
               requestCallId,
               loading: true,
@@ -839,7 +835,7 @@
           }
         }
       },
-      [stringDeps, cancelOnChange, requestAbortController, loading]
+      [stringDeps, cancelOnChange, url, requestAbortController, loading]
     );
     useEffect(() => {
       async function forceRefresh(v) {

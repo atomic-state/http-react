@@ -25,7 +25,7 @@ yarn add http-react-fetcher
 With React
 
 ```html
-<script src="https://unpkg.com/http-react-fetcher@1.9.5/dist/http-react-fetcher.min.js"></script>
+<script src="https://unpkg.com/http-react-fetcher@1.9.6/dist/http-react-fetcher.min.js"></script>
 ```
 
 

@@ -1141,11 +1141,13 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             ...ctx.query,
             ...config.query,
           };
-          fetchData({
-            query: Object.keys(reqQ)
-              .map((q) => [q, reqQ[q]].join("="))
-              .join("&"),
-          });
+          if (url !== "") {
+            fetchData({
+              query: Object.keys(reqQ)
+                .map((q) => [q, reqQ[q]].join("="))
+                .join("&"),
+            });
+          }
           requestEmitter.emit(resolvedKey, {
             requestCallId,
             loading: true,
@@ -1153,7 +1155,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         }
       }
     },
-    [stringDeps, cancelOnChange, requestAbortController, loading]
+    [stringDeps, cancelOnChange, url, requestAbortController, loading]
   );
 
   useEffect(() => {
