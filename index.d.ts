@@ -9,16 +9,55 @@ import * as React from "react";
 declare type CustomResponse<T> = Omit<Response, "json"> & {
     json(): Promise<T>;
 };
-declare type RequestWithBody = <R = any, BodyType = any>(url: string, reqConfig?: {
+declare type RequestWithBody = <R = any, BodyType = any>(
+/**
+ * The request url
+ */
+url: string, 
+/**
+ * The request configuration
+ */
+reqConfig?: {
+    /**
+     * Default value
+     */
     default?: R;
+    /**
+     * Other configuration
+     */
     config?: {
+        /**
+         * Request query
+         */
         query?: any;
+        /**
+         * The function that formats the body
+         */
         formatBody?(b: BodyType): any;
+        /**
+         * Request headers
+         */
         headers?: any;
+        /**
+         * Request params (like Express)
+         */
+        params?: any;
+        /**
+         * The request body
+         */
         body?: BodyType;
     };
+    /**
+     * The function that returns the resolved data
+     */
     resolver?: (r: CustomResponse<R>) => any;
+    /**
+     * A function that will run when the request fails
+     */
     onError?(error: Error): void;
+    /**
+     * A function that will run when the request completes succesfuly
+     */
     onResolve?(data: R, res: CustomResponse<R>): void;
 }) => Promise<{
     error: any;
@@ -111,6 +150,8 @@ declare type FetcherType<FetchDataType, BodyType> = {
      */
     onAbort?: () => void;
     /**
+     * @deprecated - Use the `abort` function to cancel a request instead
+     *
      * Whether a change in deps will cancel a queued request and make a new one
      */
     cancelOnChange?: boolean;
@@ -214,6 +255,8 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
      */
     onAbort?: () => void;
     /**
+     * @deprecated Use the `abort` function to cancel a request instead
+     *
      * Whether a change in deps will cancel a queued request and make a new one
      */
     cancelOnChange?: boolean;
@@ -351,11 +394,27 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
     id: any;
     key: string;
 };
+export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherError as useError, useFetcherId as useFetchId, };
 /**
- * Create a configuration object to use in a 'useFetcher'call
+ * Create a configuration object to use in a 'useFetcher' call
  */
 export declare type FetcherInit<FDT = any, BT = any> = FetcherConfigOptions<FDT, BT> & {
     url?: string;
+};
+/**
+ * Use an imperative version of the fetcher (similarly to Axios, it returns an object with `get`, `post`, etc)
+ */
+export declare function useImperative(): {
+    get: RequestWithBody;
+    delete: RequestWithBody;
+    head: RequestWithBody;
+    options: RequestWithBody;
+    post: RequestWithBody;
+    put: RequestWithBody;
+    patch: RequestWithBody;
+    purge: RequestWithBody;
+    link: RequestWithBody;
+    unlink: RequestWithBody;
 };
 /**
  * Fetcher hook

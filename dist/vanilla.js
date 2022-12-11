@@ -19,8 +19,35 @@
         onResolve = () => {},
         onError = () => {},
       } = init;
+      const { params = {} } = c || {};
       let query = Object.assign(Object.assign({}, q), c.query);
-      const [, qp = ""] = url.split("?");
+      const rawUrl = url
+        .split("/")
+        .map((segment) => {
+          if (segment.startsWith("[") && segment.endsWith("]")) {
+            const paramName = segment.replace(/\[|\]/g, "");
+            if (!(paramName in params)) {
+              console.warn(
+                `Param '${paramName}' does not exist in request configuration for '${url}'`
+              );
+              return paramName;
+            }
+            return params[segment.replace(/\[|\]/g, "")];
+          } else if (segment.startsWith(":")) {
+            const paramName = segment.split("").slice(1).join("");
+            if (!(paramName in params)) {
+              console.warn(
+                `Param '${paramName}' does not exist in request configuration for '${url}'`
+              );
+              return paramName;
+            }
+            return params[paramName];
+          } else {
+            return segment;
+          }
+        })
+        .join("/");
+      const [, qp = ""] = rawUrl.split("?");
       qp.split("&").forEach((q) => {
         const [key, value] = q.split("=");
         if (query[key] !== value) {
@@ -30,7 +57,6 @@
       const reqQueryString = Object.keys(query)
         .map((q) => [q, query[q]].join("="))
         .join("&");
-      // console.log(reqQueryString)
       const { headers = {}, body, formatBody } = c;
       const reqConfig = {
         method,
@@ -56,9 +82,14 @@
           : undefined,
       };
       let r = undefined;
+
+      const base =
+        `${url}`.startsWith("https://") || `${url}`.startsWith("http://")
+          ? ""
+          : baseUrl;
       try {
         const req = await fetch(
-          `${baseUrl || ""}${url}${
+          `${base}${rawUrl}${
             url.includes("?") ? `&${reqQueryString}` : `?${reqQueryString}`
           }`,
           reqConfig
@@ -73,7 +104,7 @@
             error: true,
             code: req === null || req === void 0 ? void 0 : req.status,
             config: Object.assign(
-              Object.assign({ url: `${baseUrl || ""}${url}` }, reqConfig),
+              Object.assign({ url: `${base}${rawUrl}` }, reqConfig),
               { query }
             ),
           };
@@ -85,7 +116,7 @@
             error: false,
             code: req === null || req === void 0 ? void 0 : req.status,
             config: Object.assign(
-              Object.assign({ url: `${baseUrl || ""}${url}` }, reqConfig),
+              Object.assign({ url: `${base}${rawUrl}` }, reqConfig),
               { query }
             ),
           };
@@ -98,7 +129,7 @@
           error: true,
           code: r === null || r === void 0 ? void 0 : r.status,
           config: Object.assign(
-            Object.assign({ url: `${baseUrl || ""}${url}` }, reqConfig),
+            Object.assign({ url: `${base}${rawUrl}` }, reqConfig),
             { query }
           ),
         };

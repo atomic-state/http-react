@@ -1,6 +1,6 @@
 {
   "name": "http-react-fetcher",
-  "version": "1.9.7",
+  "version": "1.9.8",
   "description": "React hooks for data fetching",
   "main": "index.js",
   "scripts": {
