@@ -15,17 +15,54 @@ type CustomResponse<T> = Omit<Response, "json"> & {
 };
 
 type RequestWithBody = <R = any, BodyType = any>(
+  /**
+   * The request url
+   */
   url: string,
+  /**
+   * The request configuration
+   */
   reqConfig?: {
+    /**
+     * Default value
+     */
     default?: R;
+    /**
+     * Other configuration
+     */
     config?: {
+      /**
+       * Request query
+       */
       query?: any;
+      /**
+       * The function that formats the body
+       */
       formatBody?(b: BodyType): any;
+      /**
+       * Request headers
+       */
       headers?: any;
+      /**
+       * Request params (like Express)
+       */
+      params?: any;
+      /**
+       * The request body
+       */
       body?: BodyType;
     };
+    /**
+     * The function that returns the resolved data
+     */
     resolver?: (r: CustomResponse<R>) => any;
+    /**
+     * A function that will run when the request fails
+     */
     onError?(error: Error): void;
+    /**
+     * A function that will run when the request completes succesfuly
+     */
     onResolve?(data: R, res: CustomResponse<R>): void;
   }
 ) => Promise<{
@@ -54,12 +91,41 @@ function createRequestFn(
       onError = () => {},
     } = init;
 
+    const { params = {} } = c || {};
+
     let query = {
       ...q,
       ...c.query,
     };
 
-    const [, qp = ""] = url.split("?");
+    const rawUrl = url
+      .split("/")
+      .map((segment) => {
+        if (segment.startsWith("[") && segment.endsWith("]")) {
+          const paramName = segment.replace(/\[|\]/g, "");
+          if (!(paramName in params)) {
+            console.warn(
+              `Param '${paramName}' does not exist in request configuration for '${url}'`
+            );
+            return paramName;
+          }
+          return params[segment.replace(/\[|\]/g, "")];
+        } else if (segment.startsWith(":")) {
+          const paramName = segment.split("").slice(1).join("");
+          if (!(paramName in params)) {
+            console.warn(
+              `Param '${paramName}' does not exist in request configuration for '${url}'`
+            );
+            return paramName;
+          }
+          return params[paramName];
+        } else {
+          return segment;
+        }
+      })
+      .join("/");
+
+    const [, qp = ""] = rawUrl.split("?");
 
     qp.split("&").forEach((q) => {
       const [key, value] = q.split("=");
@@ -101,7 +167,7 @@ function createRequestFn(
     let r = undefined as any;
     try {
       const req = await fetch(
-        `${baseUrl || ""}${url}${
+        `${baseUrl || ""}${rawUrl}${
           url.includes("?") ? `&${reqQueryString}` : `?${reqQueryString}`
         }`,
         reqConfig
@@ -115,7 +181,7 @@ function createRequestFn(
           data: def,
           error: true,
           code: req?.status,
-          config: { url: `${baseUrl || ""}${url}`, ...reqConfig, query },
+          config: { url: `${baseUrl || ""}${rawUrl}`, ...reqConfig, query },
         };
       } else {
         onResolve(data, req);
@@ -124,7 +190,7 @@ function createRequestFn(
           data: data,
           error: false,
           code: req?.status,
-          config: { url: `${baseUrl || ""}${url}`, ...reqConfig, query },
+          config: { url: `${baseUrl || ""}${rawUrl}`, ...reqConfig, query },
         };
       }
     } catch (err) {
@@ -134,7 +200,7 @@ function createRequestFn(
         data: def,
         error: true,
         code: r?.status,
-        config: { url: `${baseUrl || ""}${url}`, ...reqConfig, query },
+        config: { url: `${baseUrl || ""}${rawUrl}`, ...reqConfig, query },
       };
     }
   } as RequestWithBody;
@@ -252,6 +318,8 @@ type FetcherType<FetchDataType, BodyType> = {
    */
   onAbort?: () => void;
   /**
+   * @deprecated - Use the `abort` function to cancel a request instead
+   *
    * Whether a change in deps will cancel a queued request and make a new one
    */
   cancelOnChange?: boolean;
@@ -365,6 +433,8 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
    */
   onAbort?: () => void;
   /**
+   * @deprecated Use the `abort` function to cancel a request instead
+   *
    * Whether a change in deps will cancel a queued request and make a new one
    */
   cancelOnChange?: boolean;
@@ -599,7 +669,13 @@ export function useFetcherConfig() {
  * Get the data state of a request using its id
  */
 export function useFetcherData<T = any>(id: any) {
+  const defaultsKey = JSON.stringify({
+    idString: JSON.stringify(id),
+  });
+  const def = resolvedRequests[defaultsKey];
+
   const { data } = useFetcher<T>({
+    default: def,
     id: id,
   });
 
@@ -646,12 +722,82 @@ export function useFetcherId<ResponseType = any, BodyType = any>(id: any) {
     default: def,
   });
 }
+
+export {
+  useFetcher as useFetch,
+  useFetcherLoading as useLoading,
+  useFetcherConfig as useConfig,
+  useFetcherData as useData,
+  useFetcherError as useError,
+  useFetcherId as useFetchId,
+};
+
 /**
- * Create a configuration object to use in a 'useFetcher'call
+ * Create a configuration object to use in a 'useFetcher' call
  */
 export type FetcherInit<FDT = any, BT = any> = FetcherConfigOptions<FDT, BT> & {
   url?: string;
 };
+
+/**
+ * Use an imperative version of the fetcher (similarly to Axios, it returns an object with `get`, `post`, etc)
+ */
+export function useImperative() {
+  const ctx = useFetcherConfig();
+
+  const { baseUrl } = ctx;
+
+  const keys = [
+    "GET",
+    "DELETE",
+    "HEAD",
+    "OPTIONS",
+    "POST",
+    "PUT",
+    "PATCH",
+    "PURGE",
+    "LINK",
+    "UNLINK",
+  ];
+
+  return Object.fromEntries(
+    new Map(
+      keys.map((k) => [
+        k.toLowerCase(),
+        (url, { config = {}, ...other } = {}) =>
+          (fetcher as any)[k.toLowerCase()](
+            url.startsWith("https://") || url.startsWith("http://")
+              ? url
+              : baseUrl + url,
+            {
+              config: {
+                headers: {
+                  ...ctx.headers,
+                  ...config.headers,
+                },
+                body: config.body,
+                query: config.query,
+                params: config.params,
+                formatBody: config.formatBody,
+              },
+              ...other,
+            }
+          ),
+      ])
+    )
+  ) as {
+    get: RequestWithBody;
+    delete: RequestWithBody;
+    head: RequestWithBody;
+    options: RequestWithBody;
+    post: RequestWithBody;
+    put: RequestWithBody;
+    patch: RequestWithBody;
+    purge: RequestWithBody;
+    link: RequestWithBody;
+    unlink: RequestWithBody;
+  };
+}
 
 /**
  * Fetcher hook
@@ -891,9 +1037,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     c: { headers?: any; body?: BodyType; query?: any } = {}
   ) {
     if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
-      if (cancelOnChange) {
-        requestAbortController?.abort();
-      }
       if (!runningRequests[resolvedKey]) {
         setLoading(true);
         previousConfig[resolvedKey] = JSON.stringify(optionsConfig);

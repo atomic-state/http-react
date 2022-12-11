@@ -65,7 +65,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useFetcherId = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
+exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useFetchId = exports.useError = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useFetcherId = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
 var React = require("react");
 var react_1 = require("react");
 var events_1 = require("events");
@@ -76,13 +76,38 @@ function createRequestFn(method, baseUrl, $headers, q) {
     return function (url, init) {
         if (init === void 0) { init = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var def, _a, resolver, _b, c, _c, onResolve, _d, onError, query, _e, _f, qp, reqQueryString, _g, headers, body, formatBody, reqConfig, r, req, data, err_1;
-            return __generator(this, function (_h) {
-                switch (_h.label) {
+            var def, _a, resolver, _b, c, _c, onResolve, _d, onError, _e, params, query, rawUrl, _f, _g, qp, reqQueryString, _h, headers, body, formatBody, reqConfig, r, req, data, err_1;
+            return __generator(this, function (_j) {
+                switch (_j.label) {
                     case 0:
                         def = init.default, _a = init.resolver, resolver = _a === void 0 ? function (e) { return e.json(); } : _a, _b = init.config, c = _b === void 0 ? {} : _b, _c = init.onResolve, onResolve = _c === void 0 ? function () { } : _c, _d = init.onError, onError = _d === void 0 ? function () { } : _d;
+                        _e = (c || {}).params, params = _e === void 0 ? {} : _e;
                         query = __assign(__assign({}, q), c.query);
-                        _e = url.split("?"), _f = _e[1], qp = _f === void 0 ? "" : _f;
+                        rawUrl = url
+                            .split("/")
+                            .map(function (segment) {
+                            if (segment.startsWith("[") && segment.endsWith("]")) {
+                                var paramName = segment.replace(/\[|\]/g, "");
+                                if (!(paramName in params)) {
+                                    console.warn("Param '".concat(paramName, "' does not exist in request configuration for '").concat(url, "'"));
+                                    return paramName;
+                                }
+                                return params[segment.replace(/\[|\]/g, "")];
+                            }
+                            else if (segment.startsWith(":")) {
+                                var paramName = segment.split("").slice(1).join("");
+                                if (!(paramName in params)) {
+                                    console.warn("Param '".concat(paramName, "' does not exist in request configuration for '").concat(url, "'"));
+                                    return paramName;
+                                }
+                                return params[paramName];
+                            }
+                            else {
+                                return segment;
+                            }
+                        })
+                            .join("/");
+                        _f = rawUrl.split("?"), _g = _f[1], qp = _g === void 0 ? "" : _g;
                         qp.split("&").forEach(function (q) {
                             var _a;
                             var _b = q.split("="), key = _b[0], value = _b[1];
@@ -93,7 +118,7 @@ function createRequestFn(method, baseUrl, $headers, q) {
                         reqQueryString = Object.keys(query)
                             .map(function (q) { return [q, query[q]].join("="); })
                             .join("&");
-                        _g = c.headers, headers = _g === void 0 ? {} : _g, body = c.body, formatBody = c.formatBody;
+                        _h = c.headers, headers = _h === void 0 ? {} : _h, body = c.body, formatBody = c.formatBody;
                         reqConfig = {
                             method: method,
                             headers: __assign(__assign({ "Content-Type": "application/json" }, $headers), headers),
@@ -109,16 +134,16 @@ function createRequestFn(method, baseUrl, $headers, q) {
                                 : undefined,
                         };
                         r = undefined;
-                        _h.label = 1;
+                        _j.label = 1;
                     case 1:
-                        _h.trys.push([1, 4, , 5]);
-                        return [4 /*yield*/, fetch("".concat(baseUrl || "").concat(url).concat(url.includes("?") ? "&".concat(reqQueryString) : "?".concat(reqQueryString)), reqConfig)];
+                        _j.trys.push([1, 4, , 5]);
+                        return [4 /*yield*/, fetch("".concat(baseUrl || "").concat(rawUrl).concat(url.includes("?") ? "&".concat(reqQueryString) : "?".concat(reqQueryString)), reqConfig)];
                     case 2:
-                        req = _h.sent();
+                        req = _j.sent();
                         r = req;
                         return [4 /*yield*/, resolver(req)];
                     case 3:
-                        data = _h.sent();
+                        data = _j.sent();
                         if ((req === null || req === void 0 ? void 0 : req.status) >= 400) {
                             onError(true);
                             return [2 /*return*/, {
@@ -126,7 +151,7 @@ function createRequestFn(method, baseUrl, $headers, q) {
                                     data: def,
                                     error: true,
                                     code: req === null || req === void 0 ? void 0 : req.status,
-                                    config: __assign(__assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig), { query: query }),
+                                    config: __assign(__assign({ url: "".concat(baseUrl || "").concat(rawUrl) }, reqConfig), { query: query }),
                                 }];
                         }
                         else {
@@ -136,19 +161,19 @@ function createRequestFn(method, baseUrl, $headers, q) {
                                     data: data,
                                     error: false,
                                     code: req === null || req === void 0 ? void 0 : req.status,
-                                    config: __assign(__assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig), { query: query }),
+                                    config: __assign(__assign({ url: "".concat(baseUrl || "").concat(rawUrl) }, reqConfig), { query: query }),
                                 }];
                         }
                         return [3 /*break*/, 5];
                     case 4:
-                        err_1 = _h.sent();
+                        err_1 = _j.sent();
                         onError(err_1);
                         return [2 /*return*/, {
                                 res: r,
                                 data: def,
                                 error: true,
                                 code: r === null || r === void 0 ? void 0 : r.status,
-                                config: __assign(__assign({ url: "".concat(baseUrl || "").concat(url) }, reqConfig), { query: query }),
+                                config: __assign(__assign({ url: "".concat(baseUrl || "").concat(rawUrl) }, reqConfig), { query: query }),
                             }];
                     case 5: return [2 /*return*/];
                 }
@@ -304,16 +329,23 @@ function useFetcherConfig() {
     return ftxcf;
 }
 exports.useFetcherConfig = useFetcherConfig;
+exports.useConfig = useFetcherConfig;
 /**
  * Get the data state of a request using its id
  */
 function useFetcherData(id) {
+    var defaultsKey = JSON.stringify({
+        idString: JSON.stringify(id),
+    });
+    var def = resolvedRequests[defaultsKey];
     var data = useFetcher({
+        default: def,
         id: id,
     }).data;
     return data;
 }
 exports.useFetcherData = useFetcherData;
+exports.useData = useFetcherData;
 /**
  * Get the loading state of a request using its id
  */
@@ -327,6 +359,7 @@ function useFetcherLoading(id) {
         : runningRequests[idString];
 }
 exports.useFetcherLoading = useFetcherLoading;
+exports.useLoading = useFetcherLoading;
 /**
  * Get the error state of a request using its id
  */
@@ -337,6 +370,7 @@ function useFetcherError(id) {
     return error;
 }
 exports.useFetcherError = useFetcherError;
+exports.useError = useFetcherError;
 /**
  * Get everything from a `useFetcher` call using its id
  */
@@ -351,6 +385,43 @@ function useFetcherId(id) {
     });
 }
 exports.useFetcherId = useFetcherId;
+exports.useFetchId = useFetcherId;
+/**
+ * Use an imperative version of the fetcher (similarly to Axios, it returns an object with `get`, `post`, etc)
+ */
+function useImperative() {
+    var ctx = useFetcherConfig();
+    var baseUrl = ctx.baseUrl;
+    var keys = [
+        "GET",
+        "DELETE",
+        "HEAD",
+        "OPTIONS",
+        "POST",
+        "PUT",
+        "PATCH",
+        "PURGE",
+        "LINK",
+        "UNLINK",
+    ];
+    return Object.fromEntries(new Map(keys.map(function (k) { return [
+        k.toLowerCase(),
+        function (url, _a) {
+            if (_a === void 0) { _a = {}; }
+            var _b = _a.config, config = _b === void 0 ? {} : _b, other = __rest(_a, ["config"]);
+            return exports.fetcher[k.toLowerCase()](url.startsWith("https://") || url.startsWith("http://")
+                ? url
+                : baseUrl + url, __assign({ config: {
+                    headers: __assign(__assign({}, ctx.headers), config.headers),
+                    body: config.body,
+                    query: config.query,
+                    params: config.params,
+                    formatBody: config.formatBody,
+                } }, other));
+        },
+    ]; })));
+}
+exports.useImperative = useImperative;
 /**
  * Fetcher hook
  */
@@ -509,9 +580,6 @@ var useFetcher = function (init, options) {
                 switch (_b.label) {
                     case 0:
                         if (!(previousConfig[resolvedKey] !== JSON.stringify(optionsConfig))) return [3 /*break*/, 6];
-                        if (cancelOnChange) {
-                            requestAbortController === null || requestAbortController === void 0 ? void 0 : requestAbortController.abort();
-                        }
                         if (!!runningRequests[resolvedKey]) return [3 /*break*/, 6];
                         setLoading(true);
                         previousConfig[resolvedKey] = JSON.stringify(optionsConfig);
@@ -1007,6 +1075,7 @@ var useFetcher = function (init, options) {
         key: resolvedKey,
     };
 };
+exports.useFetch = useFetcher;
 exports.useFetcher = useFetcher;
 // Create a method for each request
 useFetcher.get = createRequestFn("GET", "", {});
