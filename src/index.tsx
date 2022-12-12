@@ -653,16 +653,43 @@ export function mutateData(
 /**
  * Get the current fetcher config
  */
-export function useFetcherConfig() {
+export function useFetcherConfig(id?: string) {
   const ftxcf = useContext(FetcherContext);
+
+  const defaultsKey = JSON.stringify({
+    idString: JSON.stringify(id),
+  });
+
+  const { config } = useFetcher({ id });
+
+  let allowedKeys = [
+    "headers",
+    "baseUrl",
+    "body",
+    "defaults",
+    "resolver",
+    "auto",
+    "memory",
+    "refresh",
+    "attempts",
+    "attemptInterval",
+    "revalidateOnFocus",
+    "query",
+    "params",
+    "onOnline",
+    "onOffline",
+    "online",
+    "retryOnReconnect",
+    "cache",
+  ];
 
   // Remove the 'method' strings
   for (let k in ftxcf) {
-    if (k.match(/[0-9]/)) {
+    if (allowedKeys.indexOf(k) === -1) {
       delete (ftxcf as any)[k];
     }
   }
-  return ftxcf;
+  return typeof id !== "undefined" ? config : ftxcf;
 }
 
 /**
@@ -867,24 +894,33 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     ...config.query,
   });
 
+  const [configUrl, setConfigUrl] = useState({
+    realUrl: "",
+    rawUrl: "",
+  });
+
   const [reqParams, setReqParams] = useState({
     ...ctx.params,
     ...config.params,
   });
 
   useEffect(() => {
-    setReqParams({
-      ...ctx.params,
-      ...config.params,
-    });
+    if (url !== "") {
+      setReqParams(() => {
+        const newParams = {
+          ...ctx.params,
+          ...config.params,
+        };
+        requestEmitter.emit(resolvedKey, {
+          requestCallId,
+          config: {
+            params: newParams,
+          },
+        });
+        return newParams;
+      });
+    }
   }, [JSON.stringify({ ...ctx.params, ...config.params })]);
-
-  useEffect(() => {
-    setReqQuery({
-      ...ctx.query,
-      ...config.query,
-    });
-  }, [JSON.stringify(ctx.query), JSON.stringify(config.query), url]);
 
   const rawUrl =
     (url.startsWith("http://") || url.startsWith("https://")
@@ -928,7 +964,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   const realUrl = urlWithParams + (urlWithParams.includes("?") ? `&` : "?");
 
-  const [resKey, qp] = realUrl.split("?");
   const resolvedKey = JSON.stringify({
     uri: typeof id === "undefined" ? rawUrl : undefined,
     idString: typeof id === "undefined" ? undefined : idString,
@@ -939,6 +974,24 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           }
         : undefined,
   });
+
+  const stringDeps = JSON.stringify(
+    // We ignore children and resolver
+    Object.assign(
+      ctx,
+      { children: undefined },
+      config?.headers,
+      config?.method,
+      config?.body,
+      config?.query,
+      config?.params,
+      { resolver: undefined },
+      { reqQuery },
+      { reqParams }
+    )
+  );
+
+  const [resKey, qp] = realUrl.split("?");
 
   // This helps pass default values to other useFetcher calls using the same id
   useEffect(() => {
@@ -973,27 +1026,40 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     let queryParamsFromString: any = {};
-    // getting query params from passed url
-    const queryParts = qp.split("&");
-    queryParts.forEach((q, i) => {
-      const [key, value] = q.split("=");
-      if (queryParamsFromString[key] !== value) {
-        queryParamsFromString[key] = `${value}`;
+    try {
+      // getting query params from passed url
+      const queryParts = qp.split("&");
+      queryParts.forEach((q, i) => {
+        const [key, value] = q.split("=");
+        if (queryParamsFromString[key] !== value) {
+          queryParamsFromString[key] = `${value}`;
+        }
+      });
+    } finally {
+      if (url !== "") {
+        setReqQuery(() => {
+          const newQuery = {
+            ...ctx.query,
+            ...queryParamsFromString,
+            ...config.query,
+          };
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            config: {
+              query: newQuery || {},
+            },
+          });
+          return newQuery;
+        });
       }
-    });
-
-    const tm1 = setTimeout(() => {
-      setReqQuery((previousQuery: any) => ({
-        ...previousQuery,
-        ...queryParamsFromString,
-      }));
-      clearTimeout(tm1);
-    }, 0);
-
-    const tm = setTimeout(() => {
-      clearTimeout(tm);
-    }, 0);
-  }, [JSON.stringify(reqQuery)]);
+    }
+  }, [
+    JSON.stringify({
+      qp,
+      ...ctx.query,
+      ...config.query,
+    }),
+  ]);
 
   const requestCache = cache.get(resolvedKey);
 
@@ -1033,10 +1099,37 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   const [requestAbortController, setRequestAbortController] =
     useState<AbortController>(new AbortController());
 
+  const [reqMethod, setReqMethod] = useState(config.method);
+
+  useEffect(() => {
+    if (url !== "") {
+      setReqMethod(config.method);
+      requestEmitter.emit(resolvedKey, {
+        requestCallId,
+        method: config.method,
+      });
+    }
+  }, [stringDeps, response, requestAbortController, requestCallId]);
+
   async function fetchData(
     c: { headers?: any; body?: BodyType; query?: any } = {}
   ) {
     if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
+      const tm = setTimeout(() => {
+        setReqMethod(config.method);
+        if (url !== "") {
+          setConfigUrl({
+            rawUrl,
+            realUrl,
+          });
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            realUrl: resKey,
+            rawUrl,
+          });
+        }
+        clearTimeout(tm);
+      }, 0);
       if (!runningRequests[resolvedKey]) {
         setLoading(true);
         previousConfig[resolvedKey] = JSON.stringify(optionsConfig);
@@ -1201,24 +1294,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     };
   }, [requestAbortController, resolvedKey, onAbort, loading]);
 
-  const stringDeps = JSON.stringify(
-    // We ignore children and resolver
-    Object.assign(
-      ctx,
-      { children: undefined },
-      config?.headers,
-      config?.method,
-      config?.body,
-      config?.query,
-      config?.params,
-      { resolver: undefined },
-      { reqQuery },
-      { reqParams }
-    )
-  );
-
   useEffect(() => {
-    async function waitFormUpdates(v: any) {
+    function waitFormUpdates(v: any) {
       if (v.requestCallId !== requestCallId) {
         const {
           isMutating,
@@ -1229,40 +1306,62 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           response,
           requestAbortController,
           code,
+          config,
+          rawUrl,
+          realUrl,
+          method,
           completedAttempts,
         } = v;
-        if (typeof completedAttempts !== "undefined") {
-          setCompletedAttempts(completedAttempts);
-        }
-        if (typeof code !== "undefined") {
-          setStatusCode(code);
-        }
-        if (typeof requestAbortController !== "undefined") {
-          setRequestAbortController(requestAbortController);
-        }
-        if (typeof response !== "undefined") {
-          setResponse(response);
-        }
-        if (typeof loading !== "undefined") {
-          setLoading(loading);
-        }
-        if (typeof data !== "undefined") {
-          setData(data);
-          cacheForMutation[idString] = data;
-          if (!isMutating) {
-            onResolve(data);
+        const tm = setTimeout(() => {
+          if (typeof method !== "undefined") {
+            setReqMethod(method);
           }
-          setError(null);
-        }
-        if (typeof error !== "undefined") {
-          setError(error);
-          if (error !== null && error !== false) {
-            onError(error);
+          if (typeof config?.query !== "undefined") {
+            setReqQuery(config.query);
           }
-        }
-        if (typeof online !== "undefined") {
-          setOnline(online);
-        }
+          if (typeof rawUrl !== "undefined" && typeof realUrl !== "undefined") {
+            setConfigUrl({
+              rawUrl,
+              realUrl,
+            });
+          }
+          if (typeof config?.params !== "undefined") {
+            setReqParams(config?.params);
+          }
+          if (typeof completedAttempts !== "undefined") {
+            setCompletedAttempts(completedAttempts);
+          }
+          if (typeof code !== "undefined") {
+            setStatusCode(code);
+          }
+          if (typeof requestAbortController !== "undefined") {
+            setRequestAbortController(requestAbortController);
+          }
+          if (typeof response !== "undefined") {
+            setResponse(response);
+          }
+          if (typeof loading !== "undefined") {
+            setLoading(loading);
+          }
+          if (typeof data !== "undefined") {
+            setData(data);
+            cacheForMutation[idString] = data;
+            if (!isMutating) {
+              onResolve(data);
+            }
+            setError(null);
+          }
+          if (typeof error !== "undefined") {
+            setError(error);
+            if (error !== null && error !== false) {
+              onError(error);
+            }
+          }
+          if (typeof online !== "undefined") {
+            setOnline(online);
+          }
+          clearTimeout(tm);
+        }, 0);
       }
     }
 
@@ -1271,7 +1370,14 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     return () => {
       requestEmitter.removeListener(resolvedKey, waitFormUpdates);
     };
-  }, [resolvedKey, id, requestAbortController, stringDeps]);
+  }, [
+    resolvedKey,
+    reqMethod,
+    id,
+    requestCallId,
+    requestAbortController,
+    stringDeps,
+  ]);
 
   const reValidate = React.useCallback(
     async function reValidate() {
@@ -1432,19 +1538,17 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     }, (attemptInterval as number) * 1000);
 
     return () => {
-      clearInterval(tm);
+      clearTimeout(tm);
     };
   }, [error, attempts, rawJSON, attemptInterval, completedAttempts]);
 
   useEffect(() => {
-    // if (error === false) {
     if (completedAttempts === 0) {
       if (refresh > 0 && auto) {
         const interval = setTimeout(reValidate, refresh * 1000);
         return () => clearTimeout(interval);
       }
     }
-    // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, loading, error, rawJSON, completedAttempts, config]);
 
@@ -1506,11 +1610,13 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   const __config = {
     ...config,
+    method: reqMethod,
     params: reqParams,
     headers: requestHeaders,
     body: config.body,
-    url: resKey,
-    rawUrl: realUrl,
+    baseUrl: ctx.baseUrl || config.baseUrl,
+    url: configUrl?.realUrl,
+    rawUrl: configUrl?.rawUrl,
     query: reqQuery,
   };
 
@@ -1583,6 +1689,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
     abort: () => void;
     config: FetcherType<FetchDataType, BodyType>["config"] & {
+      baseUrl: string;
       url: string;
       rawUrl: string;
     };

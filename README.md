@@ -32,7 +32,7 @@ With React
 Without React
 
 ```html
-<script src="https://unpkg.com/http-react-fetcher@1.9.8/dist/vanilla.min.js"></script>
+<script src="https://unpkg.com/http-react-fetcher@1.9.9/dist/vanilla.min.js"></script>
 ```
 
 [Getting started](https://fetcher.atomic-state.org/docs/intro)
