@@ -338,7 +338,34 @@ export declare function mutateData(...pairs: [any, any | ((cache: any) => any), 
 /**
  * Get the current fetcher config
  */
-export declare function useFetcherConfig(): FetcherContextType;
+export declare function useFetcherConfig(id?: string): FetcherContextType | ({
+    /**
+     * Override base url
+     */
+    baseUrl?: string | undefined;
+    /**
+     * Request method
+     */
+    method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+    headers?: object | Headers | undefined;
+    query?: any;
+    /**
+     * URL params
+     */
+    params?: any;
+    body?: any;
+    /**
+     * Customize how body is formated for the request. By default it will be sent in JSON format
+     * but you can set it to false if for example, you are sending a `FormData`
+     * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+     * (the last one is the default behaviour so in that case you can ignore it)
+     */
+    formatBody?: boolean | ((b: any) => any) | undefined;
+} & {
+    baseUrl: string;
+    url: string;
+    rawUrl: string;
+});
 /**
  * Get the data state of a request using its id
  */
@@ -387,6 +414,7 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
          */
         formatBody?: boolean | ((b: BodyType) => any) | undefined;
     } & {
+        baseUrl: string;
         url: string;
         rawUrl: string;
     };
@@ -453,6 +481,7 @@ declare const useFetcher: {
              */
             formatBody?: boolean | ((b: BodyType) => any) | undefined;
         } & {
+            baseUrl: string;
             url: string;
             rawUrl: string;
         };
@@ -507,6 +536,7 @@ declare const useFetcher: {
                  */
                 formatBody?: boolean | ((b: BodyType_1) => any) | undefined;
             } & {
+                baseUrl: string;
                 url: string;
                 rawUrl: string;
             };
@@ -568,6 +598,7 @@ export declare const fetcher: {
              */
             formatBody?: boolean | ((b: BodyType) => any) | undefined;
         } & {
+            baseUrl: string;
             url: string;
             rawUrl: string;
         };
@@ -622,6 +653,7 @@ export declare const fetcher: {
                  */
                 formatBody?: boolean | ((b: BodyType_1) => any) | undefined;
             } & {
+                baseUrl: string;
                 url: string;
                 rawUrl: string;
             };
