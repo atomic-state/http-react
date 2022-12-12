@@ -203,6 +203,7 @@ var FetcherContext = (0, react_1.createContext)({
     retryOnReconnect: true,
 });
 var resolvedRequests = {};
+var abortControllers = {};
 /**
  * Default store cache
  */
@@ -320,10 +321,7 @@ exports.mutateData = mutateData;
  */
 function useFetcherConfig(id) {
     var ftxcf = (0, react_1.useContext)(FetcherContext);
-    var defaultsKey = JSON.stringify({
-        idString: JSON.stringify(id),
-    });
-    var config = useFetcher({ id: id }).config;
+    var config = useFetcherId(id).config;
     var allowedKeys = [
         "headers",
         "baseUrl",
@@ -631,7 +629,7 @@ var useFetcher = function (init, options) {
             });
         }
     }, [stringDeps, response, requestAbortController, requestCallId]);
-    function fetchData(c) {
+    var fetchData = React.useCallback(function fetchData(c) {
         var _a;
         if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
@@ -656,9 +654,9 @@ var useFetcher = function (init, options) {
                             clearTimeout(tm_1);
                         }, 0);
                         if (!!runningRequests[resolvedKey]) return [3 /*break*/, 6];
+                        runningRequests[resolvedKey] = true;
                         setLoading(true);
                         previousConfig[resolvedKey] = JSON.stringify(optionsConfig);
-                        runningRequests[resolvedKey] = true;
                         newAbortController = new AbortController();
                         setRequestAbortController(newAbortController);
                         setError(null);
@@ -668,6 +666,7 @@ var useFetcher = function (init, options) {
                             requestAbortController: newAbortController,
                             error: null,
                         });
+                        abortControllers[resolvedKey] = newAbortController;
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 4, 5, 6]);
@@ -716,9 +715,11 @@ var useFetcher = function (init, options) {
                             setData(_data);
                             cacheForMutation[idString] = _data;
                             setError(null);
+                            setLoading(false);
                             requestEmitter.emit(resolvedKey, {
                                 requestCallId: requestCallId,
                                 data: _data,
+                                loading: false,
                                 error: null,
                             });
                             onResolve(_data, json);
@@ -805,7 +806,16 @@ var useFetcher = function (init, options) {
                 }
             });
         });
-    }
+    }, [
+        stringDeps,
+        resolvedKey,
+        config.method,
+        JSON.stringify(optionsConfig),
+        realUrl,
+        requestCallId,
+        memory,
+        def,
+    ]);
     (0, react_1.useEffect)(function () {
         var signal = (requestAbortController || {}).signal;
         // Run onAbort callback
@@ -822,10 +832,11 @@ var useFetcher = function (init, options) {
         };
     }, [requestAbortController, resolvedKey, onAbort, loading]);
     (0, react_1.useEffect)(function () {
+        var tm = null;
         function waitFormUpdates(v) {
             if (v.requestCallId !== requestCallId) {
                 var isMutating_1 = v.isMutating, data_1 = v.data, error_1 = v.error, online_1 = v.online, loading_1 = v.loading, response_1 = v.response, requestAbortController_1 = v.requestAbortController, code_1 = v.code, config_1 = v.config, rawUrl_1 = v.rawUrl, realUrl_1 = v.realUrl, method_1 = v.method, completedAttempts_1 = v.completedAttempts;
-                var tm_2 = setTimeout(function () {
+                tm = setTimeout(function () {
                     if (typeof method_1 !== "undefined") {
                         setReqMethod(method_1);
                     }
@@ -873,22 +884,16 @@ var useFetcher = function (init, options) {
                     if (typeof online_1 !== "undefined") {
                         setOnline(online_1);
                     }
-                    clearTimeout(tm_2);
+                    clearTimeout(tm);
                 }, 0);
             }
         }
         requestEmitter.addListener(resolvedKey, waitFormUpdates);
         return function () {
+            clearTimeout(tm);
             requestEmitter.removeListener(resolvedKey, waitFormUpdates);
         };
-    }, [
-        resolvedKey,
-        reqMethod,
-        id,
-        requestCallId,
-        requestAbortController,
-        stringDeps,
-    ]);
+    }, [resolvedKey, reqMethod, id, requestCallId, stringDeps]);
     var reValidate = React.useCallback(function reValidate() {
         return __awaiter(this, void 0, void 0, function () {
             var reqQ_1;
@@ -980,16 +985,23 @@ var useFetcher = function (init, options) {
                 reValidate();
             }
         }
-        if (typeof window !== "undefined") {
-            if ("addEventListener" in window) {
-                if (retryOnReconnect) {
-                    window.addEventListener("online", backOnline);
-                    return function () {
-                        window.removeEventListener("online", backOnline);
-                    };
+        function addOnlineListener() {
+            if (typeof window !== "undefined") {
+                if ("addEventListener" in window) {
+                    if (retryOnReconnect) {
+                        window.addEventListener("online", backOnline);
+                    }
                 }
             }
         }
+        addOnlineListener();
+        return function () {
+            if (typeof window !== "undefined") {
+                if ("addEventListener" in window) {
+                    window.removeEventListener("online", backOnline);
+                }
+            }
+        };
     }, [onOnline, reValidate, resolvedKey, retryOnReconnect]);
     (0, react_1.useEffect)(function () {
         function wentOffline() {
@@ -1001,14 +1013,21 @@ var useFetcher = function (init, options) {
             });
             onOffline();
         }
-        if (typeof window !== "undefined") {
-            if ("addEventListener" in window) {
-                window.addEventListener("offline", wentOffline);
-                return function () {
-                    window.removeEventListener("offline", wentOffline);
-                };
+        function addOfflineListener() {
+            if (typeof window !== "undefined") {
+                if ("addEventListener" in window) {
+                    window.addEventListener("offline", wentOffline);
+                }
             }
         }
+        addOfflineListener();
+        return function () {
+            if (typeof window !== "undefined") {
+                if ("addEventListener" in window) {
+                    window.removeEventListener("offline", wentOffline);
+                }
+            }
+        };
     }, [onOffline, reValidate, resolvedKey, retryOnReconnect]);
     (0, react_1.useEffect)(function () {
         setRequestHeades(function (r) { return (__assign(__assign({}, r), ctx.headers)); });
@@ -1048,10 +1067,11 @@ var useFetcher = function (init, options) {
     (0, react_1.useEffect)(function () {
         if (completedAttempts === 0) {
             if (refresh > 0 && auto) {
-                var interval_1 = setTimeout(reValidate, refresh * 1000);
-                return function () { return clearTimeout(interval_1); };
+                var tm_2 = setTimeout(reValidate, refresh * 1000);
+                return function () { return clearTimeout(tm_2); };
             }
         }
+        return function () { };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, loading, error, rawJSON, completedAttempts, config]);
     var initMemo = React.useMemo(function () { return JSON.stringify(optionsConfig); }, []);
@@ -1085,16 +1105,21 @@ var useFetcher = function (init, options) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initMemo, url, stringDeps, refresh, JSON.stringify(config), auto]);
     (0, react_1.useEffect)(function () {
-        if (revalidateOnFocus) {
-            if (typeof window !== "undefined") {
+        function addFocusListener() {
+            if (revalidateOnFocus && typeof window !== "undefined") {
                 if ("addEventListener" in window) {
                     window.addEventListener("focus", reValidate);
-                    return function () {
-                        window.removeEventListener("focus", reValidate);
-                    };
                 }
             }
         }
+        addFocusListener();
+        return function () {
+            if (typeof window !== "undefined") {
+                if ("addEventListener" in window) {
+                    window.removeEventListener("focus", reValidate);
+                }
+            }
+        };
     }, [
         url,
         revalidateOnFocus,
@@ -1142,7 +1167,8 @@ var useFetcher = function (init, options) {
         reFetch: reValidate,
         mutate: forceMutate,
         abort: function () {
-            requestAbortController.abort();
+            var _a;
+            (_a = abortControllers[resolvedKey]) === null || _a === void 0 ? void 0 : _a.abort();
             if (loading) {
                 setError(false);
                 setLoading(false);

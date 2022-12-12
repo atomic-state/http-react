@@ -516,6 +516,8 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
 
 const resolvedRequests: any = {};
 
+const abortControllers: any = {};
+
 /**
  * Default store cache
  */
@@ -656,11 +658,7 @@ export function mutateData(
 export function useFetcherConfig(id?: string) {
   const ftxcf = useContext(FetcherContext);
 
-  const defaultsKey = JSON.stringify({
-    idString: JSON.stringify(id),
-  });
-
-  const { config } = useFetcher({ id });
+  const { config } = useFetcherId(id);
 
   let allowedKeys = [
     "headers",
@@ -1111,172 +1109,187 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     }
   }, [stringDeps, response, requestAbortController, requestCallId]);
 
-  async function fetchData(
-    c: { headers?: any; body?: BodyType; query?: any } = {}
-  ) {
-    if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
-      const tm = setTimeout(() => {
-        setReqMethod(config.method);
-        if (url !== "") {
-          setConfigUrl({
-            rawUrl,
-            realUrl,
-          });
-          requestEmitter.emit(resolvedKey, {
-            requestCallId,
-            realUrl: resKey,
-            rawUrl,
-          });
-        }
-        clearTimeout(tm);
-      }, 0);
-      if (!runningRequests[resolvedKey]) {
-        setLoading(true);
-        previousConfig[resolvedKey] = JSON.stringify(optionsConfig);
-        runningRequests[resolvedKey] = true;
-        let newAbortController = new AbortController();
-        setRequestAbortController(newAbortController);
-        setError(null);
-        requestEmitter.emit(resolvedKey, {
-          requestCallId,
-          loading,
-          requestAbortController: newAbortController,
-          error: null,
-        });
-        try {
-          const json = await fetch(realUrl + c.query, {
-            signal: newAbortController.signal,
-            method: config.method,
-            headers: {
-              "Content-Type":
-                // If body is form-data, set Content-Type header to 'multipart/form-data'
-                typeof FormData !== "undefined" &&
-                config.body instanceof FormData
-                  ? "multipart/form-data"
-                  : "application/json",
-              ...ctx.headers,
-              ...config.headers,
-              ...c.headers,
-            } as Headers,
-            body: config.method?.match(/(POST|PUT|DELETE|PATCH)/)
-              ? typeof config.formatBody === "function"
-                ? config.formatBody(
-                    (typeof FormData !== "undefined" &&
-                    config.body instanceof FormData
-                      ? (config.body as BodyType)
-                      : { ...config.body, ...c.body }) as BodyType
-                  )
-                : config.formatBody === false ||
-                  (typeof FormData !== "undefined" &&
-                    config.body instanceof FormData)
-                ? config.body
-                : JSON.stringify({ ...config.body, ...c.body })
-              : undefined,
-          });
-          requestEmitter.emit(resolvedKey, {
-            requestCallId,
-            response: json,
-          });
-          const code = json.status;
-          setStatusCode(code);
-          requestEmitter.emit(resolvedKey, {
-            requestCallId,
-            code,
-          });
-          const _data = await resolver(json);
-          if (code >= 200 && code < 400) {
-            if (memory) {
-              cache.set(resolvedKey, _data);
-              valuesMemory[idString] = _data;
-            }
-            setData(_data);
-            cacheForMutation[idString] = _data;
-            setError(null);
+  const fetchData = React.useCallback(
+    async function fetchData(
+      c: { headers?: any; body?: BodyType; query?: any } = {}
+    ) {
+      if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
+        const tm = setTimeout(() => {
+          setReqMethod(config.method);
+          if (url !== "") {
+            setConfigUrl({
+              rawUrl,
+              realUrl,
+            });
             requestEmitter.emit(resolvedKey, {
               requestCallId,
-              data: _data,
-              error: null,
+              realUrl: resKey,
+              rawUrl,
             });
-            onResolve(_data, json);
-
-            requestEmitter.emit(idString + "value", {
-              data: _data,
-            });
-
-            runningRequests[resolvedKey] = false;
-
-            // If a request completes succesfuly, we reset the error attempts to 0
-            setCompletedAttempts(0);
-            requestEmitter.emit(resolvedKey, {
-              requestCallId,
-              completedAttempts: 0,
-            });
-          } else {
-            if (def) {
-              setData(def);
-              cacheForMutation[idString] = def;
-              requestEmitter.emit(resolvedKey, {
-                requestCallId,
-                data: def,
-              });
-            }
-            setError(true);
-            requestEmitter.emit(resolvedKey, {
-              requestCallId,
-              error: true,
-            });
-            onError(_data, json);
-            runningRequests[resolvedKey] = false;
           }
-        } catch (err) {
-          const errorString = err?.toString();
-          // Only set error if no abort
-          if (!`${errorString}`.match(/abort/i)) {
-            if (typeof requestCache === "undefined") {
-              setData(def);
-              cacheForMutation[idString] = def;
+          clearTimeout(tm);
+        }, 0);
+        if (!runningRequests[resolvedKey]) {
+          runningRequests[resolvedKey] = true;
+          setLoading(true);
+          previousConfig[resolvedKey] = JSON.stringify(optionsConfig);
+          let newAbortController = new AbortController();
+          setRequestAbortController(newAbortController);
+          setError(null);
+          requestEmitter.emit(resolvedKey, {
+            requestCallId,
+            loading,
+            requestAbortController: newAbortController,
+            error: null,
+          });
+          abortControllers[resolvedKey] = newAbortController;
+          try {
+            const json = await fetch(realUrl + c.query, {
+              signal: newAbortController.signal,
+              method: config.method,
+              headers: {
+                "Content-Type":
+                  // If body is form-data, set Content-Type header to 'multipart/form-data'
+                  typeof FormData !== "undefined" &&
+                  config.body instanceof FormData
+                    ? "multipart/form-data"
+                    : "application/json",
+                ...ctx.headers,
+                ...config.headers,
+                ...c.headers,
+              } as Headers,
+              body: config.method?.match(/(POST|PUT|DELETE|PATCH)/)
+                ? typeof config.formatBody === "function"
+                  ? config.formatBody(
+                      (typeof FormData !== "undefined" &&
+                      config.body instanceof FormData
+                        ? (config.body as BodyType)
+                        : { ...config.body, ...c.body }) as BodyType
+                    )
+                  : config.formatBody === false ||
+                    (typeof FormData !== "undefined" &&
+                      config.body instanceof FormData)
+                  ? config.body
+                  : JSON.stringify({ ...config.body, ...c.body })
+                : undefined,
+            });
+            requestEmitter.emit(resolvedKey, {
+              requestCallId,
+              response: json,
+            });
+            const code = json.status;
+            setStatusCode(code);
+            requestEmitter.emit(resolvedKey, {
+              requestCallId,
+              code,
+            });
+            const _data = await resolver(json);
+            if (code >= 200 && code < 400) {
+              if (memory) {
+                cache.set(resolvedKey, _data);
+                valuesMemory[idString] = _data;
+              }
+              setData(_data);
+              cacheForMutation[idString] = _data;
+              setError(null);
+              setLoading(false);
               requestEmitter.emit(resolvedKey, {
                 requestCallId,
-                data: def,
+                data: _data,
+                loading: false,
+                error: null,
+              });
+              onResolve(_data, json);
+
+              requestEmitter.emit(idString + "value", {
+                data: _data,
+              });
+
+              runningRequests[resolvedKey] = false;
+
+              // If a request completes succesfuly, we reset the error attempts to 0
+              setCompletedAttempts(0);
+              requestEmitter.emit(resolvedKey, {
+                requestCallId,
+                completedAttempts: 0,
               });
             } else {
-              setData(requestCache);
-              cacheForMutation[idString] = requestCache;
-              requestEmitter.emit(resolvedKey, {
-                requestCallId,
-                data: requestCache,
-              });
-            }
-            let _error = new Error(err as any);
-            setError(_error);
-            requestEmitter.emit(resolvedKey, {
-              requestCallId,
-              error: _error,
-            });
-            onError(err as any);
-          } else {
-            if (typeof requestCache === "undefined") {
-              if (typeof def !== "undefined") {
+              if (def) {
                 setData(def);
                 cacheForMutation[idString] = def;
+                requestEmitter.emit(resolvedKey, {
+                  requestCallId,
+                  data: def,
+                });
               }
+              setError(true);
               requestEmitter.emit(resolvedKey, {
                 requestCallId,
-                data: def,
+                error: true,
               });
+              onError(_data, json);
+              runningRequests[resolvedKey] = false;
             }
+          } catch (err) {
+            const errorString = err?.toString();
+            // Only set error if no abort
+            if (!`${errorString}`.match(/abort/i)) {
+              if (typeof requestCache === "undefined") {
+                setData(def);
+                cacheForMutation[idString] = def;
+                requestEmitter.emit(resolvedKey, {
+                  requestCallId,
+                  data: def,
+                });
+              } else {
+                setData(requestCache);
+                cacheForMutation[idString] = requestCache;
+                requestEmitter.emit(resolvedKey, {
+                  requestCallId,
+                  data: requestCache,
+                });
+              }
+              let _error = new Error(err as any);
+              setError(_error);
+              requestEmitter.emit(resolvedKey, {
+                requestCallId,
+                error: _error,
+              });
+              onError(err as any);
+            } else {
+              if (typeof requestCache === "undefined") {
+                if (typeof def !== "undefined") {
+                  setData(def);
+                  cacheForMutation[idString] = def;
+                }
+                requestEmitter.emit(resolvedKey, {
+                  requestCallId,
+                  data: def,
+                });
+              }
+            }
+          } finally {
+            setLoading(false);
+            runningRequests[resolvedKey] = false;
+            requestEmitter.emit(resolvedKey, {
+              requestCallId,
+              loading: false,
+            });
           }
-        } finally {
-          setLoading(false);
-          runningRequests[resolvedKey] = false;
-          requestEmitter.emit(resolvedKey, {
-            requestCallId,
-            loading: false,
-          });
         }
       }
-    }
-  }
+    },
+    [
+      stringDeps,
+      resolvedKey,
+      config.method,
+      JSON.stringify(optionsConfig),
+      realUrl,
+      requestCallId,
+      memory,
+      def,
+    ]
+  );
 
   useEffect(() => {
     const { signal } = requestAbortController || {};
@@ -1295,6 +1308,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   }, [requestAbortController, resolvedKey, onAbort, loading]);
 
   useEffect(() => {
+    let tm: any = null;
     function waitFormUpdates(v: any) {
       if (v.requestCallId !== requestCallId) {
         const {
@@ -1312,7 +1326,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           method,
           completedAttempts,
         } = v;
-        const tm = setTimeout(() => {
+        tm = setTimeout(() => {
           if (typeof method !== "undefined") {
             setReqMethod(method);
           }
@@ -1368,16 +1382,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     requestEmitter.addListener(resolvedKey, waitFormUpdates);
 
     return () => {
+      clearTimeout(tm);
       requestEmitter.removeListener(resolvedKey, waitFormUpdates);
     };
-  }, [
-    resolvedKey,
-    reqMethod,
-    id,
-    requestCallId,
-    requestAbortController,
-    stringDeps,
-  ]);
+  }, [resolvedKey, reqMethod, id, requestCallId, stringDeps]);
 
   const reValidate = React.useCallback(
     async function reValidate() {
@@ -1467,16 +1475,26 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         reValidate();
       }
     }
-    if (typeof window !== "undefined") {
-      if ("addEventListener" in window) {
-        if (retryOnReconnect) {
-          window.addEventListener("online", backOnline);
-          return () => {
-            window.removeEventListener("online", backOnline);
-          };
+
+    function addOnlineListener() {
+      if (typeof window !== "undefined") {
+        if ("addEventListener" in window) {
+          if (retryOnReconnect) {
+            window.addEventListener("online", backOnline);
+          }
         }
       }
     }
+
+    addOnlineListener();
+
+    return () => {
+      if (typeof window !== "undefined") {
+        if ("addEventListener" in window) {
+          window.removeEventListener("online", backOnline);
+        }
+      }
+    };
   }, [onOnline, reValidate, resolvedKey, retryOnReconnect]);
 
   useEffect(() => {
@@ -1489,14 +1507,24 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       });
       (onOffline as any)();
     }
-    if (typeof window !== "undefined") {
-      if ("addEventListener" in window) {
-        window.addEventListener("offline", wentOffline);
-        return () => {
-          window.removeEventListener("offline", wentOffline);
-        };
+
+    function addOfflineListener() {
+      if (typeof window !== "undefined") {
+        if ("addEventListener" in window) {
+          window.addEventListener("offline", wentOffline);
+        }
       }
     }
+
+    addOfflineListener();
+
+    return () => {
+      if (typeof window !== "undefined") {
+        if ("addEventListener" in window) {
+          window.removeEventListener("offline", wentOffline);
+        }
+      }
+    };
   }, [onOffline, reValidate, resolvedKey, retryOnReconnect]);
 
   useEffect(() => {
@@ -1545,10 +1573,11 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   useEffect(() => {
     if (completedAttempts === 0) {
       if (refresh > 0 && auto) {
-        const interval = setTimeout(reValidate, refresh * 1000);
-        return () => clearTimeout(interval);
+        const tm = setTimeout(reValidate, refresh * 1000);
+        return () => clearTimeout(tm);
       }
     }
+    return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, loading, error, rawJSON, completedAttempts, config]);
 
@@ -1587,16 +1616,22 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   }, [initMemo, url, stringDeps, refresh, JSON.stringify(config), auto]);
 
   useEffect(() => {
-    if (revalidateOnFocus) {
-      if (typeof window !== "undefined") {
+    function addFocusListener() {
+      if (revalidateOnFocus && typeof window !== "undefined") {
         if ("addEventListener" in window) {
           window.addEventListener("focus", reValidate as any);
-          return () => {
-            window.removeEventListener("focus", reValidate as any);
-          };
         }
       }
     }
+    addFocusListener();
+
+    return () => {
+      if (typeof window !== "undefined") {
+        if ("addEventListener" in window) {
+          window.removeEventListener("focus", reValidate as any);
+        }
+      }
+    };
   }, [
     url,
     revalidateOnFocus,
@@ -1659,7 +1694,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     reFetch: reValidate,
     mutate: forceMutate,
     abort: () => {
-      requestAbortController.abort();
+      abortControllers[resolvedKey]?.abort();
       if (loading) {
         setError(false);
         setLoading(false);

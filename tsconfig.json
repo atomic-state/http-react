@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "watch": true,
     "outDir": "./",
     "module": "commonjs",
     "target": "es5",
