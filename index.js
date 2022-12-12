@@ -807,6 +807,8 @@ var useFetcher = function (init, options) {
             });
         });
     }, [
+        auto,
+        ctx.auto,
         stringDeps,
         resolvedKey,
         config.method,
@@ -920,7 +922,15 @@ var useFetcher = function (init, options) {
                 return [2 /*return*/];
             });
         });
-    }, [stringDeps, cancelOnChange, url, requestAbortController, loading]);
+    }, [
+        stringDeps,
+        cancelOnChange,
+        url,
+        requestAbortController,
+        loading,
+        auto,
+        ctx.auto,
+    ]);
     (0, react_1.useEffect)(function () {
         function forceRefresh(v) {
             return __awaiter(this, void 0, void 0, function () {
@@ -968,7 +978,7 @@ var useFetcher = function (init, options) {
         return function () {
             requestEmitter.removeListener(idString, forceRefresh);
         };
-    }, [resolvedKey, stringDeps, idString, id]);
+    }, [resolvedKey, stringDeps, auto, ctx.auto, idString, id]);
     (0, react_1.useEffect)(function () {
         function backOnline() {
             var willCancel = false;
@@ -1103,7 +1113,15 @@ var useFetcher = function (init, options) {
             setLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initMemo, url, stringDeps, refresh, JSON.stringify(config), auto]);
+    }, [
+        initMemo,
+        url,
+        stringDeps,
+        refresh,
+        JSON.stringify(config),
+        auto,
+        ctx.auto,
+    ]);
     (0, react_1.useEffect)(function () {
         function addFocusListener() {
             if (revalidateOnFocus && typeof window !== "undefined") {
