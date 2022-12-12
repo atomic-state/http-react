@@ -1280,6 +1280,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       }
     },
     [
+      auto,
+      ctx.auto,
       stringDeps,
       resolvedKey,
       config.method,
@@ -1412,7 +1414,15 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         }
       }
     },
-    [stringDeps, cancelOnChange, url, requestAbortController, loading]
+    [
+      stringDeps,
+      cancelOnChange,
+      url,
+      requestAbortController,
+      loading,
+      auto,
+      ctx.auto,
+    ]
   );
 
   useEffect(() => {
@@ -1457,7 +1467,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     return () => {
       requestEmitter.removeListener(idString, forceRefresh);
     };
-  }, [resolvedKey, stringDeps, idString, id]);
+  }, [resolvedKey, stringDeps, auto, ctx.auto, idString, id]);
 
   useEffect(() => {
     function backOnline() {
@@ -1613,7 +1623,15 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initMemo, url, stringDeps, refresh, JSON.stringify(config), auto]);
+  }, [
+    initMemo,
+    url,
+    stringDeps,
+    refresh,
+    JSON.stringify(config),
+    auto,
+    ctx.auto,
+  ]);
 
   useEffect(() => {
     function addFocusListener() {
