@@ -65,7 +65,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useFetchId = exports.useError = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useFetcherId = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
+exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useFetchId = exports.useMutate = exports.useError = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
 var React = require("react");
 var react_1 = require("react");
 var events_1 = require("events");
@@ -355,13 +355,14 @@ exports.useConfig = useFetcherConfig;
 /**
  * Get the data state of a request using its id
  */
-function useFetcherData(id) {
+function useFetcherData(id, onResolve) {
     var defaultsKey = JSON.stringify({
         idString: JSON.stringify(id),
     });
     var def = resolvedRequests[defaultsKey];
     var data = useFetcher({
         default: def,
+        onResolve: onResolve,
         id: id,
     }).data;
     return data;
@@ -385,14 +386,35 @@ exports.useLoading = useFetcherLoading;
 /**
  * Get the error state of a request using its id
  */
-function useFetcherError(id) {
+function useFetcherError(id, onError) {
     var error = useFetcher({
         id: id,
+        onError: onError,
     }).error;
     return error;
 }
 exports.useFetcherError = useFetcherError;
 exports.useError = useFetcherError;
+/**
+ * Get the mutate the request data using its id
+ */
+function useFetcherMutate(
+/**
+ * The id of the `useFetch` call
+ */
+id, 
+/**
+ * The function to run after mutating
+ */
+onMutate) {
+    var mutate = useFetcher({
+        id: id,
+        onMutate: onMutate,
+    }).mutate;
+    return mutate;
+}
+exports.useFetcherMutate = useFetcherMutate;
+exports.useMutate = useFetcherMutate;
 /**
  * Get everything from a `useFetcher` call using its id
  */
@@ -409,11 +431,21 @@ function useFetcherId(id) {
 exports.useFetcherId = useFetcherId;
 exports.useFetchId = useFetcherId;
 /**
- * Use an imperative version of the fetcher (similarly to Axios, it returns an object with `get`, `post`, etc)
+ * U
  */
-function useImperative() {
-    var ctx = useFetcherConfig();
-    var baseUrl = ctx.baseUrl;
+function useResolve(id, onResolve) {
+    var defaultsKey = JSON.stringify({
+        idString: JSON.stringify(id),
+    });
+    var def = fetcherDefaults[defaultsKey];
+    useFetcher({
+        id: id,
+        onResolve: onResolve,
+        default: def,
+    });
+}
+exports.useResolve = useResolve;
+var createImperativeFetcher = function (ctx) {
     var keys = [
         "GET",
         "DELETE",
@@ -426,6 +458,7 @@ function useImperative() {
         "LINK",
         "UNLINK",
     ];
+    var baseUrl = ctx.baseUrl;
     return Object.fromEntries(new Map(keys.map(function (k) { return [
         k.toLowerCase(),
         function (url, _a) {
@@ -442,6 +475,14 @@ function useImperative() {
                 } }, other));
         },
     ]; })));
+};
+/**
+ * Use an imperative version of the fetcher (similarly to Axios, it returns an object with `get`, `post`, etc)
+ */
+function useImperative() {
+    var ctx = useFetcherConfig();
+    var imperativeFetcher = React.useMemo(function () { return createImperativeFetcher(ctx); }, [JSON.stringify(ctx)]);
+    return imperativeFetcher;
 }
 exports.useImperative = useImperative;
 /**
@@ -454,7 +495,7 @@ var useFetcher = function (init, options) {
         ? __assign({ 
             // Pass init as the url if init is a string
             url: init }, options) : init;
-    var _b = optionsConfig.onOnline, onOnline = _b === void 0 ? ctx.onOnline : _b, _c = optionsConfig.onOffline, onOffline = _c === void 0 ? ctx.onOffline : _c, _d = optionsConfig.url, url = _d === void 0 ? "" : _d, id = optionsConfig.id, _e = optionsConfig.config, config = _e === void 0 ? {
+    var _b = optionsConfig.onOnline, onOnline = _b === void 0 ? ctx.onOnline : _b, _c = optionsConfig.onOffline, onOffline = _c === void 0 ? ctx.onOffline : _c, _d = optionsConfig.onMutate, onMutate = _d === void 0 ? function () { } : _d, _e = optionsConfig.onPropsChange, onPropsChange = _e === void 0 ? function () { } : _e, _f = optionsConfig.url, url = _f === void 0 ? "" : _f, id = optionsConfig.id, _g = optionsConfig.config, config = _g === void 0 ? {
         query: {},
         params: {},
         baseUrl: undefined,
@@ -462,11 +503,11 @@ var useFetcher = function (init, options) {
         headers: {},
         body: undefined,
         formatBody: false,
-    } : _e, _f = optionsConfig.resolver, resolver = _f === void 0 ? typeof ctx.resolver === "function"
+    } : _g, _h = optionsConfig.resolver, resolver = _h === void 0 ? typeof ctx.resolver === "function"
         ? ctx.resolver
-        : function (d) { return d.json(); } : _f, _g = optionsConfig.onError, onError = _g === void 0 ? function () { } : _g, _h = optionsConfig.auto, auto = _h === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.auto : _h, _j = optionsConfig.memory, memory = _j === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _j, _k = optionsConfig.onResolve, onResolve = _k === void 0 ? function () { } : _k, _l = optionsConfig.onAbort, onAbort = _l === void 0 ? function () { } : _l, _m = optionsConfig.refresh, refresh = _m === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _m, _o = optionsConfig.cancelOnChange, cancelOnChange = _o === void 0 ? false : _o, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
-    _p = optionsConfig.attempts, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
-    attempts = _p === void 0 ? ctx.attempts : _p, _q = optionsConfig.attemptInterval, attemptInterval = _q === void 0 ? ctx.attemptInterval : _q, _r = optionsConfig.revalidateOnFocus, revalidateOnFocus = _r === void 0 ? ctx.revalidateOnFocus : _r;
+        : function (d) { return d.json(); } : _h, _j = optionsConfig.onError, onError = _j === void 0 ? function () { } : _j, _k = optionsConfig.auto, auto = _k === void 0 ? typeof ctx.auto === "undefined" ? true : ctx.auto : _k, _l = optionsConfig.memory, memory = _l === void 0 ? typeof ctx.memory === "undefined" ? true : ctx.memory : _l, _m = optionsConfig.onResolve, onResolve = _m === void 0 ? function () { } : _m, _o = optionsConfig.onAbort, onAbort = _o === void 0 ? function () { } : _o, _p = optionsConfig.refresh, refresh = _p === void 0 ? typeof ctx.refresh === "undefined" ? 0 : ctx.refresh : _p, _q = optionsConfig.cancelOnChange, cancelOnChange = _q === void 0 ? false : _q, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
+    _r = optionsConfig.attempts, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
+    attempts = _r === void 0 ? ctx.attempts : _r, _s = optionsConfig.attemptInterval, attemptInterval = _s === void 0 ? ctx.attemptInterval : _s, _t = optionsConfig.revalidateOnFocus, revalidateOnFocus = _t === void 0 ? ctx.revalidateOnFocus : _t;
     var requestCallId = React.useMemo(function () { return "".concat(Math.random()).split(".")[1]; }, []);
     var retryOnReconnect = optionsConfig.auto === false
         ? false
@@ -474,12 +515,12 @@ var useFetcher = function (init, options) {
             ? optionsConfig.retryOnReconnect
             : ctx.retryOnReconnect;
     var idString = JSON.stringify(id);
-    var _s = (0, react_1.useState)(__assign(__assign({}, ctx.query), config.query)), reqQuery = _s[0], setReqQuery = _s[1];
-    var _t = (0, react_1.useState)({
+    var _u = (0, react_1.useState)(__assign(__assign({}, ctx.query), config.query)), reqQuery = _u[0], setReqQuery = _u[1];
+    var _v = (0, react_1.useState)({
         realUrl: "",
         rawUrl: "",
-    }), configUrl = _t[0], setConfigUrl = _t[1];
-    var _u = (0, react_1.useState)(__assign(__assign({}, ctx.params), config.params)), reqParams = _u[0], setReqParams = _u[1];
+    }), configUrl = _v[0], setConfigUrl = _v[1];
+    var _w = (0, react_1.useState)(__assign(__assign({}, ctx.params), config.params)), reqParams = _w[0], setReqParams = _w[1];
     (0, react_1.useEffect)(function () {
         if (url !== "") {
             setReqParams(function () {
@@ -540,7 +581,7 @@ var useFetcher = function (init, options) {
     var stringDeps = JSON.stringify(
     // We ignore children and resolver
     Object.assign(ctx, { children: undefined }, config === null || config === void 0 ? void 0 : config.headers, config === null || config === void 0 ? void 0 : config.method, config === null || config === void 0 ? void 0 : config.body, config === null || config === void 0 ? void 0 : config.query, config === null || config === void 0 ? void 0 : config.params, { resolver: undefined }, { reqQuery: reqQuery }, { reqParams: reqParams }));
-    var _v = realUrl.split("?"), resKey = _v[0], qp = _v[1];
+    var _x = realUrl.split("?"), resKey = _x[0], qp = _x[1];
     // This helps pass default values to other useFetcher calls using the same id
     (0, react_1.useEffect)(function () {
         if (typeof optionsConfig.default !== "undefined") {
@@ -600,26 +641,26 @@ var useFetcher = function (init, options) {
         JSON.stringify(__assign(__assign({ qp: qp }, ctx.query), config.query)),
     ]);
     var requestCache = cache.get(resolvedKey);
-    var _w = (0, react_1.useState)(
+    var _y = (0, react_1.useState)(
     // Saved to base url of request without query params
-    memory ? requestCache || valuesMemory[rawUrl] || def : def), data = _w[0], setData = _w[1];
+    memory ? requestCache || valuesMemory[rawUrl] || def : def), data = _y[0], setData = _y[1];
     // Used JSON as deppendency instead of directly using a reference to data
     var rawJSON = JSON.stringify(data);
-    var _x = (0, react_1.useState)(true), online = _x[0], setOnline = _x[1];
-    var _y = (0, react_1.useState)((typeof FormData !== "undefined"
+    var _z = (0, react_1.useState)(true), online = _z[0], setOnline = _z[1];
+    var _0 = (0, react_1.useState)((typeof FormData !== "undefined"
         ? config.body instanceof FormData
             ? config.body
             : typeof ctx.body !== "undefined" || typeof config.body !== "undefined"
                 ? __assign(__assign({}, ctx.body), config.body) : undefined
-        : config.body)), requestBody = _y[0], setRequestBody = _y[1];
-    var _z = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _z[0], setRequestHeades = _z[1];
-    var _0 = (0, react_1.useState)(), response = _0[0], setResponse = _0[1];
-    var _1 = (0, react_1.useState)(), statusCode = _1[0], setStatusCode = _1[1];
-    var _2 = (0, react_1.useState)(null), error = _2[0], setError = _2[1];
-    var _3 = (0, react_1.useState)(true), loading = _3[0], setLoading = _3[1];
-    var _4 = (0, react_1.useState)(0), completedAttempts = _4[0], setCompletedAttempts = _4[1];
-    var _5 = (0, react_1.useState)(new AbortController()), requestAbortController = _5[0], setRequestAbortController = _5[1];
-    var _6 = (0, react_1.useState)(config.method), reqMethod = _6[0], setReqMethod = _6[1];
+        : config.body)), requestBody = _0[0], setRequestBody = _0[1];
+    var _1 = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _1[0], setRequestHeades = _1[1];
+    var _2 = (0, react_1.useState)(), response = _2[0], setResponse = _2[1];
+    var _3 = (0, react_1.useState)(), statusCode = _3[0], setStatusCode = _3[1];
+    var _4 = (0, react_1.useState)(null), error = _4[0], setError = _4[1];
+    var _5 = (0, react_1.useState)(true), loading = _5[0], setLoading = _5[1];
+    var _6 = (0, react_1.useState)(0), completedAttempts = _6[0], setCompletedAttempts = _6[1];
+    var _7 = (0, react_1.useState)(new AbortController()), requestAbortController = _7[0], setRequestAbortController = _7[1];
+    var _8 = (0, react_1.useState)(config.method), reqMethod = _8[0], setReqMethod = _8[1];
     (0, react_1.useEffect)(function () {
         if (url !== "") {
             setReqMethod(config.method);
@@ -833,6 +874,7 @@ var useFetcher = function (init, options) {
             signal === null || signal === void 0 ? void 0 : signal.removeEventListener("abort", abortCallback);
         };
     }, [requestAbortController, resolvedKey, onAbort, loading]);
+    var imperativeFetcher = React.useMemo(function () { return createImperativeFetcher(ctx); }, [JSON.stringify(ctx)]);
     (0, react_1.useEffect)(function () {
         var tm = null;
         function waitFormUpdates(v) {
@@ -870,10 +912,16 @@ var useFetcher = function (init, options) {
                         setLoading(loading_1);
                     }
                     if (typeof data_1 !== "undefined") {
-                        setData(data_1);
-                        cacheForMutation[idString] = data_1;
-                        if (!isMutating_1) {
-                            onResolve(data_1);
+                        if (JSON.stringify(data_1) !==
+                            JSON.stringify(cacheForMutation[resolvedKey])) {
+                            setData(data_1);
+                            cacheForMutation[idString] = data_1;
+                            if (!isMutating_1) {
+                                onResolve(data_1);
+                            }
+                            if (isMutating_1) {
+                                onMutate(data_1, imperativeFetcher);
+                            }
                         }
                         setError(null);
                     }
@@ -895,7 +943,14 @@ var useFetcher = function (init, options) {
             clearTimeout(tm);
             requestEmitter.removeListener(resolvedKey, waitFormUpdates);
         };
-    }, [resolvedKey, reqMethod, id, requestCallId, stringDeps]);
+    }, [
+        resolvedKey,
+        imperativeFetcher,
+        reqMethod,
+        id,
+        requestCallId,
+        stringDeps,
+    ]);
     var reValidate = React.useCallback(function reValidate() {
         return __awaiter(this, void 0, void 0, function () {
             var reqQ_1;
@@ -1149,32 +1204,50 @@ var useFetcher = function (init, options) {
         JSON.stringify(config),
     ]);
     var __config = __assign(__assign({}, config), { method: reqMethod, params: reqParams, headers: requestHeaders, body: config.body, baseUrl: ctx.baseUrl || config.baseUrl, url: configUrl === null || configUrl === void 0 ? void 0 : configUrl.realUrl, rawUrl: configUrl === null || configUrl === void 0 ? void 0 : configUrl.rawUrl, query: reqQuery });
-    function forceMutate(newValue) {
+    function forceMutate(newValue, callback) {
+        if (callback === void 0) { callback = function () { }; }
         if (typeof newValue !== "function") {
-            cache.set(resolvedKey, newValue);
-            valuesMemory[idString] = newValue;
-            cacheForMutation[idString] = newValue;
-            requestEmitter.emit(resolvedKey, {
-                requestCallId: requestCallId,
-                isMutating: true,
-                data: newValue,
-            });
-            setData(newValue);
+            if (JSON.stringify(resolvedRequests[resolvedKey]) !==
+                JSON.stringify(newValue)) {
+                onMutate(newValue, imperativeFetcher);
+                callback(newValue, imperativeFetcher);
+                cache.set(resolvedKey, newValue);
+                valuesMemory[idString] = newValue;
+                cacheForMutation[idString] = newValue;
+                requestEmitter.emit(resolvedKey, {
+                    requestCallId: requestCallId,
+                    isMutating: true,
+                    data: newValue,
+                });
+                setData(newValue);
+            }
         }
         else {
-            setData(function (prev) {
-                var newVal = newValue(prev);
+            var newVal = newValue(data);
+            if (JSON.stringify(resolvedRequests[resolvedKey]) !== JSON.stringify(newVal)) {
+                onMutate(newVal, imperativeFetcher);
+                callback(newVal, imperativeFetcher);
                 cache.set(resolvedKey, newVal);
                 valuesMemory[idString] = newVal;
                 cacheForMutation[idString] = newVal;
                 requestEmitter.emit(resolvedKey, {
                     requestCallId: requestCallId,
+                    isMutating: true,
                     data: newVal,
                 });
-                return newVal;
-            });
+                setData(newVal);
+            }
         }
     }
+    (0, react_1.useEffect)(function () {
+        onPropsChange(reValidate, exports.fetcher);
+    }, [
+        // reValidate,
+        JSON.stringify({
+            optionsConfig: optionsConfig,
+            ctx: ctx,
+        }),
+    ]);
     var resolvedData = React.useMemo(function () { return data; }, [rawJSON]);
     return {
         data: resolvedData,

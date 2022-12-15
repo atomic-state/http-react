@@ -310,6 +310,26 @@ type FetcherType<FetchDataType, BodyType> = {
    */
   onResolve?: (data: FetchDataType, req?: Response) => void;
   /**
+   * Function to run when data is mutated
+   */
+  onMutate?: (
+    data: FetchDataType,
+    /**
+     * An imperative version of `useFetcher`
+     */
+    fetcher: ImperativeFetcher
+  ) => void;
+  /**
+   * Function to run when props change
+   */
+  onPropsChange?: (
+    revalidate: () => void,
+    /**
+     * An imperative version of `useFetcher`
+     */
+    fetcher: ImperativeFetcher
+  ) => void;
+  /**
    * Function to run when the request fails
    */
   onError?: (error: Error, req?: Response) => void;
@@ -424,6 +444,26 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
    * Function to run when request is resolved succesfuly
    */
   onResolve?: (data: FetchDataType) => void;
+  /**
+   * Function to run when data is mutated
+   */
+  onMutate?: (
+    data: FetchDataType,
+    /**
+     * An imperative version of `useFetcher`
+     */
+    fetcher: ImperativeFetcher
+  ) => void;
+  /**
+   * Function to run when props change
+   */
+  onPropsChange?: (
+    revalidate: () => void,
+    /**
+     * An imperative version of `useFetcher`
+     */
+    fetcher: ImperativeFetcher
+  ) => void;
   /**
    * Function to run when the request fails
    */
@@ -693,7 +733,10 @@ export function useFetcherConfig(id?: string) {
 /**
  * Get the data state of a request using its id
  */
-export function useFetcherData<T = any>(id: any) {
+export function useFetcherData<T = any>(
+  id: any,
+  onResolve?: (data: T) => void
+) {
   const defaultsKey = JSON.stringify({
     idString: JSON.stringify(id),
   });
@@ -701,6 +744,7 @@ export function useFetcherData<T = any>(id: any) {
 
   const { data } = useFetcher<T>({
     default: def,
+    onResolve,
     id: id,
   });
 
@@ -725,12 +769,40 @@ export function useFetcherLoading(id: any): boolean {
 /**
  * Get the error state of a request using its id
  */
-export function useFetcherError(id: any) {
+export function useFetcherError(id: any, onError?: () => void) {
   const { error } = useFetcher({
     id: id,
+    onError,
   });
 
   return error;
+}
+
+/**
+ * Get the mutate the request data using its id
+ */
+export function useFetcherMutate<T = any>(
+  /**
+   * The id of the `useFetch` call
+   */
+  id: any,
+  /**
+   * The function to run after mutating
+   */
+  onMutate?: (
+    data: T,
+    /**
+     * An imperative version of `useFetcher`
+     */
+    fetcher: ImperativeFetcher
+  ) => void
+) {
+  const { mutate } = useFetcher({
+    id: id,
+    onMutate,
+  });
+
+  return mutate;
 }
 
 /**
@@ -748,12 +820,32 @@ export function useFetcherId<ResponseType = any, BodyType = any>(id: any) {
   });
 }
 
+/**
+ * U
+ */
+export function useResolve<ResponseType = any>(
+  id: any,
+  onResolve: (data: ResponseType) => void
+) {
+  const defaultsKey = JSON.stringify({
+    idString: JSON.stringify(id),
+  });
+  const def = fetcherDefaults[defaultsKey];
+
+  useFetcher<ResponseType>({
+    id,
+    onResolve,
+    default: def,
+  });
+}
+
 export {
   useFetcher as useFetch,
   useFetcherLoading as useLoading,
   useFetcherConfig as useConfig,
   useFetcherData as useData,
   useFetcherError as useError,
+  useFetcherMutate as useMutate,
   useFetcherId as useFetchId,
 };
 
@@ -765,13 +857,22 @@ export type FetcherInit<FDT = any, BT = any> = FetcherConfigOptions<FDT, BT> & {
 };
 
 /**
- * Use an imperative version of the fetcher (similarly to Axios, it returns an object with `get`, `post`, etc)
+ * An imperative version of the `useFetcher`
  */
-export function useImperative() {
-  const ctx = useFetcherConfig();
+type ImperativeFetcher = {
+  get: RequestWithBody;
+  delete: RequestWithBody;
+  head: RequestWithBody;
+  options: RequestWithBody;
+  post: RequestWithBody;
+  put: RequestWithBody;
+  patch: RequestWithBody;
+  purge: RequestWithBody;
+  link: RequestWithBody;
+  unlink: RequestWithBody;
+};
 
-  const { baseUrl } = ctx;
-
+const createImperativeFetcher = (ctx: FetcherContextType) => {
   const keys = [
     "GET",
     "DELETE",
@@ -784,6 +885,8 @@ export function useImperative() {
     "LINK",
     "UNLINK",
   ];
+
+  const { baseUrl } = ctx;
 
   return Object.fromEntries(
     new Map(
@@ -810,18 +913,21 @@ export function useImperative() {
           ),
       ])
     )
-  ) as {
-    get: RequestWithBody;
-    delete: RequestWithBody;
-    head: RequestWithBody;
-    options: RequestWithBody;
-    post: RequestWithBody;
-    put: RequestWithBody;
-    patch: RequestWithBody;
-    purge: RequestWithBody;
-    link: RequestWithBody;
-    unlink: RequestWithBody;
-  };
+  ) as ImperativeFetcher;
+};
+
+/**
+ * Use an imperative version of the fetcher (similarly to Axios, it returns an object with `get`, `post`, etc)
+ */
+export function useImperative() {
+  const ctx = useFetcherConfig();
+
+  const imperativeFetcher = React.useMemo(
+    () => createImperativeFetcher(ctx),
+    [JSON.stringify(ctx)]
+  );
+
+  return imperativeFetcher;
 }
 
 /**
@@ -847,6 +953,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   const {
     onOnline = ctx.onOnline,
     onOffline = ctx.onOffline,
+    onMutate = () => {},
+    onPropsChange = () => {},
     url = "",
     id,
     config = {
@@ -1309,6 +1417,11 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     };
   }, [requestAbortController, resolvedKey, onAbort, loading]);
 
+  const imperativeFetcher = React.useMemo(
+    () => createImperativeFetcher(ctx),
+    [JSON.stringify(ctx)]
+  );
+
   useEffect(() => {
     let tm: any = null;
     function waitFormUpdates(v: any) {
@@ -1360,10 +1473,18 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             setLoading(loading);
           }
           if (typeof data !== "undefined") {
-            setData(data);
-            cacheForMutation[idString] = data;
-            if (!isMutating) {
-              onResolve(data);
+            if (
+              JSON.stringify(data) !==
+              JSON.stringify(cacheForMutation[resolvedKey])
+            ) {
+              setData(data);
+              cacheForMutation[idString] = data;
+              if (!isMutating) {
+                onResolve(data);
+              }
+              if (isMutating) {
+                onMutate(data, imperativeFetcher);
+              }
             }
             setError(null);
           }
@@ -1387,7 +1508,14 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       clearTimeout(tm);
       requestEmitter.removeListener(resolvedKey, waitFormUpdates);
     };
-  }, [resolvedKey, reqMethod, id, requestCallId, stringDeps]);
+  }, [
+    resolvedKey,
+    imperativeFetcher,
+    reqMethod,
+    id,
+    requestCallId,
+    stringDeps,
+  ]);
 
   const reValidate = React.useCallback(
     async function reValidate() {
@@ -1674,32 +1802,59 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   };
 
   function forceMutate(
-    newValue: FetchDataType | ((prev: FetchDataType) => FetchDataType)
+    newValue: FetchDataType | ((prev: FetchDataType) => FetchDataType),
+    callback: (
+      data: FetchDataType,
+      fetcher: ImperativeFetcher
+    ) => void = () => {}
   ) {
     if (typeof newValue !== "function") {
-      cache.set(resolvedKey, newValue);
-      valuesMemory[idString] = newValue;
-      cacheForMutation[idString] = newValue;
-      requestEmitter.emit(resolvedKey, {
-        requestCallId,
-        isMutating: true,
-        data: newValue,
-      });
-      setData(newValue);
+      if (
+        JSON.stringify(resolvedRequests[resolvedKey]) !==
+        JSON.stringify(newValue)
+      ) {
+        onMutate(newValue, imperativeFetcher);
+        callback(newValue, imperativeFetcher);
+        cache.set(resolvedKey, newValue);
+        valuesMemory[idString] = newValue;
+        cacheForMutation[idString] = newValue;
+        requestEmitter.emit(resolvedKey, {
+          requestCallId,
+          isMutating: true,
+          data: newValue,
+        });
+        setData(newValue);
+      }
     } else {
-      setData((prev) => {
-        let newVal = (newValue as any)(prev);
+      let newVal = (newValue as any)(data);
+      if (
+        JSON.stringify(resolvedRequests[resolvedKey]) !== JSON.stringify(newVal)
+      ) {
+        onMutate(newVal, imperativeFetcher);
+        callback(newVal, imperativeFetcher);
         cache.set(resolvedKey, newVal);
         valuesMemory[idString] = newVal;
         cacheForMutation[idString] = newVal;
         requestEmitter.emit(resolvedKey, {
           requestCallId,
+          isMutating: true,
           data: newVal,
         });
-        return newVal;
-      });
+
+        setData(newVal);
+      }
     }
   }
+
+  useEffect(() => {
+    onPropsChange(reValidate, fetcher);
+  }, [
+    // reValidate,
+    JSON.stringify({
+      optionsConfig,
+      ctx,
+    }),
+  ]);
 
   const resolvedData = React.useMemo(() => data, [rawJSON]);
 
@@ -1739,7 +1894,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     online: boolean;
     code: number;
     reFetch: () => Promise<void>;
-    mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
+    mutate: (
+      update: FetchDataType | ((prev: FetchDataType) => FetchDataType),
+      callback?: (data: FetchDataType, fetcher: ImperativeFetcher) => void
+    ) => FetchDataType;
     abort: () => void;
     config: FetcherType<FetchDataType, BodyType>["config"] & {
       baseUrl: string;

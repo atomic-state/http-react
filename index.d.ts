@@ -142,6 +142,22 @@ declare type FetcherType<FetchDataType, BodyType> = {
      */
     onResolve?: (data: FetchDataType, req?: Response) => void;
     /**
+     * Function to run when data is mutated
+     */
+    onMutate?: (data: FetchDataType, 
+    /**
+     * An imperative version of `useFetcher`
+     */
+    fetcher: ImperativeFetcher) => void;
+    /**
+     * Function to run when props change
+     */
+    onPropsChange?: (revalidate: () => void, 
+    /**
+     * An imperative version of `useFetcher`
+     */
+    fetcher: ImperativeFetcher) => void;
+    /**
      * Function to run when the request fails
      */
     onError?: (error: Error, req?: Response) => void;
@@ -246,6 +262,22 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
      * Function to run when request is resolved succesfuly
      */
     onResolve?: (data: FetchDataType) => void;
+    /**
+     * Function to run when data is mutated
+     */
+    onMutate?: (data: FetchDataType, 
+    /**
+     * An imperative version of `useFetcher`
+     */
+    fetcher: ImperativeFetcher) => void;
+    /**
+     * Function to run when props change
+     */
+    onPropsChange?: (revalidate: () => void, 
+    /**
+     * An imperative version of `useFetcher`
+     */
+    fetcher: ImperativeFetcher) => void;
     /**
      * Function to run when the request fails
      */
@@ -369,7 +401,7 @@ export declare function useFetcherConfig(id?: string): FetcherContextType | ({
 /**
  * Get the data state of a request using its id
  */
-export declare function useFetcherData<T = any>(id: any): T;
+export declare function useFetcherData<T = any>(id: any, onResolve?: (data: T) => void): T;
 /**
  * Get the loading state of a request using its id
  */
@@ -377,7 +409,23 @@ export declare function useFetcherLoading(id: any): boolean;
 /**
  * Get the error state of a request using its id
  */
-export declare function useFetcherError(id: any): Error | null;
+export declare function useFetcherError(id: any, onError?: () => void): Error | null;
+/**
+ * Get the mutate the request data using its id
+ */
+export declare function useFetcherMutate<T = any>(
+/**
+ * The id of the `useFetch` call
+ */
+id: any, 
+/**
+ * The function to run after mutating
+ */
+onMutate?: (data: T, 
+/**
+ * An imperative version of `useFetcher`
+ */
+fetcher: ImperativeFetcher) => void): (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
 /**
  * Get everything from a `useFetcher` call using its id
  */
@@ -388,7 +436,7 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
     online: boolean;
     code: number;
     reFetch: () => Promise<void>;
-    mutate: React.Dispatch<React.SetStateAction<ResponseType>>;
+    mutate: (update: ResponseType | ((prev: ResponseType) => ResponseType), callback?: ((data: ResponseType, fetcher: ImperativeFetcher) => void) | undefined) => ResponseType;
     abort: () => void;
     config: {
         /**
@@ -422,7 +470,11 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
     id: any;
     key: string;
 };
-export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherError as useError, useFetcherId as useFetchId, };
+/**
+ * U
+ */
+export declare function useResolve<ResponseType = any>(id: any, onResolve: (data: ResponseType) => void): void;
+export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, };
 /**
  * Create a configuration object to use in a 'useFetcher' call
  */
@@ -430,9 +482,9 @@ export declare type FetcherInit<FDT = any, BT = any> = FetcherConfigOptions<FDT,
     url?: string;
 };
 /**
- * Use an imperative version of the fetcher (similarly to Axios, it returns an object with `get`, `post`, etc)
+ * An imperative version of the `useFetcher`
  */
-export declare function useImperative(): {
+declare type ImperativeFetcher = {
     get: RequestWithBody;
     delete: RequestWithBody;
     head: RequestWithBody;
@@ -445,6 +497,10 @@ export declare function useImperative(): {
     unlink: RequestWithBody;
 };
 /**
+ * Use an imperative version of the fetcher (similarly to Axios, it returns an object with `get`, `post`, etc)
+ */
+export declare function useImperative(): ImperativeFetcher;
+/**
  * Fetcher hook
  */
 declare const useFetcher: {
@@ -455,7 +511,7 @@ declare const useFetcher: {
         online: boolean;
         code: number;
         reFetch: () => Promise<void>;
-        mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
+        mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
         abort: () => void;
         config: {
             /**
@@ -510,7 +566,7 @@ declare const useFetcher: {
             online: boolean;
             code: number;
             reFetch: () => Promise<void>;
-            mutate: React.Dispatch<React.SetStateAction<T>>;
+            mutate: (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
             abort: () => void;
             config: {
                 /**
@@ -572,7 +628,7 @@ export declare const fetcher: {
         online: boolean;
         code: number;
         reFetch: () => Promise<void>;
-        mutate: React.Dispatch<React.SetStateAction<FetchDataType>>;
+        mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
         abort: () => void;
         config: {
             /**
@@ -627,7 +683,7 @@ export declare const fetcher: {
             online: boolean;
             code: number;
             reFetch: () => Promise<void>;
-            mutate: React.Dispatch<React.SetStateAction<T>>;
+            mutate: (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
             abort: () => void;
             config: {
                 /**
