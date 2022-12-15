@@ -1,30 +1,30 @@
-import { act, renderHook } from "@testing-library/react"
-import { useFetcher } from "../../"
-import mocks from "../mocks"
+import { act, renderHook } from '@testing-library/react'
+import { useFetcher } from '../../'
+import mocks from '../mocks'
 
-test("GET data in JSON", async () => {
+test('GET data in JSON', async () => {
   global.fetch = jest.fn().mockImplementation((url, config) =>
     Promise.resolve({
-      json: () => mocks[config.method],
+      json: () => mocks[config.method]
     })
   )
 
   await act(async () => {
     const { result } = renderHook(useFetcher, {
       initialProps: {
-        url: "",
-      },
+        url: ''
+      }
     })
 
     if (result.current?.data)
       expect(result.current.data).toEqual({
         careers: [
-          "Backend Developer",
-          "Cloud Enginner",
-          "DB Administrator",
-          "Designer UI/UX",
-          "Security Analist",
-        ],
+          'Backend Developer',
+          'Cloud Enginner',
+          'DB Administrator',
+          'Designer UI/UX',
+          'Security Analist'
+        ]
       })
   })
 })

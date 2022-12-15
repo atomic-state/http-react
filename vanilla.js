@@ -70,18 +70,18 @@ function createRequestFn(method, baseUrl, $headers, q) {
                         _e = (c || {}).params, params = _e === void 0 ? {} : _e;
                         query = __assign(__assign({}, q), c.query);
                         rawUrl = url
-                            .split("/")
+                            .split('/')
                             .map(function (segment) {
-                            if (segment.startsWith("[") && segment.endsWith("]")) {
-                                var paramName = segment.replace(/\[|\]/g, "");
+                            if (segment.startsWith('[') && segment.endsWith(']')) {
+                                var paramName = segment.replace(/\[|\]/g, '');
                                 if (!(paramName in params)) {
                                     console.warn("Param '".concat(paramName, "' does not exist in request configuration for '").concat(url, "'"));
                                     return paramName;
                                 }
-                                return params[segment.replace(/\[|\]/g, "")];
+                                return params[segment.replace(/\[|\]/g, '')];
                             }
-                            else if (segment.startsWith(":")) {
-                                var paramName = segment.split("").slice(1).join("");
+                            else if (segment.startsWith(':')) {
+                                var paramName = segment.split('').slice(1).join('');
                                 if (!(paramName in params)) {
                                     console.warn("Param '".concat(paramName, "' does not exist in request configuration for '").concat(url, "'"));
                                     return paramName;
@@ -92,38 +92,38 @@ function createRequestFn(method, baseUrl, $headers, q) {
                                 return segment;
                             }
                         })
-                            .join("/");
-                        _f = rawUrl.split("?"), _g = _f[1], qp = _g === void 0 ? "" : _g;
-                        qp.split("&").forEach(function (q) {
+                            .join('/');
+                        _f = rawUrl.split('?'), _g = _f[1], qp = _g === void 0 ? '' : _g;
+                        qp.split('&').forEach(function (q) {
                             var _a;
-                            var _b = q.split("="), key = _b[0], value = _b[1];
+                            var _b = q.split('='), key = _b[0], value = _b[1];
                             if (query[key] !== value) {
                                 query = __assign(__assign({}, query), (_a = {}, _a[key] = value, _a));
                             }
                         });
                         reqQueryString = Object.keys(query)
-                            .map(function (q) { return [q, query[q]].join("="); })
-                            .join("&");
+                            .map(function (q) { return [q, query[q]].join('='); })
+                            .join('&');
                         _h = c.headers, headers = _h === void 0 ? {} : _h, body = c.body, formatBody = c.formatBody;
                         reqConfig = {
                             method: method,
-                            headers: __assign(__assign({ "Content-Type": "application/json" }, $headers), headers),
+                            headers: __assign(__assign({ 'Content-Type': 'application/json' }, $headers), headers),
                             body: (method === null || method === void 0 ? void 0 : method.match(/(POST|PUT|DELETE|PATCH)/))
-                                ? typeof formatBody === "function"
-                                    ? formatBody((typeof FormData !== "undefined" && body instanceof FormData
+                                ? typeof formatBody === 'function'
+                                    ? formatBody((typeof FormData !== 'undefined' && body instanceof FormData
                                         ? body
                                         : body))
                                     : formatBody === false ||
-                                        (typeof FormData !== "undefined" && body instanceof FormData)
+                                        (typeof FormData !== 'undefined' && body instanceof FormData)
                                         ? body
                                         : JSON.stringify(body)
-                                : undefined,
+                                : undefined
                         };
                         r = undefined;
                         _j.label = 1;
                     case 1:
                         _j.trys.push([1, 4, , 5]);
-                        return [4 /*yield*/, fetch("".concat(baseUrl || "").concat(rawUrl).concat(url.includes("?") ? "&".concat(reqQueryString) : "?".concat(reqQueryString)), reqConfig)];
+                        return [4 /*yield*/, fetch("".concat(baseUrl || '').concat(rawUrl).concat(url.includes('?') ? "&".concat(reqQueryString) : "?".concat(reqQueryString)), reqConfig)];
                     case 2:
                         req = _j.sent();
                         r = req;
@@ -137,7 +137,7 @@ function createRequestFn(method, baseUrl, $headers, q) {
                                     data: def,
                                     error: true,
                                     code: req === null || req === void 0 ? void 0 : req.status,
-                                    config: __assign(__assign({ url: "".concat(baseUrl || "").concat(rawUrl) }, reqConfig), { query: query }),
+                                    config: __assign(__assign({ url: "".concat(baseUrl || '').concat(rawUrl) }, reqConfig), { query: query })
                                 }];
                         }
                         else {
@@ -147,7 +147,7 @@ function createRequestFn(method, baseUrl, $headers, q) {
                                     data: data,
                                     error: false,
                                     code: req === null || req === void 0 ? void 0 : req.status,
-                                    config: __assign(__assign({ url: "".concat(baseUrl || "").concat(rawUrl) }, reqConfig), { query: query }),
+                                    config: __assign(__assign({ url: "".concat(baseUrl || '').concat(rawUrl) }, reqConfig), { query: query })
                                 }];
                         }
                         return [3 /*break*/, 5];
@@ -159,7 +159,7 @@ function createRequestFn(method, baseUrl, $headers, q) {
                                 data: def,
                                 error: true,
                                 code: r === null || r === void 0 ? void 0 : r.status,
-                                config: __assign(__assign({ url: "".concat(baseUrl || "").concat(rawUrl) }, reqConfig), { query: query }),
+                                config: __assign(__assign({ url: "".concat(baseUrl || '').concat(rawUrl) }, reqConfig), { query: query })
                             }];
                     case 5: return [2 /*return*/];
                 }
@@ -173,21 +173,21 @@ function createRequestFn(method, baseUrl, $headers, q) {
 var fetcher = function () { };
 exports.fetcher = fetcher;
 // Create a method for each request
-fetcher.get = createRequestFn("GET", "", {});
-fetcher.delete = createRequestFn("DELETE", "", {});
-fetcher.head = createRequestFn("HEAD", "", {});
-fetcher.options = createRequestFn("OPTIONS", "", {});
-fetcher.post = createRequestFn("POST", "", {});
-fetcher.put = createRequestFn("PUT", "", {});
-fetcher.patch = createRequestFn("PATCH", "", {});
-fetcher.purge = createRequestFn("PURGE", "", {});
-fetcher.link = createRequestFn("LINK", "", {});
-fetcher.unlink = createRequestFn("UNLINK", "", {});
+fetcher.get = createRequestFn('GET', '', {});
+fetcher.delete = createRequestFn('DELETE', '', {});
+fetcher.head = createRequestFn('HEAD', '', {});
+fetcher.options = createRequestFn('OPTIONS', '', {});
+fetcher.post = createRequestFn('POST', '', {});
+fetcher.put = createRequestFn('PUT', '', {});
+fetcher.patch = createRequestFn('PATCH', '', {});
+fetcher.purge = createRequestFn('PURGE', '', {});
+fetcher.link = createRequestFn('LINK', '', {});
+fetcher.unlink = createRequestFn('UNLINK', '', {});
 /**
  * Extend the fetcher object
  */
 fetcher.extend = function extendFetcher(_a) {
-    var _b = _a === void 0 ? {} : _a, _c = _b.baseUrl, baseUrl = _c === void 0 ? "" : _c, _d = _b.headers, headers = _d === void 0 ? {} : _d, _e = _b.body, body = _e === void 0 ? {} : _e, _f = _b.query, query = _f === void 0 ? {} : _f, 
+    var _b = _a === void 0 ? {} : _a, _c = _b.baseUrl, baseUrl = _c === void 0 ? '' : _c, _d = _b.headers, headers = _d === void 0 ? {} : _d, _e = _b.body, body = _e === void 0 ? {} : _e, _f = _b.query, query = _f === void 0 ? {} : _f, 
     // json by default
     _g = _b.resolver, 
     // json by default
@@ -197,18 +197,18 @@ fetcher.extend = function extendFetcher(_a) {
         baseUrl: baseUrl,
         headers: headers,
         body: body,
-        query: query,
+        query: query
     };
     // Creating methods for fetcher.extend
-    customFetcher.get = createRequestFn("GET", baseUrl, headers, query);
-    customFetcher.delete = createRequestFn("DELETE", baseUrl, headers, query);
-    customFetcher.head = createRequestFn("HEAD", baseUrl, headers, query);
-    customFetcher.options = createRequestFn("OPTIONS", baseUrl, headers, query);
-    customFetcher.post = createRequestFn("POST", baseUrl, headers, query);
-    customFetcher.put = createRequestFn("PUT", baseUrl, headers, query);
-    customFetcher.patch = createRequestFn("PATCH", baseUrl, headers, query);
-    customFetcher.purge = createRequestFn("PURGE", baseUrl, headers, query);
-    customFetcher.link = createRequestFn("LINK", baseUrl, headers, query);
-    customFetcher.unlink = createRequestFn("UNLINK", baseUrl, headers, query);
+    customFetcher.get = createRequestFn('GET', baseUrl, headers, query);
+    customFetcher.delete = createRequestFn('DELETE', baseUrl, headers, query);
+    customFetcher.head = createRequestFn('HEAD', baseUrl, headers, query);
+    customFetcher.options = createRequestFn('OPTIONS', baseUrl, headers, query);
+    customFetcher.post = createRequestFn('POST', baseUrl, headers, query);
+    customFetcher.put = createRequestFn('PUT', baseUrl, headers, query);
+    customFetcher.patch = createRequestFn('PATCH', baseUrl, headers, query);
+    customFetcher.purge = createRequestFn('PURGE', baseUrl, headers, query);
+    customFetcher.link = createRequestFn('LINK', baseUrl, headers, query);
+    customFetcher.unlink = createRequestFn('UNLINK', baseUrl, headers, query);
     return customFetcher;
 };
