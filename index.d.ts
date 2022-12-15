@@ -471,10 +471,460 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
     key: string;
 };
 /**
- * U
+ * Create an effect for when the request completes
  */
 export declare function useResolve<ResponseType = any>(id: any, onResolve: (data: ResponseType) => void): void;
-export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId };
+/**
+ * User a `GET` request
+ */
+declare function useGET<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+/**
+ * Use a `DELETE` request
+ */
+declare function useDELETE<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+/**
+ * Use a `HEAD` request
+ */
+declare function useHEAD<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+/**
+ * Use an `OPTIONS` request
+ */
+declare function useOPTIONS<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+/**
+ * Use a `POST` request
+ */
+declare function usePOST<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+/**
+ * Use a `PUT` request
+ */
+declare function usePUT<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+/**
+ * Use a `PATCH` request
+ */
+declare function usePATCH<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+/**
+ * Use a `PURGE` request
+ */
+declare function usePURGE<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+/**
+ * Use a `LINK` request
+ */
+declare function useLINK<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+/**
+ * Use an `UNLINK` request
+ */
+declare function useUNLINK<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, useGET, useDELETE, useHEAD, useOPTIONS, usePOST, usePUT, usePATCH, usePURGE, useLINK, useUNLINK };
 /**
  * Create a configuration object to use in a 'useFetcher' call
  */

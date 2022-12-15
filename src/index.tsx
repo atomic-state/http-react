@@ -85,7 +85,7 @@ function createRequestFn(
   return async function (url, init = {}) {
     const {
       default: def,
-      resolver = (e) => e.json(),
+      resolver = e => e.json(),
       config: c = {},
       onResolve = () => {},
       onError = () => {}
@@ -100,7 +100,7 @@ function createRequestFn(
 
     const rawUrl = url
       .split('/')
-      .map((segment) => {
+      .map(segment => {
         if (segment.startsWith('[') && segment.endsWith(']')) {
           const paramName = segment.replace(/\[|\]/g, '')
           if (!(paramName in params)) {
@@ -127,7 +127,7 @@ function createRequestFn(
 
     const [, qp = ''] = rawUrl.split('?')
 
-    qp.split('&').forEach((q) => {
+    qp.split('&').forEach(q => {
       const [key, value] = q.split('=')
       if (query[key] !== value) {
         query = {
@@ -138,7 +138,7 @@ function createRequestFn(
     })
 
     const reqQueryString = Object.keys(query)
-      .map((q) => [q, query[q]].join('='))
+      .map(q => [q, query[q]].join('='))
       .join('&')
 
     const { headers = {}, body, formatBody } = c
@@ -631,7 +631,7 @@ export function FetcherConfig(props: FetcherContextType) {
  */
 export function revalidate(id: any | any[]) {
   if (Array.isArray(id)) {
-    id.map((reqId) => {
+    id.map(reqId => {
       if (typeof reqId !== 'undefined') {
         const key = JSON.stringify(reqId)
 
@@ -822,7 +822,7 @@ export function useFetcherId<ResponseType = any, BodyType = any>(id: any) {
 }
 
 /**
- * U
+ * Create an effect for when the request completes
  */
 export function useResolve<ResponseType = any>(
   id: any,
@@ -840,6 +840,168 @@ export function useResolve<ResponseType = any>(
   })
 }
 
+/**
+ * User a `GET` request
+ */
+function useGET<FetchDataType = any, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
+) {
+  return useFetcher(init, {
+    ...options,
+    config: {
+      ...options?.config,
+      method: 'GET'
+    }
+  })
+}
+
+/**
+ * Use a `DELETE` request
+ */
+function useDELETE<FetchDataType = any, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
+) {
+  return useFetcher(init, {
+    ...options,
+    config: {
+      ...options?.config,
+      method: 'DELETE'
+    }
+  })
+}
+
+/**
+ * Use a `HEAD` request
+ */
+function useHEAD<FetchDataType = any, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
+) {
+  return useFetcher(init, {
+    ...options,
+    config: {
+      ...options?.config,
+      method: 'HEAD'
+    }
+  })
+}
+
+/**
+ * Use an `OPTIONS` request
+ */
+function useOPTIONS<FetchDataType = any, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
+) {
+  return useFetcher(init, {
+    ...options,
+    config: {
+      ...options?.config,
+      method: 'OPTIONS'
+    }
+  })
+}
+
+/**
+ * Use a `POST` request
+ */
+function usePOST<FetchDataType = any, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
+) {
+  return useFetcher(init, {
+    ...options,
+    config: {
+      ...options?.config,
+      method: 'POST'
+    }
+  })
+}
+
+/**
+ * Use a `PUT` request
+ */
+function usePUT<FetchDataType = any, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
+) {
+  return useFetcher(init, {
+    ...options,
+    config: {
+      ...options?.config,
+      method: 'PUT'
+    }
+  })
+}
+
+/**
+ * Use a `PATCH` request
+ */
+function usePATCH<FetchDataType = any, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
+) {
+  return useFetcher(init, {
+    ...options,
+    config: {
+      ...options?.config,
+      method: 'PATCH'
+    }
+  })
+}
+
+/**
+ * Use a `PURGE` request
+ */
+function usePURGE<FetchDataType = any, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
+) {
+  return useFetcher(init, {
+    ...options,
+    config: {
+      ...options?.config,
+      method: 'PURGE'
+    }
+  })
+}
+
+/**
+ * Use a `LINK` request
+ */
+function useLINK<FetchDataType = any, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
+) {
+  return useFetcher(init, {
+    ...options,
+    config: {
+      ...options?.config,
+      method: 'LINK'
+    }
+  })
+}
+
+/**
+ * Use an `UNLINK` request
+ */
+function useUNLINK<FetchDataType = any, BodyType = any>(
+  init: FetcherType<FetchDataType, BodyType> | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType>
+) {
+  return useFetcher(init, {
+    ...options,
+    config: {
+      ...options?.config,
+      method: 'UNLINK'
+    }
+  })
+}
+
+// "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK"
+
 export {
   useFetcher as useFetch,
   useFetcherLoading as useLoading,
@@ -847,7 +1009,17 @@ export {
   useFetcherData as useData,
   useFetcherError as useError,
   useFetcherMutate as useMutate,
-  useFetcherId as useFetchId
+  useFetcherId as useFetchId,
+  useGET,
+  useDELETE,
+  useHEAD,
+  useOPTIONS,
+  usePOST,
+  usePUT,
+  usePATCH,
+  usePURGE,
+  useLINK,
+  useUNLINK
 }
 
 /**
@@ -891,7 +1063,7 @@ const createImperativeFetcher = (ctx: FetcherContextType) => {
 
   return Object.fromEntries(
     new Map(
-      keys.map((k) => [
+      keys.map(k => [
         k.toLowerCase(),
         (url, { config = {}, ...other } = {}) =>
           (fetcher as any)[k.toLowerCase()](
@@ -1048,7 +1220,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     () =>
       rawUrl
         .split('/')
-        .map((segment) => {
+        .map(segment => {
           if (segment.startsWith('[') && segment.endsWith(']')) {
             const paramName = segment.replace(/\[|\]/g, '')
             if (!(paramName in reqParams)) {
@@ -1534,7 +1706,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           if (url !== '') {
             fetchData({
               query: Object.keys(reqQ)
-                .map((q) => [q, reqQ[q]].join('='))
+                .map(q => [q, reqQ[q]].join('='))
                 .join('&')
             })
           }
@@ -1586,7 +1758,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             }
             fetchData({
               query: Object.keys(reqQ)
-                .map((q) => [q, reqQ[q]].join('='))
+                .map(q => [q, reqQ[q]].join('='))
                 .join('&')
             })
           }
@@ -1669,7 +1841,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   }, [onOffline, reValidate, resolvedKey, retryOnReconnect])
 
   useEffect(() => {
-    setRequestHeades((r) => ({
+    setRequestHeades(r => ({
       ...r,
       ...ctx.headers
     }))
@@ -1685,7 +1857,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
-          setCompletedAttempts((previousAttempts) => {
+          setCompletedAttempts(previousAttempts => {
             let newAttemptsValue = previousAttempts + 1
 
             requestEmitter.emit(resolvedKey, {
@@ -1736,7 +1908,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         }
         fetchData({
           query: Object.keys(reqQ)
-            .map((q) => [q, reqQ[q]].join('='))
+            .map(q => [q, reqQ[q]].join('='))
             .join('&')
         })
       }
@@ -1964,7 +2136,7 @@ useFetcher.extend = function extendFetcher(props: FetcherContextType = {}) {
       url: `${url}`,
       // If resolver is present is hook call, use that instead
       resolver:
-        resolver || otherProps.resolver || ctx.resolver || ((d) => d.json()),
+        resolver || otherProps.resolver || ctx.resolver || (d => d.json()),
       config: {
         baseUrl:
           typeof config.baseUrl === 'undefined'
