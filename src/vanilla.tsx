@@ -81,7 +81,7 @@ function createRequestFn(
   return async function (url, init = {}) {
     const {
       default: def,
-      resolver = (e) => e.json(),
+      resolver = e => e.json(),
       config: c = {},
       onResolve = () => {},
       onError = () => {}
@@ -96,7 +96,7 @@ function createRequestFn(
 
     const rawUrl = url
       .split('/')
-      .map((segment) => {
+      .map(segment => {
         if (segment.startsWith('[') && segment.endsWith(']')) {
           const paramName = segment.replace(/\[|\]/g, '')
           if (!(paramName in params)) {
@@ -123,7 +123,7 @@ function createRequestFn(
 
     const [, qp = ''] = rawUrl.split('?')
 
-    qp.split('&').forEach((q) => {
+    qp.split('&').forEach(q => {
       const [key, value] = q.split('=')
       if (query[key] !== value) {
         query = {
@@ -134,7 +134,7 @@ function createRequestFn(
     })
 
     const reqQueryString = Object.keys(query)
-      .map((q) => [q, query[q]].join('='))
+      .map(q => [q, query[q]].join('='))
       .join('&')
 
     const { headers = {}, body, formatBody } = c
@@ -258,7 +258,7 @@ fetcher.extend = function extendFetcher({
   body = {},
   query = {},
   // json by default
-  resolver = (d) => d.json()
+  resolver = d => d.json()
 }: FetcherExtendConfig = {}) {
   function customFetcher() {}
   customFetcher.config = {

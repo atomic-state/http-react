@@ -65,7 +65,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useFetchId = exports.useMutate = exports.useError = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
+exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useUNLINK = exports.useLINK = exports.usePURGE = exports.usePATCH = exports.usePUT = exports.usePOST = exports.useOPTIONS = exports.useHEAD = exports.useDELETE = exports.useGET = exports.useFetchId = exports.useMutate = exports.useError = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
 var React = require("react");
 var react_1 = require("react");
 var events_1 = require("events");
@@ -433,7 +433,7 @@ function useFetcherId(id) {
 exports.useFetcherId = useFetcherId;
 exports.useFetchId = useFetcherId;
 /**
- * U
+ * Create an effect for when the request completes
  */
 function useResolve(id, onResolve) {
     var defaultsKey = JSON.stringify({
@@ -447,6 +447,76 @@ function useResolve(id, onResolve) {
     });
 }
 exports.useResolve = useResolve;
+/**
+ * User a `GET` request
+ */
+function useGET(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'GET' }) }));
+}
+exports.useGET = useGET;
+/**
+ * Use a `DELETE` request
+ */
+function useDELETE(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'DELETE' }) }));
+}
+exports.useDELETE = useDELETE;
+/**
+ * Use a `HEAD` request
+ */
+function useHEAD(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'HEAD' }) }));
+}
+exports.useHEAD = useHEAD;
+/**
+ * Use an `OPTIONS` request
+ */
+function useOPTIONS(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'OPTIONS' }) }));
+}
+exports.useOPTIONS = useOPTIONS;
+/**
+ * Use a `POST` request
+ */
+function usePOST(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'POST' }) }));
+}
+exports.usePOST = usePOST;
+/**
+ * Use a `PUT` request
+ */
+function usePUT(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'PUT' }) }));
+}
+exports.usePUT = usePUT;
+/**
+ * Use a `PATCH` request
+ */
+function usePATCH(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'PATCH' }) }));
+}
+exports.usePATCH = usePATCH;
+/**
+ * Use a `PURGE` request
+ */
+function usePURGE(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'PURGE' }) }));
+}
+exports.usePURGE = usePURGE;
+/**
+ * Use a `LINK` request
+ */
+function useLINK(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'LINK' }) }));
+}
+exports.useLINK = useLINK;
+/**
+ * Use an `UNLINK` request
+ */
+function useUNLINK(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'UNLINK' }) }));
+}
+exports.useUNLINK = useUNLINK;
 var createImperativeFetcher = function (ctx) {
     var keys = [
         'GET',
