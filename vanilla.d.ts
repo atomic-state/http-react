@@ -5,7 +5,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-export declare type CustomResponse<T> = Omit<Response, "json"> & {
+export declare type CustomResponse<T> = Omit<Response, 'json'> & {
     json(): Promise<T>;
 };
 declare type RequestWithBody = <R = any, BodyType = any>(
@@ -111,7 +111,7 @@ declare const fetcher: {
     /**
      * Extend the fetcher object
      */
-    extend({ baseUrl, headers, body, query, resolver, }?: FetcherExtendConfig): {
+    extend({ baseUrl, headers, body, query, resolver }?: FetcherExtendConfig): {
         (): void;
         config: {
             baseUrl: string;

@@ -5,8 +5,8 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-import * as React from "react";
-declare type CustomResponse<T> = Omit<Response, "json"> & {
+import * as React from 'react';
+declare type CustomResponse<T> = Omit<Response, 'json'> & {
     json(): Promise<T>;
 };
 declare type RequestWithBody = <R = any, BodyType = any>(
@@ -74,7 +74,6 @@ export declare type CacheStoreType = {
 declare type FetcherContextType = {
     headers?: any;
     baseUrl?: string;
-    body?: object | FormData;
     /**
      * Keys in `defaults` are just friendly names. Defaults are based on the `id` and `value` passed
      */
@@ -212,7 +211,7 @@ declare type FetcherType<FetchDataType, BodyType> = {
         /**
          * Request method
          */
-        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
+        method?: 'GET' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'POST' | 'PUT' | 'PATCH' | 'PURGE' | 'LINK' | 'UNLINK';
         headers?: Headers | object;
         query?: any;
         /**
@@ -333,7 +332,7 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
         /**
          * Request method
          */
-        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK";
+        method?: 'GET' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'POST' | 'PUT' | 'PATCH' | 'PURGE' | 'LINK' | 'UNLINK';
         headers?: Headers | object;
         /**
          * Request query params
@@ -437,6 +436,7 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
     code: number;
     reFetch: () => Promise<void>;
     mutate: (update: ResponseType | ((prev: ResponseType) => ResponseType), callback?: ((data: ResponseType, fetcher: ImperativeFetcher) => void) | undefined) => ResponseType;
+    fetcher: ImperativeFetcher;
     abort: () => void;
     config: {
         /**
@@ -474,7 +474,7 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
  * U
  */
 export declare function useResolve<ResponseType = any>(id: any, onResolve: (data: ResponseType) => void): void;
-export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, };
+export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId };
 /**
  * Create a configuration object to use in a 'useFetcher' call
  */
@@ -512,6 +512,7 @@ declare const useFetcher: {
         code: number;
         reFetch: () => Promise<void>;
         mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+        fetcher: ImperativeFetcher;
         abort: () => void;
         config: {
             /**
@@ -567,6 +568,7 @@ declare const useFetcher: {
             code: number;
             reFetch: () => Promise<void>;
             mutate: (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
+            fetcher: ImperativeFetcher;
             abort: () => void;
             config: {
                 /**
@@ -603,7 +605,6 @@ declare const useFetcher: {
         config: {
             baseUrl: any;
             headers: any;
-            body: object;
             query: any;
         };
         get: RequestWithBody;
@@ -629,6 +630,7 @@ export declare const fetcher: {
         code: number;
         reFetch: () => Promise<void>;
         mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+        fetcher: ImperativeFetcher;
         abort: () => void;
         config: {
             /**
@@ -684,6 +686,7 @@ export declare const fetcher: {
             code: number;
             reFetch: () => Promise<void>;
             mutate: (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
+            fetcher: ImperativeFetcher;
             abort: () => void;
             config: {
                 /**
@@ -720,7 +723,6 @@ export declare const fetcher: {
         config: {
             baseUrl: any;
             headers: any;
-            body: object;
             query: any;
         };
         get: RequestWithBody;
