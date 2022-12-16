@@ -74,6 +74,58 @@ type RequestWithBody = <R = any, BodyType = any>(
 }>
 
 /**
+ *
+ * @param str The target string
+ * @param $params The params to parse in the url
+ *
+ * Params should be separated by `"/"`, (e.g. `"/api/[resource]/:id"`)
+ *
+ * URL search params will not be affected
+ */
+export function setURLParams(str: string = '', $params: any = {}) {
+  const hasQuery = str.includes('?')
+
+  const queryString =
+    '?' +
+    str
+      .split('?')
+      .filter((_, i) => i > 0)
+      .join('?')
+
+  return (
+    str
+      .split('/')
+      .map($segment => {
+        const [segment] = $segment.split('?')
+        if (segment.startsWith('[') && segment.endsWith(']')) {
+          const paramName = segment.replace(/\[|\]/g, '')
+          if (!(paramName in $params)) {
+            console.warn(
+              `Param '${paramName}' does not exist in params configuration for '${str}'`
+            )
+            return paramName
+          }
+
+          return $params[segment.replace(/\[|\]/g, '')]
+          // return $params[segment.replace(/\[|\]/g, '')] + hasQ ? '?' + hasQ : ''
+        } else if (segment.startsWith(':')) {
+          const paramName = segment.split('').slice(1).join('')
+          if (!(paramName in $params)) {
+            console.warn(
+              `Param '${paramName}' does not exist in params configuration for '${str}'`
+            )
+            return paramName
+          }
+          return $params[paramName]
+        } else {
+          return segment
+        }
+      })
+      .join('/') + (hasQuery ? queryString : '')
+  )
+}
+
+/**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
  */
 function createRequestFn(
@@ -98,32 +150,7 @@ function createRequestFn(
       ...c.query
     }
 
-    const rawUrl = url
-      .split('/')
-      .map(segment => {
-        if (segment.startsWith('[') && segment.endsWith(']')) {
-          const paramName = segment.replace(/\[|\]/g, '')
-          if (!(paramName in params)) {
-            console.warn(
-              `Param '${paramName}' does not exist in request configuration for '${url}'`
-            )
-            return paramName
-          }
-          return params[segment.replace(/\[|\]/g, '')]
-        } else if (segment.startsWith(':')) {
-          const paramName = segment.split('').slice(1).join('')
-          if (!(paramName in params)) {
-            console.warn(
-              `Param '${paramName}' does not exist in request configuration for '${url}'`
-            )
-            return paramName
-          }
-          return params[paramName]
-        } else {
-          return segment
-        }
-      })
-      .join('/')
+    const rawUrl = setURLParams(url, params)
 
     const [, qp = ''] = rawUrl.split('?')
 
@@ -1226,33 +1253,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       : config.baseUrl) + url
 
   const urlWithParams = React.useMemo(
-    () =>
-      rawUrl
-        .split('/')
-        .map(segment => {
-          if (segment.startsWith('[') && segment.endsWith(']')) {
-            const paramName = segment.replace(/\[|\]/g, '')
-            if (!(paramName in reqParams)) {
-              console.warn(
-                `Param '${paramName}' does not exist in request configuration for '${url}'`
-              )
-              return paramName
-            }
-            return reqParams[segment.replace(/\[|\]/g, '')]
-          } else if (segment.startsWith(':')) {
-            const paramName = segment.split('').slice(1).join('')
-            if (!(paramName in reqParams)) {
-              console.warn(
-                `Param '${paramName}' does not exist in request configuration for '${url}'`
-              )
-              return paramName
-            }
-            return reqParams[paramName]
-          } else {
-            return segment
-          }
-        })
-        .join('/'),
+    () => setURLParams(rawUrl, reqParams),
     [JSON.stringify(reqParams), config.baseUrl, ctx.baseUrl, url]
   )
 

@@ -54,7 +54,53 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fetcher = void 0;
+exports.fetcher = exports.setURLParams = void 0;
+/**
+ *
+ * @param str The target string
+ * @param $params The params to parse in the url
+ *
+ * Params should be separated by `"/"`, (e.g. `"/api/[resource]/:id"`)
+ *
+ * URL search params will not be affected
+ */
+function setURLParams(str, $params) {
+    if (str === void 0) { str = ''; }
+    if ($params === void 0) { $params = {}; }
+    var hasQuery = str.includes('?');
+    var queryString = '?' +
+        str
+            .split('?')
+            .filter(function (_, i) { return i > 0; })
+            .join('?');
+    return (str
+        .split('/')
+        .map(function ($segment) {
+        var segment = $segment.split('?')[0];
+        if (segment.startsWith('[') && segment.endsWith(']')) {
+            var paramName = segment.replace(/\[|\]/g, '');
+            if (!(paramName in $params)) {
+                console.warn("Param '".concat(paramName, "' does not exist in params configuration for '").concat(str, "'"));
+                return paramName;
+            }
+            return $params[segment.replace(/\[|\]/g, '')];
+            // return $params[segment.replace(/\[|\]/g, '')] + hasQ ? '?' + hasQ : ''
+        }
+        else if (segment.startsWith(':')) {
+            var paramName = segment.split('').slice(1).join('');
+            if (!(paramName in $params)) {
+                console.warn("Param '".concat(paramName, "' does not exist in params configuration for '").concat(str, "'"));
+                return paramName;
+            }
+            return $params[paramName];
+        }
+        else {
+            return segment;
+        }
+    })
+        .join('/') + (hasQuery ? queryString : ''));
+}
+exports.setURLParams = setURLParams;
 /**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
  */
@@ -69,30 +115,7 @@ function createRequestFn(method, baseUrl, $headers, q) {
                         def = init.default, _a = init.resolver, resolver = _a === void 0 ? function (e) { return e.json(); } : _a, _b = init.config, c = _b === void 0 ? {} : _b, _c = init.onResolve, onResolve = _c === void 0 ? function () { } : _c, _d = init.onError, onError = _d === void 0 ? function () { } : _d;
                         _e = (c || {}).params, params = _e === void 0 ? {} : _e;
                         query = __assign(__assign({}, q), c.query);
-                        rawUrl = url
-                            .split('/')
-                            .map(function (segment) {
-                            if (segment.startsWith('[') && segment.endsWith(']')) {
-                                var paramName = segment.replace(/\[|\]/g, '');
-                                if (!(paramName in params)) {
-                                    console.warn("Param '".concat(paramName, "' does not exist in request configuration for '").concat(url, "'"));
-                                    return paramName;
-                                }
-                                return params[segment.replace(/\[|\]/g, '')];
-                            }
-                            else if (segment.startsWith(':')) {
-                                var paramName = segment.split('').slice(1).join('');
-                                if (!(paramName in params)) {
-                                    console.warn("Param '".concat(paramName, "' does not exist in request configuration for '").concat(url, "'"));
-                                    return paramName;
-                                }
-                                return params[paramName];
-                            }
-                            else {
-                                return segment;
-                            }
-                        })
-                            .join('/');
+                        rawUrl = setURLParams(url, params);
                         _f = rawUrl.split('?'), _g = _f[1], qp = _g === void 0 ? '' : _g;
                         qp.split('&').forEach(function (q) {
                             var _a;

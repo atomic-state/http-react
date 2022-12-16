@@ -66,6 +66,16 @@ reqConfig?: {
     code: number;
     res: CustomResponse<R>;
 }>;
+/**
+ *
+ * @param str The target string
+ * @param $params The params to parse in the url
+ *
+ * Params should be separated by `"/"`, (e.g. `"/api/[resource]/:id"`)
+ *
+ * URL search params will not be affected
+ */
+export declare function setURLParams(str?: string, $params?: any): string;
 export declare type CacheStoreType = {
     get(k?: any): any;
     set(k?: any, v?: any): any;
