@@ -935,7 +935,101 @@ declare function useUNLINK<FetchDataType = any, BodyType = any>(init: FetcherTyp
     id: any;
     key: string;
 };
-export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherCode as useCode, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, useGET, useDELETE, useHEAD, useOPTIONS, usePOST, usePUT, usePATCH, usePURGE, useLINK, useUNLINK };
+/**
+ * Get a blob of the response. You can pass an `objectURL` property that will convet that blob into a string using `URL.createObjectURL`
+ */
+export declare function useFetcherBlob<FetchDataType = string, BodyType = any>(init: (FetcherType<FetchDataType, BodyType> & {
+    objectURL?: boolean;
+}) | string, options?: FetcherConfigOptions<FetchDataType, BodyType> & {
+    objectURL?: boolean;
+}): {
+    data: FetchDataType;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: FetchDataType | ((prev: FetchDataType) => FetchDataType), callback?: ((data: FetchDataType, fetcher: ImperativeFetcher) => void) | undefined) => FetchDataType;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+};
+/**
+ * Get a text of the response
+ */
+export declare function useFetcherText<FetchDataType = string, BodyType = any>(init: FetcherType<string, BodyType> | string, options?: FetcherConfigOptions<string, BodyType>): {
+    data: string;
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: string | ((prev: string) => string), callback?: ((data: string, fetcher: ImperativeFetcher) => void) | undefined) => string;
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: BodyType | undefined;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: BodyType) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<string>;
+    id: any;
+    key: string;
+};
+export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherCode as useCode, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, useFetcherBlob as useBlob, useFetcherText as useText, useGET, useDELETE, useHEAD, useOPTIONS, usePOST, usePUT, usePATCH, usePURGE, useLINK, useUNLINK };
 /**
  * Create a configuration object to use in a 'useFetcher' call
  */
