@@ -683,6 +683,17 @@ export function revalidate(id: any | any[]) {
 }
 const fetcherDefaults: any = {}
 const cacheForMutation: any = {}
+
+function queue(callback: any, time: number = 0) {
+  // let tm = null
+  const tm = setTimeout(() => {
+    callback()
+    clearTimeout(tm)
+  }, time)
+
+  return tm
+}
+
 /**
  * Force mutation in requests from anywhere. This doesn't revalidate requests
  */
@@ -705,6 +716,9 @@ export function mutateData(
           previousConfig[key] = undefined
           requestEmitter.emit(JSON.stringify(k))
         }
+        queue(() => {
+          cacheForMutation[key] = newVal
+        })
       } else {
         requestEmitter.emit(key, {
           requestCallId,
@@ -715,6 +729,9 @@ export function mutateData(
           previousConfig[key] = undefined
           requestEmitter.emit(JSON.stringify(k))
         }
+        queue(() => {
+          cacheForMutation[key] = v
+        })
       }
     } catch (err) {}
   }
@@ -1035,6 +1052,52 @@ function useUNLINK<FetchDataType = any, BodyType = any>(
   })
 }
 
+/**
+ * Get a blob of the response. You can pass an `objectURL` property that will convet that blob into a string using `URL.createObjectURL`
+ */
+export function useFetcherBlob<FetchDataType = string, BodyType = any>(
+  init:
+    | (FetcherType<FetchDataType, BodyType> & { objectURL?: boolean })
+    | string,
+  options?: FetcherConfigOptions<FetchDataType, BodyType> & {
+    objectURL?: boolean
+  }
+) {
+  return useFetcher<FetchDataType, BodyType>(init, {
+    ...options,
+    async resolver(res) {
+      const blob = await res.blob()
+      if (typeof URL !== 'undefined') {
+        if ((init as any).objectURL) {
+          return URL.createObjectURL(blob)
+        } else {
+          if (options?.objectURL) {
+            return URL.createObjectURL(blob)
+          }
+        }
+      }
+
+      return blob
+    }
+  })
+}
+
+/**
+ * Get a text of the response
+ */
+export function useFetcherText<FetchDataType = string, BodyType = any>(
+  init: FetcherType<string, BodyType> | string,
+  options?: FetcherConfigOptions<string, BodyType>
+) {
+  return useFetcher<string, BodyType>(init, {
+    ...options,
+    async resolver(res) {
+      const text = await res.text()
+      return text
+    }
+  })
+}
+
 // "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK"
 
 export {
@@ -1046,6 +1109,8 @@ export {
   useFetcherError as useError,
   useFetcherMutate as useMutate,
   useFetcherId as useFetchId,
+  useFetcherBlob as useBlob,
+  useFetcherText as useText,
   useGET,
   useDELETE,
   useHEAD,
@@ -1485,7 +1550,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               })
               onResolve(_data, json)
 
-              requestEmitter.emit(idString + 'value', {
+              requestEmitter.emit(resolvedKey, {
+                requestCallId,
+                isResolved: true,
                 data: _data
               })
 
@@ -1496,6 +1563,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               requestEmitter.emit(resolvedKey, {
                 requestCallId,
                 completedAttempts: 0
+              })
+              queue(() => {
+                cacheForMutation[resolvedKey] = _data
               })
             } else {
               if (def) {
@@ -1614,24 +1684,12 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     })
   }, [JSON.stringify(ctx)])
 
-  const queue = React.useCallback(function queue(
-    callback: any,
-    time: number = 0
-  ) {
-    const tm = setTimeout(() => {
-      callback()
-      clearTimeout(tm)
-    }, time)
-
-    return tm
-  },
-  [])
-
   useEffect(() => {
     async function waitFormUpdates(v: any) {
       if (v.requestCallId !== requestCallId) {
         const {
           isMutating,
+          isResolved,
           data,
           error,
           online,
@@ -1696,15 +1754,15 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         }
         if (typeof data !== 'undefined') {
           queue(() => {
+            if (isResolved) {
+              onResolve(data)
+            }
             if (
               JSON.stringify(data) !==
               JSON.stringify(cacheForMutation[resolvedKey])
             ) {
               setData(data)
               cacheForMutation[idString] = data
-              if (!isMutating) {
-                onResolve(data)
-              }
               if (isMutating) {
                 onMutate(data, imperativeFetcher)
               }

@@ -65,7 +65,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useUNLINK = exports.useLINK = exports.usePURGE = exports.usePATCH = exports.usePUT = exports.usePOST = exports.useOPTIONS = exports.useHEAD = exports.useDELETE = exports.useGET = exports.useFetchId = exports.useMutate = exports.useError = exports.useCode = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherCode = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = exports.setURLParams = void 0;
+exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useUNLINK = exports.useLINK = exports.usePURGE = exports.usePATCH = exports.usePUT = exports.usePOST = exports.useOPTIONS = exports.useHEAD = exports.useDELETE = exports.useGET = exports.useText = exports.useBlob = exports.useFetchId = exports.useMutate = exports.useError = exports.useCode = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useFetcherText = exports.useFetcherBlob = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherCode = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = exports.setURLParams = void 0;
 var React = require("react");
 var react_1 = require("react");
 var events_1 = require("events");
@@ -299,6 +299,15 @@ function revalidate(id) {
 exports.revalidate = revalidate;
 var fetcherDefaults = {};
 var cacheForMutation = {};
+function queue(callback, time) {
+    if (time === void 0) { time = 0; }
+    // let tm = null
+    var tm = setTimeout(function () {
+        callback();
+        clearTimeout(tm);
+    }, time);
+    return tm;
+}
 /**
  * Force mutation in requests from anywhere. This doesn't revalidate requests
  */
@@ -307,37 +316,46 @@ function mutateData() {
     for (var _i = 0; _i < arguments.length; _i++) {
         pairs[_i] = arguments[_i];
     }
-    for (var _a = 0, pairs_1 = pairs; _a < pairs_1.length; _a++) {
-        var pair = pairs_1[_a];
+    var _loop_1 = function (pair) {
         try {
-            var k = pair[0], v = pair[1], _revalidate = pair[2];
-            var key = JSON.stringify({ idString: JSON.stringify(k) });
+            var k = pair[0], v_1 = pair[1], _revalidate = pair[2];
+            var key_1 = JSON.stringify({ idString: JSON.stringify(k) });
             var requestCallId = '';
-            if (typeof v === 'function') {
-                var newVal = v(cacheForMutation[key]);
-                requestEmitter.emit(key, {
-                    data: newVal,
+            if (typeof v_1 === 'function') {
+                var newVal_1 = v_1(cacheForMutation[key_1]);
+                requestEmitter.emit(key_1, {
+                    data: newVal_1,
                     isMutating: true,
                     requestCallId: requestCallId
                 });
                 if (_revalidate) {
-                    previousConfig[key] = undefined;
+                    previousConfig[key_1] = undefined;
                     requestEmitter.emit(JSON.stringify(k));
                 }
+                queue(function () {
+                    cacheForMutation[key_1] = newVal_1;
+                });
             }
             else {
-                requestEmitter.emit(key, {
+                requestEmitter.emit(key_1, {
                     requestCallId: requestCallId,
                     isMutating: true,
-                    data: v
+                    data: v_1
                 });
                 if (_revalidate) {
-                    previousConfig[key] = undefined;
+                    previousConfig[key_1] = undefined;
                     requestEmitter.emit(JSON.stringify(k));
                 }
+                queue(function () {
+                    cacheForMutation[key_1] = v_1;
+                });
             }
         }
         catch (err) { }
+    };
+    for (var _a = 0, pairs_1 = pairs; _a < pairs_1.length; _a++) {
+        var pair = pairs_1[_a];
+        _loop_1(pair);
     }
 }
 exports.mutateData = mutateData;
@@ -548,6 +566,56 @@ function useUNLINK(init, options) {
     return useFetcher(init, __assign(__assign({}, options), { config: __assign(__assign({}, options === null || options === void 0 ? void 0 : options.config), { method: 'UNLINK' }) }));
 }
 exports.useUNLINK = useUNLINK;
+/**
+ * Get a blob of the response. You can pass an `objectURL` property that will convet that blob into a string using `URL.createObjectURL`
+ */
+function useFetcherBlob(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { resolver: function (res) {
+            return __awaiter(this, void 0, void 0, function () {
+                var blob;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, res.blob()];
+                        case 1:
+                            blob = _a.sent();
+                            if (typeof URL !== 'undefined') {
+                                if (init.objectURL) {
+                                    return [2 /*return*/, URL.createObjectURL(blob)];
+                                }
+                                else {
+                                    if (options === null || options === void 0 ? void 0 : options.objectURL) {
+                                        return [2 /*return*/, URL.createObjectURL(blob)];
+                                    }
+                                }
+                            }
+                            return [2 /*return*/, blob];
+                    }
+                });
+            });
+        } }));
+}
+exports.useFetcherBlob = useFetcherBlob;
+exports.useBlob = useFetcherBlob;
+/**
+ * Get a text of the response
+ */
+function useFetcherText(init, options) {
+    return useFetcher(init, __assign(__assign({}, options), { resolver: function (res) {
+            return __awaiter(this, void 0, void 0, function () {
+                var text;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, res.text()];
+                        case 1:
+                            text = _a.sent();
+                            return [2 /*return*/, text];
+                    }
+                });
+            });
+        } }));
+}
+exports.useFetcherText = useFetcherText;
+exports.useText = useFetcherText;
 var createImperativeFetcher = function (ctx) {
     var keys = [
         'GET',
@@ -746,7 +814,7 @@ var useFetcher = function (init, options) {
         var _a;
         if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var tm_1, newAbortController, json, code, _data, err_2, errorString, _error;
+            var tm_1, newAbortController, json, code, _data_1, err_2, errorString, _error;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -819,25 +887,27 @@ var useFetcher = function (init, options) {
                         });
                         return [4 /*yield*/, resolver(json)];
                     case 3:
-                        _data = _b.sent();
+                        _data_1 = _b.sent();
                         if (code >= 200 && code < 400) {
                             if (memory) {
-                                cache.set(resolvedKey, _data);
-                                valuesMemory[idString] = _data;
+                                cache.set(resolvedKey, _data_1);
+                                valuesMemory[idString] = _data_1;
                             }
-                            setData(_data);
-                            cacheForMutation[idString] = _data;
+                            setData(_data_1);
+                            cacheForMutation[idString] = _data_1;
                             setError(null);
                             setLoading(false);
                             requestEmitter.emit(resolvedKey, {
                                 requestCallId: requestCallId,
-                                data: _data,
+                                data: _data_1,
                                 loading: false,
                                 error: null
                             });
-                            onResolve(_data, json);
-                            requestEmitter.emit(idString + 'value', {
-                                data: _data
+                            onResolve(_data_1, json);
+                            requestEmitter.emit(resolvedKey, {
+                                requestCallId: requestCallId,
+                                isResolved: true,
+                                data: _data_1
                             });
                             runningRequests[resolvedKey] = false;
                             // If a request completes succesfuly, we reset the error attempts to 0
@@ -845,6 +915,9 @@ var useFetcher = function (init, options) {
                             requestEmitter.emit(resolvedKey, {
                                 requestCallId: requestCallId,
                                 completedAttempts: 0
+                            });
+                            queue(function () {
+                                cacheForMutation[resolvedKey] = _data_1;
                             });
                         }
                         else {
@@ -861,7 +934,7 @@ var useFetcher = function (init, options) {
                                 requestCallId: requestCallId,
                                 error: true
                             });
-                            onError(_data, json);
+                            onError(_data_1, json);
                             runningRequests[resolvedKey] = false;
                         }
                         return [3 /*break*/, 6];
@@ -952,21 +1025,13 @@ var useFetcher = function (init, options) {
         var __baseUrl = typeof config.baseUrl !== 'undefined' ? config.baseUrl : ctx.baseUrl;
         return createImperativeFetcher(__assign(__assign({}, ctx), { headers: __headers, baseUrl: __baseUrl, params: __params }));
     }, [JSON.stringify(ctx)]);
-    var queue = React.useCallback(function queue(callback, time) {
-        if (time === void 0) { time = 0; }
-        var tm = setTimeout(function () {
-            callback();
-            clearTimeout(tm);
-        }, time);
-        return tm;
-    }, []);
     (0, react_1.useEffect)(function () {
         function waitFormUpdates(v) {
             return __awaiter(this, void 0, void 0, function () {
-                var isMutating_1, data_1, error_1, online_1, loading_1, response_1, requestAbortController_1, code_1, config_1, rawUrl_1, realUrl_1, method_1, completedAttempts_1;
+                var isMutating_1, isResolved_1, data_1, error_1, online_1, loading_1, response_1, requestAbortController_1, code_1, config_1, rawUrl_1, realUrl_1, method_1, completedAttempts_1;
                 return __generator(this, function (_a) {
                     if (v.requestCallId !== requestCallId) {
-                        isMutating_1 = v.isMutating, data_1 = v.data, error_1 = v.error, online_1 = v.online, loading_1 = v.loading, response_1 = v.response, requestAbortController_1 = v.requestAbortController, code_1 = v.code, config_1 = v.config, rawUrl_1 = v.rawUrl, realUrl_1 = v.realUrl, method_1 = v.method, completedAttempts_1 = v.completedAttempts;
+                        isMutating_1 = v.isMutating, isResolved_1 = v.isResolved, data_1 = v.data, error_1 = v.error, online_1 = v.online, loading_1 = v.loading, response_1 = v.response, requestAbortController_1 = v.requestAbortController, code_1 = v.code, config_1 = v.config, rawUrl_1 = v.rawUrl, realUrl_1 = v.realUrl, method_1 = v.method, completedAttempts_1 = v.completedAttempts;
                         if (typeof method_1 !== 'undefined') {
                             queue(function () {
                                 setReqMethod(method_1);
@@ -1017,13 +1082,13 @@ var useFetcher = function (init, options) {
                         }
                         if (typeof data_1 !== 'undefined') {
                             queue(function () {
+                                if (isResolved_1) {
+                                    onResolve(data_1);
+                                }
                                 if (JSON.stringify(data_1) !==
                                     JSON.stringify(cacheForMutation[resolvedKey])) {
                                     setData(data_1);
                                     cacheForMutation[idString] = data_1;
-                                    if (!isMutating_1) {
-                                        onResolve(data_1);
-                                    }
                                     if (isMutating_1) {
                                         onMutate(data_1, imperativeFetcher);
                                     }
