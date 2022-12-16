@@ -401,6 +401,7 @@ export declare function useFetcherConfig(id?: string): FetcherContextType | ({
  * Get the data state of a request using its id
  */
 export declare function useFetcherData<T = any>(id: any, onResolve?: (data: T) => void): T;
+export declare function useFetcherCode(id: any): number;
 /**
  * Get the loading state of a request using its id
  */
@@ -924,7 +925,7 @@ declare function useUNLINK<FetchDataType = any, BodyType = any>(init: FetcherTyp
     id: any;
     key: string;
 };
-export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, useGET, useDELETE, useHEAD, useOPTIONS, usePOST, usePUT, usePATCH, usePURGE, useLINK, useUNLINK };
+export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherCode as useCode, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, useGET, useDELETE, useHEAD, useOPTIONS, usePOST, usePUT, usePATCH, usePURGE, useLINK, useUNLINK };
 /**
  * Create a configuration object to use in a 'useFetcher' call
  */
