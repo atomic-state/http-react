@@ -65,7 +65,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useUNLINK = exports.useLINK = exports.usePURGE = exports.usePATCH = exports.usePUT = exports.usePOST = exports.useOPTIONS = exports.useHEAD = exports.useDELETE = exports.useGET = exports.useFetchId = exports.useMutate = exports.useError = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
+exports.createHttpClient = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useUNLINK = exports.useLINK = exports.usePURGE = exports.usePATCH = exports.usePUT = exports.usePOST = exports.useOPTIONS = exports.useHEAD = exports.useDELETE = exports.useGET = exports.useFetchId = exports.useMutate = exports.useError = exports.useCode = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherCode = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = void 0;
 var React = require("react");
 var react_1 = require("react");
 var events_1 = require("events");
@@ -371,6 +371,14 @@ function useFetcherData(id, onResolve) {
 }
 exports.useFetcherData = useFetcherData;
 exports.useData = useFetcherData;
+function useFetcherCode(id) {
+    var code = useFetcher({
+        id: id
+    }).code;
+    return code;
+}
+exports.useFetcherCode = useFetcherCode;
+exports.useCode = useFetcherCode;
 /**
  * Get the loading state of a request using its id
  */
@@ -946,72 +954,105 @@ var useFetcher = function (init, options) {
         var __baseUrl = typeof config.baseUrl !== 'undefined' ? config.baseUrl : ctx.baseUrl;
         return createImperativeFetcher(__assign(__assign({}, ctx), { headers: __headers, baseUrl: __baseUrl, params: __params }));
     }, [JSON.stringify(ctx)]);
+    var queue = React.useCallback(function queue(callback, time) {
+        if (time === void 0) { time = 0; }
+        var tm = setTimeout(function () {
+            callback();
+            clearTimeout(tm);
+        }, time);
+        return tm;
+    }, []);
     (0, react_1.useEffect)(function () {
-        var tm = null;
         function waitFormUpdates(v) {
-            if (v.requestCallId !== requestCallId) {
-                var isMutating_1 = v.isMutating, data_1 = v.data, error_1 = v.error, online_1 = v.online, loading_1 = v.loading, response_1 = v.response, requestAbortController_1 = v.requestAbortController, code_1 = v.code, config_1 = v.config, rawUrl_1 = v.rawUrl, realUrl_1 = v.realUrl, method_1 = v.method, completedAttempts_1 = v.completedAttempts;
-                tm = setTimeout(function () {
-                    if (typeof method_1 !== 'undefined') {
-                        setReqMethod(method_1);
-                    }
-                    if (typeof (config_1 === null || config_1 === void 0 ? void 0 : config_1.query) !== 'undefined') {
-                        setReqQuery(config_1.query);
-                    }
-                    if (typeof rawUrl_1 !== 'undefined' && typeof realUrl_1 !== 'undefined') {
-                        setConfigUrl({
-                            rawUrl: rawUrl_1,
-                            realUrl: realUrl_1
-                        });
-                    }
-                    if (typeof (config_1 === null || config_1 === void 0 ? void 0 : config_1.params) !== 'undefined') {
-                        setReqParams(config_1 === null || config_1 === void 0 ? void 0 : config_1.params);
-                    }
-                    if (typeof completedAttempts_1 !== 'undefined') {
-                        setCompletedAttempts(completedAttempts_1);
-                    }
-                    if (typeof code_1 !== 'undefined') {
-                        setStatusCode(code_1);
-                    }
-                    if (typeof requestAbortController_1 !== 'undefined') {
-                        setRequestAbortController(requestAbortController_1);
-                    }
-                    if (typeof response_1 !== 'undefined') {
-                        setResponse(response_1);
-                    }
-                    if (typeof loading_1 !== 'undefined') {
-                        setLoading(loading_1);
-                    }
-                    if (typeof data_1 !== 'undefined') {
-                        if (JSON.stringify(data_1) !==
-                            JSON.stringify(cacheForMutation[resolvedKey])) {
-                            setData(data_1);
-                            cacheForMutation[idString] = data_1;
-                            if (!isMutating_1) {
-                                onResolve(data_1);
-                            }
-                            if (isMutating_1) {
-                                onMutate(data_1, imperativeFetcher);
-                            }
+            return __awaiter(this, void 0, void 0, function () {
+                var isMutating_1, data_1, error_1, online_1, loading_1, response_1, requestAbortController_1, code_1, config_1, rawUrl_1, realUrl_1, method_1, completedAttempts_1;
+                return __generator(this, function (_a) {
+                    if (v.requestCallId !== requestCallId) {
+                        isMutating_1 = v.isMutating, data_1 = v.data, error_1 = v.error, online_1 = v.online, loading_1 = v.loading, response_1 = v.response, requestAbortController_1 = v.requestAbortController, code_1 = v.code, config_1 = v.config, rawUrl_1 = v.rawUrl, realUrl_1 = v.realUrl, method_1 = v.method, completedAttempts_1 = v.completedAttempts;
+                        if (typeof method_1 !== 'undefined') {
+                            queue(function () {
+                                setReqMethod(method_1);
+                            });
                         }
-                        setError(null);
-                    }
-                    if (typeof error_1 !== 'undefined') {
-                        setError(error_1);
-                        if (error_1 !== null && error_1 !== false) {
-                            onError(error_1);
+                        if (typeof (config_1 === null || config_1 === void 0 ? void 0 : config_1.query) !== 'undefined') {
+                            queue(function () {
+                                setReqQuery(config_1.query);
+                            });
+                        }
+                        if (typeof rawUrl_1 !== 'undefined' && typeof realUrl_1 !== 'undefined') {
+                            queue(function () {
+                                setConfigUrl({
+                                    rawUrl: rawUrl_1,
+                                    realUrl: realUrl_1
+                                });
+                            });
+                        }
+                        if (typeof (config_1 === null || config_1 === void 0 ? void 0 : config_1.params) !== 'undefined') {
+                            queue(function () {
+                                setReqParams(config_1 === null || config_1 === void 0 ? void 0 : config_1.params);
+                            });
+                        }
+                        if (typeof completedAttempts_1 !== 'undefined') {
+                            queue(function () {
+                                setCompletedAttempts(completedAttempts_1);
+                            });
+                        }
+                        if (typeof code_1 !== 'undefined') {
+                            queue(function () {
+                                setStatusCode(code_1);
+                            });
+                        }
+                        if (typeof requestAbortController_1 !== 'undefined') {
+                            queue(function () {
+                                setRequestAbortController(requestAbortController_1);
+                            });
+                        }
+                        if (typeof response_1 !== 'undefined') {
+                            queue(function () {
+                                setResponse(response_1);
+                            });
+                        }
+                        if (typeof loading_1 !== 'undefined') {
+                            queue(function () {
+                                setLoading(loading_1);
+                            });
+                        }
+                        if (typeof data_1 !== 'undefined') {
+                            queue(function () {
+                                if (JSON.stringify(data_1) !==
+                                    JSON.stringify(cacheForMutation[resolvedKey])) {
+                                    setData(data_1);
+                                    cacheForMutation[idString] = data_1;
+                                    if (!isMutating_1) {
+                                        onResolve(data_1);
+                                    }
+                                    if (isMutating_1) {
+                                        onMutate(data_1, imperativeFetcher);
+                                    }
+                                }
+                                setError(null);
+                            });
+                        }
+                        if (typeof error_1 !== 'undefined') {
+                            queue(function () {
+                                setError(error_1);
+                                if (error_1 !== null && error_1 !== false) {
+                                    onError(error_1);
+                                }
+                            });
+                        }
+                        if (typeof online_1 !== 'undefined') {
+                            queue(function () {
+                                setOnline(online_1);
+                            });
                         }
                     }
-                    if (typeof online_1 !== 'undefined') {
-                        setOnline(online_1);
-                    }
-                    clearTimeout(tm);
-                }, 0);
-            }
+                    return [2 /*return*/];
+                });
+            });
         }
         requestEmitter.addListener(resolvedKey, waitFormUpdates);
         return function () {
-            clearTimeout(tm);
             requestEmitter.removeListener(resolvedKey, waitFormUpdates);
         };
     }, [resolvedKey, imperativeFetcher, reqMethod, id, requestCallId, stringDeps]);

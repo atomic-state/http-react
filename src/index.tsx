@@ -752,6 +752,14 @@ export function useFetcherData<T = any>(
   return data
 }
 
+export function useFetcherCode(id: any) {
+  const { code } = useFetcher({
+    id: id
+  })
+
+  return code
+}
+
 /**
  * Get the loading state of a request using its id
  */
@@ -1007,6 +1015,7 @@ export {
   useFetcherLoading as useLoading,
   useFetcherConfig as useConfig,
   useFetcherData as useData,
+  useFetcherCode as useCode,
   useFetcherError as useError,
   useFetcherMutate as useMutate,
   useFetcherId as useFetchId,
@@ -1604,9 +1613,21 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     })
   }, [JSON.stringify(ctx)])
 
+  const queue = React.useCallback(function queue(
+    callback: any,
+    time: number = 0
+  ) {
+    const tm = setTimeout(() => {
+      callback()
+      clearTimeout(tm)
+    }, time)
+
+    return tm
+  },
+  [])
+
   useEffect(() => {
-    let tm: any = null
-    function waitFormUpdates(v: any) {
+    async function waitFormUpdates(v: any) {
       if (v.requestCallId !== requestCallId) {
         const {
           isMutating,
@@ -1623,38 +1644,57 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           method,
           completedAttempts
         } = v
-        tm = setTimeout(() => {
-          if (typeof method !== 'undefined') {
+
+        if (typeof method !== 'undefined') {
+          queue(() => {
             setReqMethod(method)
-          }
-          if (typeof config?.query !== 'undefined') {
+          })
+        }
+        if (typeof config?.query !== 'undefined') {
+          queue(() => {
             setReqQuery(config.query)
-          }
-          if (typeof rawUrl !== 'undefined' && typeof realUrl !== 'undefined') {
+          })
+        }
+        if (typeof rawUrl !== 'undefined' && typeof realUrl !== 'undefined') {
+          queue(() => {
             setConfigUrl({
               rawUrl,
               realUrl
             })
-          }
-          if (typeof config?.params !== 'undefined') {
+          })
+        }
+        if (typeof config?.params !== 'undefined') {
+          queue(() => {
             setReqParams(config?.params)
-          }
-          if (typeof completedAttempts !== 'undefined') {
+          })
+        }
+        if (typeof completedAttempts !== 'undefined') {
+          queue(() => {
             setCompletedAttempts(completedAttempts)
-          }
-          if (typeof code !== 'undefined') {
+          })
+        }
+        if (typeof code !== 'undefined') {
+          queue(() => {
             setStatusCode(code)
-          }
-          if (typeof requestAbortController !== 'undefined') {
+          })
+        }
+        if (typeof requestAbortController !== 'undefined') {
+          queue(() => {
             setRequestAbortController(requestAbortController)
-          }
-          if (typeof response !== 'undefined') {
+          })
+        }
+        if (typeof response !== 'undefined') {
+          queue(() => {
             setResponse(response)
-          }
-          if (typeof loading !== 'undefined') {
+          })
+        }
+        if (typeof loading !== 'undefined') {
+          queue(() => {
             setLoading(loading)
-          }
-          if (typeof data !== 'undefined') {
+          })
+        }
+        if (typeof data !== 'undefined') {
+          queue(() => {
             if (
               JSON.stringify(data) !==
               JSON.stringify(cacheForMutation[resolvedKey])
@@ -1669,25 +1709,27 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               }
             }
             setError(null)
-          }
-          if (typeof error !== 'undefined') {
+          })
+        }
+        if (typeof error !== 'undefined') {
+          queue(() => {
             setError(error)
             if (error !== null && error !== false) {
               onError(error)
             }
-          }
-          if (typeof online !== 'undefined') {
+          })
+        }
+        if (typeof online !== 'undefined') {
+          queue(() => {
             setOnline(online)
-          }
-          clearTimeout(tm)
-        }, 0)
+          })
+        }
       }
     }
 
     requestEmitter.addListener(resolvedKey, waitFormUpdates)
 
     return () => {
-      clearTimeout(tm)
       requestEmitter.removeListener(resolvedKey, waitFormUpdates)
     }
   }, [resolvedKey, imperativeFetcher, reqMethod, id, requestCallId, stringDeps])
