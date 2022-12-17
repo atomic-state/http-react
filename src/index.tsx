@@ -237,6 +237,8 @@ const runningRequests: any = {}
 
 const previousConfig: any = {}
 
+const previousProps: any = {}
+
 const createRequestEmitter = () => {
   const emitter = new EventEmitter()
 
@@ -348,13 +350,16 @@ type FetcherType<FetchDataType, BodyType> = {
   /**
    * Function to run when props change
    */
-  onPropsChange?: (
-    revalidate: () => void,
-    /**
-     * An imperative version of `useFetcher`
-     */
+  onPropsChange?: (rev: {
+    revalidate: () => void
+    cancel: {
+      (reason?: any): void
+      (): void
+    }
     fetcher: ImperativeFetcher
-  ) => void
+    props: FetcherConfigOptions<FetchDataType, BodyType>
+    previousProps: FetcherConfigOptions<FetchDataType, BodyType>
+  }) => void
   /**
    * Function to run when the request fails
    */
@@ -364,8 +369,6 @@ type FetcherType<FetchDataType, BodyType> = {
    */
   onAbort?: () => void
   /**
-   * @deprecated - Use the `abort` function to cancel a request instead
-   *
    * Whether a change in deps will cancel a queued request and make a new one
    */
   cancelOnChange?: boolean
@@ -483,13 +486,16 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
   /**
    * Function to run when props change
    */
-  onPropsChange?: (
-    revalidate: () => void,
-    /**
-     * An imperative version of `useFetcher`
-     */
+  onPropsChange?: (rev: {
+    revalidate: () => void
+    cancel: {
+      (reason?: any): void
+      (): void
+    }
     fetcher: ImperativeFetcher
-  ) => void
+    props: FetcherConfigOptions<FetchDataType, BodyType>
+    previousProps: FetcherConfigOptions<FetchDataType, BodyType>
+  }) => void
   /**
    * Function to run when the request fails
    */
@@ -499,8 +505,6 @@ type FetcherConfigOptions<FetchDataType, BodyType = any> = {
    */
   onAbort?: () => void
   /**
-   * @deprecated Use the `abort` function to cancel a request instead
-   *
    * Whether a change in deps will cancel a queued request and make a new one
    */
   cancelOnChange?: boolean
@@ -629,9 +633,12 @@ export function FetcherConfig(props: FetcherContextType) {
     })
 
     if (typeof id !== 'undefined') {
-      valuesMemory[JSON.stringify(id)] = defaults[defaultKey]?.value
-
-      fetcherDefaults[JSON.stringify(id)] = defaults[defaultKey]?.value
+      if (typeof valuesMemory[resolvedKey] == 'undefined') {
+        valuesMemory[resolvedKey] = defaults[defaultKey]?.value
+      }
+      if (typeof fetcherDefaults[resolvedKey] === 'undefined') {
+        fetcherDefaults[resolvedKey] = defaults[defaultKey]?.value
+      }
     }
 
     if (typeof cache.get(resolvedKey) === 'undefined') {
@@ -1322,6 +1329,12 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         : undefined
   })
 
+  if (typeof previousProps[resolvedKey] === 'undefined') {
+    if (url !== '') {
+      previousProps[resolvedKey] = optionsConfig
+    }
+  }
+
   useEffect(() => {
     if (url !== '') {
       setReqParams(() => {
@@ -1355,26 +1368,32 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   // This helps pass default values to other useFetcher calls using the same id
   useEffect(() => {
     if (typeof optionsConfig.default !== 'undefined') {
-      if (typeof fetcherDefaults[idString] === 'undefined') {
+      if (typeof fetcherDefaults[resolvedKey] === 'undefined') {
         if (url !== '') {
-          fetcherDefaults[idString] = optionsConfig.default
+          if (typeof cache.get(resolvedKey) === 'undefined') {
+            fetcherDefaults[resolvedKey] = optionsConfig.default
+          }
         } else {
-          requestEmitter.emit(resolvedKey, {
-            requestCallId,
-            data: optionsConfig.default
-          })
+          if (typeof cache.get(resolvedKey) === 'undefined') {
+            requestEmitter.emit(resolvedKey, {
+              requestCallId,
+              data: optionsConfig.default
+            })
+          }
         }
       }
     } else {
-      if (typeof fetcherDefaults[idString] !== 'undefined') {
-        setData(fetcherDefaults[idString])
+      if (typeof fetcherDefaults[resolvedKey] !== 'undefined') {
+        if (typeof cache.get(resolvedKey) === 'undefined') {
+          setData(fetcherDefaults[resolvedKey])
+        }
       }
     }
-  }, [idString])
+  }, [resolvedKey])
 
   const def =
-    idString in fetcherDefaults
-      ? fetcherDefaults[idString]
+    resolvedKey in fetcherDefaults
+      ? fetcherDefaults[resolvedKey]
       : optionsConfig.default
 
   useEffect(() => {
@@ -1418,9 +1437,14 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   const requestCache = cache.get(resolvedKey)
 
+  const initialDataValue =
+    typeof valuesMemory[resolvedKey] !== 'undefined'
+      ? valuesMemory[resolvedKey]
+      : typeof cache.get(resolvedKey) !== 'undefined'
+      ? cache.get(resolvedKey)
+      : def
   const [data, setData] = useState<FetchDataType | undefined>(
-    // Saved to base url of request without query params
-    memory ? requestCache || valuesMemory[rawUrl] || def : def
+    memory ? initialDataValue : def
   )
 
   // Used JSON as deppendency instead of directly using a reference to data
@@ -1549,25 +1573,13 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             if (code >= 200 && code < 400) {
               if (memory) {
                 cache.set(resolvedKey, _data)
-                valuesMemory[idString] = _data
+                valuesMemory[resolvedKey] = _data
               }
               setData(_data)
               cacheForMutation[idString] = _data
               setError(null)
               setLoading(false)
-              requestEmitter.emit(resolvedKey, {
-                requestCallId,
-                data: _data,
-                loading: false,
-                error: null
-              })
               onResolve(_data, json)
-
-              requestEmitter.emit(resolvedKey, {
-                requestCallId,
-                isResolved: true,
-                data: _data
-              })
 
               runningRequests[resolvedKey] = false
 
@@ -1575,6 +1587,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               setCompletedAttempts(0)
               requestEmitter.emit(resolvedKey, {
                 requestCallId,
+                data: _data,
+                isResolved: true,
+                loading: false,
+                error: null,
                 completedAttempts: 0
               })
               queue(() => {
@@ -1874,7 +1890,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             setData(d)
             cacheForMutation[idString] = d
             cache.set(resolvedKey, d)
-            valuesMemory[idString] = d
+            valuesMemory[resolvedKey] = d
           }
         } catch (err) {}
       } else {
@@ -2138,7 +2154,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         onMutate(newValue, imperativeFetcher)
         callback(newValue, imperativeFetcher)
         cache.set(resolvedKey, newValue)
-        valuesMemory[idString] = newValue
+        valuesMemory[resolvedKey] = newValue
         cacheForMutation[idString] = newValue
         requestEmitter.emit(resolvedKey, {
           requestCallId,
@@ -2153,7 +2169,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         onMutate(newVal, imperativeFetcher)
         callback(newVal, imperativeFetcher)
         cache.set(resolvedKey, newVal)
-        valuesMemory[idString] = newVal
+        valuesMemory[resolvedKey] = newVal
         cacheForMutation[idString] = newVal
         requestEmitter.emit(resolvedKey, {
           requestCallId,
@@ -2167,12 +2183,42 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   }
 
   useEffect(() => {
-    onPropsChange(reValidate, fetcher)
+    const rev = {
+      revalidate: () => queue(() => revalidate(id)),
+      cancel: () => {
+        try {
+          if (url !== '') {
+            if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
+              requestAbortController?.abort()
+            }
+          }
+        } catch (err) {}
+      },
+      fetcher: imperativeFetcher,
+      props: optionsConfig,
+      previousProps: previousProps[resolvedKey]
+    }
+
+    if (
+      JSON.stringify(previousProps[resolvedKey]) !==
+      JSON.stringify(optionsConfig)
+    ) {
+      if (cancelOnChange) {
+        if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
+          requestAbortController?.abort()
+        }
+        onPropsChange(rev as any)
+        if (url !== '') {
+          previousProps[resolvedKey] = optionsConfig
+        }
+      }
+    }
   }, [
-    JSON.stringify({
-      optionsConfig,
-      ctx
-    })
+    url,
+    cancelOnChange,
+    JSON.stringify(id),
+    JSON.stringify(optionsConfig),
+    resolvedKey
   ])
 
   const resolvedData = React.useMemo(() => data, [rawJSON])

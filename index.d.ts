@@ -161,11 +161,16 @@ declare type FetcherType<FetchDataType, BodyType> = {
     /**
      * Function to run when props change
      */
-    onPropsChange?: (revalidate: () => void, 
-    /**
-     * An imperative version of `useFetcher`
-     */
-    fetcher: ImperativeFetcher) => void;
+    onPropsChange?: (rev: {
+        revalidate: () => void;
+        cancel: {
+            (reason?: any): void;
+            (): void;
+        };
+        fetcher: ImperativeFetcher;
+        props: FetcherConfigOptions<FetchDataType, BodyType>;
+        previousProps: FetcherConfigOptions<FetchDataType, BodyType>;
+    }) => void;
     /**
      * Function to run when the request fails
      */
@@ -175,8 +180,6 @@ declare type FetcherType<FetchDataType, BodyType> = {
      */
     onAbort?: () => void;
     /**
-     * @deprecated - Use the `abort` function to cancel a request instead
-     *
      * Whether a change in deps will cancel a queued request and make a new one
      */
     cancelOnChange?: boolean;
@@ -282,11 +285,16 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
     /**
      * Function to run when props change
      */
-    onPropsChange?: (revalidate: () => void, 
-    /**
-     * An imperative version of `useFetcher`
-     */
-    fetcher: ImperativeFetcher) => void;
+    onPropsChange?: (rev: {
+        revalidate: () => void;
+        cancel: {
+            (reason?: any): void;
+            (): void;
+        };
+        fetcher: ImperativeFetcher;
+        props: FetcherConfigOptions<FetchDataType, BodyType>;
+        previousProps: FetcherConfigOptions<FetchDataType, BodyType>;
+    }) => void;
     /**
      * Function to run when the request fails
      */
@@ -296,8 +304,6 @@ declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
      */
     onAbort?: () => void;
     /**
-     * @deprecated Use the `abort` function to cancel a request instead
-     *
      * Whether a change in deps will cancel a queued request and make a new one
      */
     cancelOnChange?: boolean;
