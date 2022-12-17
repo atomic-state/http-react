@@ -1532,6 +1532,9 @@ useFetcher.purge = createRequestFn('PURGE', '', {});
 useFetcher.link = createRequestFn('LINK', '', {});
 useFetcher.unlink = createRequestFn('UNLINK', '', {});
 /**
+ * @deprecated Everything with `extend` can be achieved with `useFetch` alone
+ *
+ *
  * Extend the useFetcher hook
  */
 useFetcher.extend = function extendFetcher(props) {
