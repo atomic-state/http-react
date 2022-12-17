@@ -118,7 +118,7 @@ declare type FetcherContextType = {
     retryOnReconnect?: boolean;
     cache?: CacheStoreType;
 };
-declare type FetcherType<FetchDataType, BodyType> = {
+export declare type FetcherConfigType<FetchDataType = any, BodyType = any> = {
     /**
      * Any serializable id. This is optional.
      */
@@ -168,8 +168,8 @@ declare type FetcherType<FetchDataType, BodyType> = {
             (): void;
         };
         fetcher: ImperativeFetcher;
-        props: FetcherConfigOptions<FetchDataType, BodyType>;
-        previousProps: FetcherConfigOptions<FetchDataType, BodyType>;
+        props: FetcherConfigTypeNoUrl<FetchDataType, BodyType>;
+        previousProps: FetcherConfigTypeNoUrl<FetchDataType, BodyType>;
     }) => void;
     /**
      * Function to run when the request fails
@@ -246,133 +246,7 @@ declare type FetcherType<FetchDataType, BodyType> = {
         loading: boolean;
     }>;
 };
-declare type FetcherConfigOptions<FetchDataType, BodyType = any> = {
-    /**
-     * Any serializable id. This is optional.
-     */
-    id?: any;
-    /**
-     * Default data value
-     */
-    default?: FetchDataType;
-    /**
-     * Refresh interval (in seconds) to re-fetch the resource
-     */
-    refresh?: number;
-    /**
-     * This will prevent automatic requests.
-     * By setting this to `false`, requests will
-     * only be made by calling `reFetch()`
-     */
-    auto?: boolean;
-    /**
-     * Default is true. Responses are saved in memory and used as default data.
-     * If `false`, the `default` prop will be used instead.
-     */
-    memory?: boolean;
-    /**
-     * Function to run when request is resolved succesfuly
-     */
-    onResolve?: (data: FetchDataType) => void;
-    /**
-     * Function to run when data is mutated
-     */
-    onMutate?: (data: FetchDataType, 
-    /**
-     * An imperative version of `useFetcher`
-     */
-    fetcher: ImperativeFetcher) => void;
-    /**
-     * Function to run when props change
-     */
-    onPropsChange?: (rev: {
-        revalidate: () => void;
-        cancel: {
-            (reason?: any): void;
-            (): void;
-        };
-        fetcher: ImperativeFetcher;
-        props: FetcherConfigOptions<FetchDataType, BodyType>;
-        previousProps: FetcherConfigOptions<FetchDataType, BodyType>;
-    }) => void;
-    /**
-     * Function to run when the request fails
-     */
-    onError?: (error: Error) => void;
-    /**
-     * Function to run when a request is aborted
-     */
-    onAbort?: () => void;
-    /**
-     * Whether a change in deps will cancel a queued request and make a new one
-     */
-    cancelOnChange?: boolean;
-    /**
-     * Parse as json by default
-     */
-    resolver?: (d: CustomResponse<FetchDataType>) => any;
-    /**
-     * The ammount of attempts if request fails
-     */
-    attempts?: number;
-    /**
-     * The interval at which to run attempts on request fail
-     */
-    attemptInterval?: number;
-    /**
-     * If a request should be made when the tab is focused. This currently works on browsers
-     */
-    revalidateOnFocus?: boolean;
-    /**
-     * This will run when connection is interrupted
-     */
-    onOffline?: () => void;
-    /**
-     * This will run when connection is restored
-     */
-    onOnline?: (e: {
-        cancel: () => void;
-    }) => void;
-    /**
-     * If the request should retry when connection is restored
-     */
-    retryOnReconnect?: boolean;
-    /**
-     * Request configuration
-     */
-    config?: {
-        /**
-         * Override base url
-         */
-        baseUrl?: string;
-        /**
-         * Request method
-         */
-        method?: 'GET' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'POST' | 'PUT' | 'PATCH' | 'PURGE' | 'LINK' | 'UNLINK';
-        headers?: Headers | object;
-        /**
-         * Request query params
-         */
-        query?: any;
-        /**
-         * URL params
-         */
-        params?: any;
-        body?: BodyType;
-        /**
-         * Customize how body is formated for the request. By default it will be sent in JSON format
-         * but you can set it to false if for example, you are sending a `FormData`
-         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
-         * (the last one is the default behaviour so in that case you can ignore it)
-         */
-        formatBody?: (b: BodyType) => any;
-    };
-    children?: React.FC<{
-        data: FetchDataType | undefined;
-        error: Error | null;
-        loading: boolean;
-    }>;
-};
+declare type FetcherConfigTypeNoUrl<FetchDataType = any, BodyType = any> = Omit<FetcherConfigType<FetchDataType, BodyType>, 'url'>;
 export declare function FetcherConfig(props: FetcherContextType): JSX.Element;
 /**
  * Revalidate requests that match an id or ids
@@ -494,7 +368,7 @@ export declare function useResolve<ResponseType = any>(id: any, onResolve: (data
 /**
  * User a `GET` request
  */
-declare function useGET<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+declare function useGET<FetchDataType = any, BodyType = any>(init: FetcherConfigType<FetchDataType, BodyType> | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>): {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
@@ -539,7 +413,7 @@ declare function useGET<FetchDataType = any, BodyType = any>(init: FetcherType<F
 /**
  * Use a `DELETE` request
  */
-declare function useDELETE<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+declare function useDELETE<FetchDataType = any, BodyType = any>(init: FetcherConfigType<FetchDataType, BodyType> | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>): {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
@@ -584,7 +458,7 @@ declare function useDELETE<FetchDataType = any, BodyType = any>(init: FetcherTyp
 /**
  * Use a `HEAD` request
  */
-declare function useHEAD<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+declare function useHEAD<FetchDataType = any, BodyType = any>(init: FetcherConfigType<FetchDataType, BodyType> | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>): {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
@@ -629,7 +503,7 @@ declare function useHEAD<FetchDataType = any, BodyType = any>(init: FetcherType<
 /**
  * Use an `OPTIONS` request
  */
-declare function useOPTIONS<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+declare function useOPTIONS<FetchDataType = any, BodyType = any>(init: FetcherConfigType<FetchDataType, BodyType> | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>): {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
@@ -674,7 +548,7 @@ declare function useOPTIONS<FetchDataType = any, BodyType = any>(init: FetcherTy
 /**
  * Use a `POST` request
  */
-declare function usePOST<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+declare function usePOST<FetchDataType = any, BodyType = any>(init: FetcherConfigType<FetchDataType, BodyType> | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>): {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
@@ -719,7 +593,7 @@ declare function usePOST<FetchDataType = any, BodyType = any>(init: FetcherType<
 /**
  * Use a `PUT` request
  */
-declare function usePUT<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+declare function usePUT<FetchDataType = any, BodyType = any>(init: FetcherConfigType<FetchDataType, BodyType> | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>): {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
@@ -764,7 +638,7 @@ declare function usePUT<FetchDataType = any, BodyType = any>(init: FetcherType<F
 /**
  * Use a `PATCH` request
  */
-declare function usePATCH<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+declare function usePATCH<FetchDataType = any, BodyType = any>(init: FetcherConfigType<FetchDataType, BodyType> | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>): {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
@@ -809,7 +683,7 @@ declare function usePATCH<FetchDataType = any, BodyType = any>(init: FetcherType
 /**
  * Use a `PURGE` request
  */
-declare function usePURGE<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+declare function usePURGE<FetchDataType = any, BodyType = any>(init: FetcherConfigType<FetchDataType, BodyType> | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>): {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
@@ -854,7 +728,7 @@ declare function usePURGE<FetchDataType = any, BodyType = any>(init: FetcherType
 /**
  * Use a `LINK` request
  */
-declare function useLINK<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+declare function useLINK<FetchDataType = any, BodyType = any>(init: FetcherConfigType<FetchDataType, BodyType> | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>): {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
@@ -899,7 +773,7 @@ declare function useLINK<FetchDataType = any, BodyType = any>(init: FetcherType<
 /**
  * Use an `UNLINK` request
  */
-declare function useUNLINK<FetchDataType = any, BodyType = any>(init: FetcherType<FetchDataType, BodyType> | string, options?: FetcherConfigOptions<FetchDataType, BodyType>): {
+declare function useUNLINK<FetchDataType = any, BodyType = any>(init: FetcherConfigType<FetchDataType, BodyType> | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>): {
     data: FetchDataType;
     loading: boolean;
     error: Error | null;
@@ -944,9 +818,9 @@ declare function useUNLINK<FetchDataType = any, BodyType = any>(init: FetcherTyp
 /**
  * Get a blob of the response. You can pass an `objectURL` property that will convet that blob into a string using `URL.createObjectURL`
  */
-export declare function useFetcherBlob<FetchDataType = string, BodyType = any>(init: (FetcherType<FetchDataType, BodyType> & {
+export declare function useFetcherBlob<FetchDataType = string, BodyType = any>(init: (FetcherConfigType<FetchDataType, BodyType> & {
     objectURL?: boolean;
-}) | string, options?: FetcherConfigOptions<FetchDataType, BodyType> & {
+}) | string, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType> & {
     objectURL?: boolean;
 }): {
     data: FetchDataType;
@@ -993,7 +867,7 @@ export declare function useFetcherBlob<FetchDataType = string, BodyType = any>(i
 /**
  * Get a text of the response
  */
-export declare function useFetcherText<FetchDataType = string, BodyType = any>(init: FetcherType<string, BodyType> | string, options?: FetcherConfigOptions<string, BodyType>): {
+export declare function useFetcherText<FetchDataType = string, BodyType = any>(init: FetcherConfigType<string, BodyType> | string, options?: FetcherConfigTypeNoUrl<string, BodyType>): {
     data: string;
     loading: boolean;
     error: Error | null;
@@ -1039,7 +913,7 @@ export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConf
 /**
  * Create a configuration object to use in a 'useFetcher' call
  */
-export declare type FetcherInit<FDT = any, BT = any> = FetcherConfigOptions<FDT, BT> & {
+export declare type FetcherInit<FDT = any, BT = any> = FetcherConfigTypeNoUrl<FDT, BT> & {
     url?: string;
 };
 /**
@@ -1065,7 +939,7 @@ export declare function useImperative(): ImperativeFetcher;
  * Fetcher hook
  */
 declare const useFetcher: {
-    <FetchDataType = any, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
+    <FetchDataType = any, BodyType = any>(init: string | FetcherConfigType<FetchDataType, BodyType>, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType> | undefined): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
@@ -1118,10 +992,13 @@ declare const useFetcher: {
     link: RequestWithBody;
     unlink: RequestWithBody;
     /**
+     * @deprecated Everything with `extend` can be achieved with `useFetch` alone
+     *
+     *
      * Extend the useFetcher hook
      */
     extend(props?: FetcherContextType): {
-        <T, BodyType_1 = any>(init: string | FetcherType<T, BodyType_1>, options?: FetcherConfigOptions<T, BodyType_1> | undefined): {
+        <T, BodyType_1 = any>(init: string | FetcherConfigType<T, BodyType_1>, options?: FetcherConfigTypeNoUrl<T, BodyType_1> | undefined): {
             data: T;
             loading: boolean;
             error: Error | null;
@@ -1183,7 +1060,7 @@ declare const useFetcher: {
 };
 export { useFetcher };
 export declare const fetcher: {
-    <FetchDataType = any, BodyType = any>(init: string | FetcherType<FetchDataType, BodyType>, options?: FetcherConfigOptions<FetchDataType, BodyType> | undefined): {
+    <FetchDataType = any, BodyType = any>(init: string | FetcherConfigType<FetchDataType, BodyType>, options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType> | undefined): {
         data: FetchDataType;
         loading: boolean;
         error: Error | null;
@@ -1236,10 +1113,13 @@ export declare const fetcher: {
     link: RequestWithBody;
     unlink: RequestWithBody;
     /**
+     * @deprecated Everything with `extend` can be achieved with `useFetch` alone
+     *
+     *
      * Extend the useFetcher hook
      */
     extend(props?: FetcherContextType): {
-        <T, BodyType_1 = any>(init: string | FetcherType<T, BodyType_1>, options?: FetcherConfigOptions<T, BodyType_1> | undefined): {
+        <T, BodyType_1 = any>(init: string | FetcherConfigType<T, BodyType_1>, options?: FetcherConfigTypeNoUrl<T, BodyType_1> | undefined): {
             data: T;
             loading: boolean;
             error: Error | null;
