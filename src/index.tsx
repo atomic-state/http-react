@@ -634,7 +634,9 @@ export function FetcherConfig(props: FetcherContextType) {
       fetcherDefaults[JSON.stringify(id)] = defaults[defaultKey]?.value
     }
 
-    cache.set(resolvedKey, defaults[defaultKey]?.value)
+    if (typeof cache.get(resolvedKey) === 'undefined') {
+      cache.set(resolvedKey, defaults[defaultKey]?.value)
+    }
   }
 
   let mergedConfig = {
@@ -782,10 +784,13 @@ export function useFetcherData<T = any>(
   id: any,
   onResolve?: (data: T) => void
 ) {
+  const { cache = defaultCache } = useContext(FetcherContext)
+
   const defaultsKey = JSON.stringify({
     idString: JSON.stringify(id)
   })
-  const def = resolvedRequests[defaultsKey]
+
+  const def = cache.get(defaultsKey)
 
   const { data } = useFetcher<T>({
     default: def,
@@ -1290,24 +1295,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     ...config.params
   })
 
-  useEffect(() => {
-    if (url !== '') {
-      setReqParams(() => {
-        const newParams = {
-          ...ctx.params,
-          ...config.params
-        }
-        requestEmitter.emit(resolvedKey, {
-          requestCallId,
-          config: {
-            params: newParams
-          }
-        })
-        return newParams
-      })
-    }
-  }, [JSON.stringify({ ...ctx.params, ...config.params })])
-
   const rawUrl =
     (url.startsWith('http://') || url.startsWith('https://')
       ? ''
@@ -1334,6 +1321,18 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           }
         : undefined
   })
+
+  useEffect(() => {
+    if (url !== '') {
+      setReqParams(() => {
+        const newParams = {
+          ...ctx.params,
+          ...config.params
+        }
+        return newParams
+      })
+    }
+  }, [JSON.stringify({ ...ctx.params, ...config.params }), resolvedKey])
 
   const stringDeps = JSON.stringify(
     // We ignore children and resolver
@@ -1403,17 +1402,13 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             ...queryParamsFromString,
             ...config.query
           }
-          requestEmitter.emit(resolvedKey, {
-            requestCallId,
-            config: {
-              query: newQuery || {}
-            }
-          })
           return newQuery
         })
       }
     }
   }, [
+    resolvedKey,
+    requestCallId,
     JSON.stringify({
       qp,
       ...ctx.query,
@@ -1460,10 +1455,29 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   const fetchData = React.useCallback(
     async function fetchData(
-      c: { headers?: any; body?: BodyType; query?: any } = {}
+      c: { headers?: any; body?: BodyType; query?: any; params?: any } = {}
     ) {
+      requestEmitter.emit(resolvedKey, {
+        config: c
+      })
+
+      const rawUrl =
+        (url.startsWith('http://') || url.startsWith('https://')
+          ? ''
+          : typeof config.baseUrl === 'undefined'
+          ? typeof ctx.baseUrl === 'undefined'
+            ? ''
+            : ctx.baseUrl
+          : config.baseUrl) + url
+
+      const urlWithParams = setURLParams(rawUrl, c.params)
+
+      const realUrl = urlWithParams + (urlWithParams.includes('?') ? `&` : '?')
+
+      const [resKey] = realUrl.split('?')
+
       if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
-        const tm = setTimeout(() => {
+        queue(() => {
           setReqMethod(config.method)
           if (url !== '') {
             setConfigUrl({
@@ -1476,8 +1490,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               rawUrl
             })
           }
-          clearTimeout(tm)
-        }, 0)
+        })
         if (!runningRequests[resolvedKey]) {
           runningRequests[resolvedKey] = true
           setLoading(true)
@@ -1690,7 +1703,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         const {
           isMutating,
           isResolved,
-          data,
+          data: $data,
           error,
           online,
           loading,
@@ -1727,6 +1740,11 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             setReqParams(config?.params)
           })
         }
+        if (typeof config?.headers !== 'undefined') {
+          queue(() => {
+            setRequestHeades(config?.headers)
+          })
+        }
         if (typeof completedAttempts !== 'undefined') {
           queue(() => {
             setCompletedAttempts(completedAttempts)
@@ -1752,19 +1770,23 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             setLoading(loading)
           })
         }
-        if (typeof data !== 'undefined') {
+        if (typeof $data !== 'undefined') {
           queue(() => {
             if (isResolved) {
-              onResolve(data)
+              onResolve($data)
             }
             if (
-              JSON.stringify(data) !==
+              JSON.stringify(data) !== JSON.stringify(cache.get(resolvedKey))
+            ) {
+              setData($data)
+            }
+            if (
+              JSON.stringify($data) !==
               JSON.stringify(cacheForMutation[resolvedKey])
             ) {
-              setData(data)
               cacheForMutation[idString] = data
               if (isMutating) {
-                onMutate(data, imperativeFetcher)
+                onMutate($data, imperativeFetcher)
               }
             }
             setError(null)
@@ -1791,7 +1813,15 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     return () => {
       requestEmitter.removeListener(resolvedKey, waitFormUpdates)
     }
-  }, [resolvedKey, imperativeFetcher, reqMethod, id, requestCallId, stringDeps])
+  }, [
+    resolvedKey,
+    data,
+    imperativeFetcher,
+    reqMethod,
+    id,
+    requestCallId,
+    stringDeps
+  ])
 
   const reValidate = React.useCallback(
     async function reValidate() {
@@ -1804,11 +1834,16 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             ...ctx.query,
             ...config.query
           }
+          const reqP = {
+            ...ctx.params,
+            ...config.params
+          }
           if (url !== '') {
             fetchData({
               query: Object.keys(reqQ)
                 .map(q => [q, reqQ[q]].join('='))
-                .join('&')
+                .join('&'),
+              params: reqP
             })
           }
           requestEmitter.emit(resolvedKey, {
@@ -1819,6 +1854,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       }
     },
     [
+      requestCallId,
       stringDeps,
       cancelOnChange,
       url,
@@ -1857,10 +1893,15 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               ...ctx.query,
               ...config.query
             }
+            const reqP = {
+              ...ctx.params,
+              ...config.params
+            }
             fetchData({
               query: Object.keys(reqQ)
                 .map(q => [q, reqQ[q]].join('='))
-                .join('&')
+                .join('&'),
+              params: reqP
             })
           }
         }
@@ -1871,7 +1912,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     return () => {
       requestEmitter.removeListener(idString, forceRefresh)
     }
-  }, [resolvedKey, stringDeps, auto, ctx.auto, idString, id])
+  }, [resolvedKey, requestCallId, stringDeps, auto, ctx.auto, idString, id])
 
   useEffect(() => {
     function backOnline() {
@@ -1942,15 +1983,16 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   }, [onOffline, reValidate, resolvedKey, retryOnReconnect])
 
   useEffect(() => {
-    setRequestHeades(r => ({
-      ...r,
-      ...ctx.headers
-    }))
-  }, [ctx.headers])
+    const newHeaders = {
+      ...ctx.headers,
+      ...config.headers
+    }
+    setRequestHeades(newHeaders)
+  }, [JSON.stringify({ ...ctx.headers, ...config.headers }), resolvedKey])
 
   useEffect(() => {
     previousConfig[resolvedKey] = undefined
-  }, [requestCallId])
+  }, [requestCallId, resolvedKey])
 
   useEffect(() => {
     // Attempts will be made after a request fails
@@ -2007,10 +2049,15 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           ...ctx.query,
           ...config.query
         }
+        const reqP = {
+          ...ctx.params,
+          ...config.params
+        }
         fetchData({
           query: Object.keys(reqQ)
             .map(q => [q, reqQ[q]].join('='))
-            .join('&')
+            .join('&'),
+          params: reqP
         })
       }
       // It means a url is not passed
@@ -2028,6 +2075,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    requestCallId,
     initMemo,
     url,
     stringDeps,
@@ -2055,6 +2103,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       }
     }
   }, [
+    requestCallId,
     url,
     revalidateOnFocus,
     stringDeps,
@@ -2085,10 +2134,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     ) => void = () => {}
   ) {
     if (typeof newValue !== 'function') {
-      if (
-        JSON.stringify(resolvedRequests[resolvedKey]) !==
-        JSON.stringify(newValue)
-      ) {
+      if (JSON.stringify(cache.get(resolvedKey)) !== JSON.stringify(newValue)) {
         onMutate(newValue, imperativeFetcher)
         callback(newValue, imperativeFetcher)
         cache.set(resolvedKey, newValue)
@@ -2103,9 +2149,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       }
     } else {
       let newVal = (newValue as any)(data)
-      if (
-        JSON.stringify(resolvedRequests[resolvedKey]) !== JSON.stringify(newVal)
-      ) {
+      if (JSON.stringify(cache.get(resolvedKey)) !== JSON.stringify(newVal)) {
         onMutate(newVal, imperativeFetcher)
         callback(newVal, imperativeFetcher)
         cache.set(resolvedKey, newVal)
@@ -2125,7 +2169,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   useEffect(() => {
     onPropsChange(reValidate, fetcher)
   }, [
-    // reValidate,
     JSON.stringify({
       optionsConfig,
       ctx
