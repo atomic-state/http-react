@@ -1190,6 +1190,7 @@ interface IRequestParam {
      */
     formatBody?: boolean | ((b: any) => any);
 }
+export declare const isFormData: (target: any) => boolean;
 declare type requestType = <T>(path: string, data: IRequestParam) => Promise<T>;
 interface IHttpClient {
     baseUrl: string;
