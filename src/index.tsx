@@ -178,14 +178,9 @@ function createRequestFn(
         ...headers
       },
       body: method?.match(/(POST|PUT|DELETE|PATCH)/)
-        ? typeof formatBody === 'function'
-          ? formatBody(
-              (typeof FormData !== 'undefined' && body instanceof FormData
-                ? body
-                : body) as any
-            )
-          : formatBody === false ||
-            (typeof FormData !== 'undefined' && body instanceof FormData)
+        ? isFunction(formatBody)
+          ? (formatBody as any)(body)
+          : (formatBody as any) === false || isFormData(body)
           ? body
           : JSON.stringify(body)
         : undefined
@@ -476,40 +471,41 @@ const valuesMemory: any = {}
 export function FetcherConfig(props: FetcherContextType) {
   const { children, defaults = {}, baseUrl } = props
 
-  const previousConfig = useContext(FetcherContext)
+  const previousConfig = useHRFContext()
 
   const { cache = defaultCache } = previousConfig
 
-  let base =
-    typeof baseUrl === 'undefined'
-      ? typeof previousConfig.baseUrl === 'undefined'
-        ? ''
-        : previousConfig.baseUrl
-      : baseUrl
+  let base = !isDefined(baseUrl)
+    ? !isDefined(previousConfig.baseUrl)
+      ? ''
+      : previousConfig.baseUrl
+    : baseUrl
 
   for (let defaultKey in defaults) {
     const { id } = defaults[defaultKey]
-    const resolvedKey = JSON.stringify({
-      uri: typeof id === 'undefined' ? `${base}${defaultKey}` : undefined,
-      idString: typeof id === 'undefined' ? undefined : JSON.stringify(id),
-      config:
-        typeof id === 'undefined'
-          ? {
+    const resolvedKey = JSON.stringify(
+      isDefined(id)
+        ? {
+            idString: JSON.stringify(id)
+          }
+        : {
+            uri: `${base}${defaultKey}`,
+            config: {
               method: defaults[defaultKey]?.config?.method
             }
-          : undefined
-    })
+          }
+    )
 
-    if (typeof id !== 'undefined') {
-      if (typeof valuesMemory[resolvedKey] == 'undefined') {
+    if (isDefined(id)) {
+      if (!isDefined(valuesMemory[resolvedKey])) {
         valuesMemory[resolvedKey] = defaults[defaultKey]?.value
       }
-      if (typeof fetcherDefaults[resolvedKey] === 'undefined') {
+      if (!isDefined(fetcherDefaults[resolvedKey])) {
         fetcherDefaults[resolvedKey] = defaults[defaultKey]?.value
       }
     }
 
-    if (typeof cache.get(resolvedKey) === 'undefined') {
+    if (!isDefined(cache.get(resolvedKey))) {
       cache.set(resolvedKey, defaults[defaultKey]?.value)
     }
   }
@@ -536,7 +532,7 @@ export function FetcherConfig(props: FetcherContextType) {
 export function revalidate(id: any | any[]) {
   if (Array.isArray(id)) {
     id.map(reqId => {
-      if (typeof reqId !== 'undefined') {
+      if (isDefined(reqId)) {
         const key = JSON.stringify(reqId)
 
         const resolveKey = JSON.stringify({ idString: key })
@@ -547,7 +543,7 @@ export function revalidate(id: any | any[]) {
       }
     })
   } else {
-    if (typeof id !== 'undefined') {
+    if (isDefined(id)) {
       const key = JSON.stringify(id)
 
       const resolveKey = JSON.stringify({ idString: key })
@@ -582,7 +578,7 @@ export function mutateData(
       const [k, v, _revalidate] = pair
       const key = JSON.stringify({ idString: JSON.stringify(k) })
       const requestCallId = ''
-      if (typeof v === 'function') {
+      if (isFunction(v)) {
         let newVal = v(cacheForMutation[key])
         requestEmitter.emit(key, {
           data: newVal,
@@ -618,7 +614,7 @@ export function mutateData(
  * Get the current fetcher config
  */
 export function useFetcherConfig(id?: string) {
-  const ftxcf = useContext(FetcherContext)
+  const ftxcf = useHRFContext()
 
   const { config } = useFetcherId(id)
 
@@ -649,7 +645,7 @@ export function useFetcherConfig(id?: string) {
       delete (ftxcf as any)[k]
     }
   }
-  return typeof id !== 'undefined' ? config : ftxcf
+  return isDefined(id) ? config : ftxcf
 }
 
 /**
@@ -659,7 +655,7 @@ export function useFetcherData<T = any>(
   id: any,
   onResolve?: (data: T) => void
 ) {
-  const { cache = defaultCache } = useContext(FetcherContext)
+  const { cache = defaultCache } = useHRFContext()
 
   const defaultsKey = JSON.stringify({
     idString: JSON.stringify(id)
@@ -694,7 +690,7 @@ export function useFetcherLoading(id: any): boolean {
     id: id
   })
 
-  return typeof runningRequests[idString] === 'undefined'
+  return !isDefined(runningRequests[idString])
     ? true
     : runningRequests[idString]
 }
@@ -1051,9 +1047,7 @@ const createImperativeFetcher = (ctx: FetcherContextType) => {
         k.toLowerCase(),
         (url, { config = {}, ...other } = {}) =>
           (fetcher as any)[k.toLowerCase()](
-            url.startsWith('https://') || url.startsWith('http://')
-              ? url
-              : baseUrl + url,
+            hasBaseUrl(url) ? url : baseUrl + url,
             {
               config: {
                 headers: {
@@ -1093,6 +1087,24 @@ export function useImperative() {
   return imperativeFetcher
 }
 
+function isDefined(target: any) {
+  return typeof target !== 'undefined'
+}
+
+function isFunction(target: any) {
+  return typeof target === 'function'
+}
+
+function hasBaseUrl(target: string) {
+  return target.startsWith('http://') || target.startsWith('https://')
+}
+
+function useHRFContext() {
+  return useContext(FetcherContext)
+}
+
+const windowExists = typeof window !== 'undefined'
+
 /**
  * Fetcher hook
  */
@@ -1100,7 +1112,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   init: FetcherConfigType<FetchDataType, BodyType> | string,
   options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>
 ) => {
-  const ctx = useContext(FetcherContext)
+  const ctx = useHRFContext()
 
   const { cache = defaultCache } = {}
 
@@ -1116,8 +1128,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   const {
     onOnline = ctx.onOnline,
     onOffline = ctx.onOffline,
-    onMutate = () => {},
-    onPropsChange = () => {},
+    onMutate,
+    onPropsChange,
     url = '',
     id,
     config = {
@@ -1129,16 +1141,14 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       body: undefined as unknown as Body,
       formatBody: false
     },
-    resolver = typeof ctx.resolver === 'function'
-      ? ctx.resolver
-      : (d: any) => d.json(),
-    onError = () => {},
-    auto = typeof ctx.auto === 'undefined' ? true : ctx.auto,
-    memory = typeof ctx.memory === 'undefined' ? true : ctx.memory,
+    resolver = isFunction(ctx.resolver) ? ctx.resolver : (d: any) => d.json(),
+    onError,
+    auto = isDefined(ctx.auto) ? ctx.auto : true,
+    memory = isDefined(ctx.memory) ? ctx.memory : true,
     onResolve,
-    onAbort = () => {},
-    refresh = typeof ctx.refresh === 'undefined' ? 0 : ctx.refresh,
-    cancelOnChange = false, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
+    onAbort,
+    refresh = isDefined(ctx.refresh) ? ctx.refresh : 0,
+    cancelOnChange = false,
     attempts = ctx.attempts,
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus
@@ -1149,12 +1159,18 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     []
   )
 
-  const willResolve = typeof onResolve !== 'undefined'
+  const willResolve = isDefined(onResolve)
+  const handleError = isDefined(onError)
+  const handlePropsChange = isDefined(onPropsChange)
+  const handleOnAbort = isDefined(onAbort)
+  const handleMutate = isDefined(onMutate)
+  const handleOnline = isDefined(onOnline)
+  const handleOffline = isDefined(onOffline)
 
   const retryOnReconnect =
     optionsConfig.auto === false
       ? false
-      : typeof optionsConfig.retryOnReconnect !== 'undefined'
+      : isDefined(optionsConfig.retryOnReconnect)
       ? optionsConfig.retryOnReconnect
       : ctx.retryOnReconnect
 
@@ -1176,10 +1192,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   })
 
   const rawUrl =
-    (url.startsWith('http://') || url.startsWith('https://')
+    (hasBaseUrl(url)
       ? ''
-      : typeof config.baseUrl === 'undefined'
-      ? typeof ctx.baseUrl === 'undefined'
+      : !isDefined(config.baseUrl)
+      ? !isDefined(ctx.baseUrl)
         ? ''
         : ctx.baseUrl
       : config.baseUrl) + url
@@ -1189,20 +1205,22 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     [JSON.stringify(reqParams), config.baseUrl, ctx.baseUrl, url]
   )
 
-  const resolvedKey = JSON.stringify({
-    uri: typeof id === 'undefined' ? rawUrl : undefined,
-    idString: typeof id === 'undefined' ? undefined : idString,
-    config:
-      typeof id === 'undefined'
-        ? {
+  const resolvedKey = JSON.stringify(
+    isDefined(id)
+      ? {
+          idString
+        }
+      : {
+          uri: rawUrl,
+          config: {
             method: config?.method
           }
-        : undefined
-  })
+        }
+  )
 
   const realUrl = urlWithParams + (urlWithParams.includes('?') ? `` : '?')
 
-  if (typeof previousProps[resolvedKey] === 'undefined') {
+  if (!isDefined(previousProps[resolvedKey])) {
     if (url !== '') {
       previousProps[resolvedKey] = optionsConfig
     }
@@ -1240,14 +1258,14 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   // This helps pass default values to other useFetcher calls using the same id
   useEffect(() => {
-    if (typeof optionsConfig.default !== 'undefined') {
-      if (typeof fetcherDefaults[resolvedKey] === 'undefined') {
+    if (isDefined(optionsConfig.default)) {
+      if (!isDefined(fetcherDefaults[resolvedKey])) {
         if (url !== '') {
-          if (typeof cache.get(resolvedKey) === 'undefined') {
+          if (!isDefined(cache.get(resolvedKey))) {
             fetcherDefaults[resolvedKey] = optionsConfig.default
           }
         } else {
-          if (typeof cache.get(resolvedKey) === 'undefined') {
+          if (!isDefined(cache.get(resolvedKey))) {
             requestEmitter.emit(resolvedKey, {
               requestCallId,
               data: optionsConfig.default
@@ -1256,8 +1274,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         }
       }
     } else {
-      if (typeof fetcherDefaults[resolvedKey] !== 'undefined') {
-        if (typeof cache.get(resolvedKey) === 'undefined') {
+      if (isDefined(fetcherDefaults[resolvedKey])) {
+        if (!isDefined(cache.get(resolvedKey))) {
           setData(fetcherDefaults[resolvedKey])
         }
       }
@@ -1310,12 +1328,11 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   const requestCache = cache.get(resolvedKey)
 
-  const initialDataValue =
-    typeof valuesMemory[resolvedKey] !== 'undefined'
-      ? valuesMemory[resolvedKey]
-      : typeof cache.get(resolvedKey) !== 'undefined'
-      ? cache.get(resolvedKey)
-      : def
+  const initialDataValue = isDefined(valuesMemory[resolvedKey])
+    ? valuesMemory[resolvedKey]
+    : isDefined(cache.get(resolvedKey))
+    ? cache.get(resolvedKey)
+    : def
   const [data, setData] = useState<FetchDataType | undefined>(
     memory ? initialDataValue : def
   )
@@ -1370,10 +1387,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       })
 
       const rawUrl =
-        (url.startsWith('http://') || url.startsWith('https://')
+        (hasBaseUrl(url)
           ? ''
-          : typeof config.baseUrl === 'undefined'
-          ? typeof ctx.baseUrl === 'undefined'
+          : !isDefined(config.baseUrl)
+          ? !isDefined(ctx.baseUrl)
             ? ''
             : ctx.baseUrl
           : config.baseUrl) + url
@@ -1422,8 +1439,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               headers: {
                 'Content-Type':
                   // If body is form-data, set Content-Type header to 'multipart/form-data'
-                  typeof FormData !== 'undefined' &&
-                  config.body instanceof FormData
+                  isFormData(config.body)
                     ? 'multipart/form-data'
                     : 'application/json',
                 ...ctx.headers,
@@ -1431,16 +1447,13 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 ...c.headers
               } as Headers,
               body: config.method?.match(/(POST|PUT|DELETE|PATCH)/)
-                ? typeof config.formatBody === 'function'
-                  ? config.formatBody(
-                      (typeof FormData !== 'undefined' &&
-                      config.body instanceof FormData
+                ? isFunction(config.formatBody)
+                  ? (config.formatBody as any)(
+                      (isFormData(config.body)
                         ? (config.body as BodyType)
                         : { ...config.body, ...c.body }) as BodyType
                     )
-                  : config.formatBody === false ||
-                    (typeof FormData !== 'undefined' &&
-                      config.body instanceof FormData)
+                  : config.formatBody === false || isFormData(config.body)
                   ? config.body
                   : JSON.stringify({ ...config.body, ...c.body })
                 : undefined
@@ -1455,7 +1468,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               requestCallId,
               code
             })
-            const _data = await resolver(json)
+            const _data = await (resolver as any)(json)
             if (code >= 200 && code < 400) {
               if (memory) {
                 cache.set(resolvedKey, _data)
@@ -1475,7 +1488,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               setError(null)
               setLoading(false)
               if (willResolve) {
-                onResolve(_data, json)
+                ;(onResolve as any)(_data, json)
               }
               runningRequests[resolvedKey] = false
               // If a request completes succesfuly, we reset the error attempts to 0
@@ -1493,7 +1506,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 })
               }
               setError(true)
-              onError(_data, json)
+              if (handleError) {
+                ;(onError as any)(_data, json)
+              }
               runningRequests[resolvedKey] = false
             }
           } catch (err) {
@@ -1505,7 +1520,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 requestCallId,
                 error: _error
               })
-              if (typeof requestCache === 'undefined') {
+              if (!isDefined(cache.get(resolvedKey))) {
                 setData(def)
                 cacheForMutation[idString] = def
                 requestEmitter.emit(resolvedKey, {
@@ -1521,10 +1536,12 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 })
               }
               setError(_error)
-              onError(err as any)
+              if (handleError) {
+                ;(onError as any)(err as any)
+              }
             } else {
-              if (typeof requestCache === 'undefined') {
-                if (typeof def !== 'undefined') {
+              if (!isDefined(cache.get(resolvedKey))) {
+                if (isDefined(def)) {
                   setData(def)
                   cacheForMutation[idString] = def
                 }
@@ -1565,7 +1582,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     const abortCallback = () => {
       if (loading) {
         if (runningRequests[resolvedKey]) {
-          onAbort()
+          if (handleOnAbort) {
+            ;(onAbort as any)()
+          }
         }
       }
     }
@@ -1586,8 +1605,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       ...config.params
     }
 
-    const __baseUrl =
-      typeof config.baseUrl !== 'undefined' ? config.baseUrl : ctx.baseUrl
+    const __baseUrl = isDefined(config.baseUrl) ? config.baseUrl : ctx.baseUrl
     return createImperativeFetcher({
       ...ctx,
       headers: __headers,
@@ -1598,8 +1616,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   if (willResolve) {
     if (resolvedHookCalls[resolvedKey]) {
-      if (typeof cache.get(resolvedKey) !== 'undefined') {
-        onResolve(cache.get(resolvedKey) as any, response)
+      if (isDefined(cache.get(resolvedKey))) {
+        ;(onResolve as any)(cache.get(resolvedKey) as any, response)
         queue(() => {
           delete resolvedHookCalls[resolvedKey]
         })
@@ -1627,20 +1645,20 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           completedAttempts
         } = v
 
-        if (typeof isResolved !== 'undefined') {
+        if (isDefined(isResolved)) {
           resolvedHookCalls[resolvedKey] = true
         }
-        if (typeof method !== 'undefined') {
+        if (isDefined(method)) {
           queue(() => {
             setReqMethod(method)
           })
         }
-        if (typeof config?.query !== 'undefined') {
+        if (isDefined(config?.query)) {
           queue(() => {
             setReqQuery(config.query)
           })
         }
-        if (typeof rawUrl !== 'undefined' && typeof realUrl !== 'undefined') {
+        if (isDefined(rawUrl) && isDefined(realUrl)) {
           queue(() => {
             setConfigUrl({
               rawUrl,
@@ -1648,42 +1666,42 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             })
           })
         }
-        if (typeof config?.params !== 'undefined') {
+        if (isDefined(config?.params)) {
           queue(() => {
             setReqParams(config?.params)
           })
         }
-        if (typeof config?.headers !== 'undefined') {
+        if (isDefined(config?.headers)) {
           queue(() => {
             setRequestHeades(config?.headers)
           })
         }
-        if (typeof completedAttempts !== 'undefined') {
+        if (isDefined(completedAttempts)) {
           queue(() => {
             setCompletedAttempts(completedAttempts)
           })
         }
-        if (typeof code !== 'undefined') {
+        if (isDefined(code)) {
           queue(() => {
             setStatusCode(code)
           })
         }
-        if (typeof requestAbortController !== 'undefined') {
+        if (isDefined(requestAbortController)) {
           queue(() => {
             setRequestAbortController(requestAbortController)
           })
         }
-        if (typeof response !== 'undefined') {
+        if (isDefined(response)) {
           queue(() => {
             setResponse(response)
           })
         }
-        if (typeof loading !== 'undefined') {
+        if (isDefined(loading)) {
           queue(() => {
             setLoading(loading)
           })
         }
-        if (typeof $data !== 'undefined') {
+        if (isDefined($data)) {
           queue(() => {
             if (
               JSON.stringify(data) !== JSON.stringify(cache.get(resolvedKey))
@@ -1696,20 +1714,24 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             ) {
               cacheForMutation[idString] = data
               if (isMutating) {
-                onMutate($data, imperativeFetcher)
+                if (handleMutate) {
+                  ;(onMutate as any)($data, imperativeFetcher)
+                }
               }
             }
           })
         }
-        if (typeof $error !== 'undefined') {
+        if (isDefined($error)) {
           queue(() => {
             setError($error)
             if ($error !== null) {
-              onError($error)
+              if (handleError) {
+                ;(onError as any)($error)
+              }
             }
           })
         }
-        if (typeof online !== 'undefined') {
+        if (isDefined(online)) {
           queue(() => {
             setOnline(online)
           })
@@ -1778,10 +1800,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     async function forceRefresh(v: any) {
-      if (typeof v?.data !== 'undefined') {
+      if (isDefined(v?.data)) {
         try {
           const { data: d } = v
-          if (typeof data !== 'undefined') {
+          if (isDefined(data)) {
             setData(d)
             cacheForMutation[idString] = d
             cache.set(resolvedKey, d)
@@ -1836,14 +1858,16 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         online: true
       })
       setOnline(true)
-      ;(onOnline as any)({ cancel: cancelReconectionAttempt })
+      if (handleOnline) {
+        ;(onOnline as any)({ cancel: cancelReconectionAttempt })
+      }
       if (!willCancel) {
         reValidate()
       }
     }
 
     function addOnlineListener() {
-      if (typeof window !== 'undefined') {
+      if (windowExists) {
         if ('addEventListener' in window) {
           if (retryOnReconnect) {
             window.addEventListener('online', backOnline)
@@ -1855,7 +1879,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     addOnlineListener()
 
     return () => {
-      if (typeof window !== 'undefined') {
+      if (windowExists) {
         if ('addEventListener' in window) {
           window.removeEventListener('online', backOnline)
         }
@@ -1871,11 +1895,13 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         requestCallId,
         online: false
       })
-      ;(onOffline as any)()
+      if (handleOffline) {
+        ;(onOffline as any)()
+      }
     }
 
     function addOfflineListener() {
-      if (typeof window !== 'undefined') {
+      if (windowExists) {
         if ('addEventListener' in window) {
           window.addEventListener('offline', wentOffline)
         }
@@ -1885,7 +1911,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     addOfflineListener()
 
     return () => {
-      if (typeof window !== 'undefined') {
+      if (windowExists) {
         if ('addEventListener' in window) {
           window.removeEventListener('offline', wentOffline)
         }
@@ -1907,7 +1933,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     // Attempts will be made after a request fails
-    const tm = setTimeout(() => {
+    const tm = queue(() => {
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
@@ -1928,7 +1954,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           })
           setOnline(false)
         }
-        clearTimeout(tm)
       }
     }, (attemptInterval as number) * 1000)
 
@@ -1939,9 +1964,12 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     if (completedAttempts === 0) {
-      if (refresh > 0 && auto) {
-        const tm = setTimeout(reValidate, refresh * 1000)
-        return () => clearTimeout(tm)
+      if ((refresh as any) > 0 && auto) {
+        const tm = queue(reValidate, (refresh as any) * 1000)
+
+        return () => {
+          clearTimeout(tm)
+        }
       }
     }
     return () => {}
@@ -1977,7 +2005,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         setLoading(false)
       }
     } else {
-      if (typeof data === 'undefined') {
+      if (!isDefined(data)) {
         setData(def)
         cacheForMutation[idString] = def
       }
@@ -1998,16 +2026,17 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     function addFocusListener() {
-      if (revalidateOnFocus && typeof window !== 'undefined') {
+      if (revalidateOnFocus && windowExists) {
         if ('addEventListener' in window) {
           window.addEventListener('focus', reValidate as any)
         }
       }
     }
+
     addFocusListener()
 
     return () => {
-      if (typeof window !== 'undefined') {
+      if (windowExists) {
         if ('addEventListener' in window) {
           window.removeEventListener('focus', reValidate as any)
         }
@@ -2044,10 +2073,12 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       fetcher: ImperativeFetcher
     ) => void = () => {}
   ) {
-    if (typeof newValue !== 'function') {
+    if (!isFunction(newValue)) {
       if (JSON.stringify(cache.get(resolvedKey)) !== JSON.stringify(newValue)) {
-        onMutate(newValue, imperativeFetcher)
-        callback(newValue, imperativeFetcher)
+        if (handleMutate) {
+          ;(onMutate as any)(newValue, imperativeFetcher)
+        }
+        callback(newValue as any, imperativeFetcher)
         cache.set(resolvedKey, newValue)
         valuesMemory[resolvedKey] = newValue
         cacheForMutation[idString] = newValue
@@ -2056,12 +2087,14 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           isMutating: true,
           data: newValue
         })
-        setData(newValue)
+        setData(newValue as any)
       }
     } else {
       let newVal = (newValue as any)(data)
       if (JSON.stringify(cache.get(resolvedKey)) !== JSON.stringify(newVal)) {
-        onMutate(newVal, imperativeFetcher)
+        if (handleMutate) {
+          ;(onMutate as any)(newVal, imperativeFetcher)
+        }
         callback(newVal, imperativeFetcher)
         cache.set(resolvedKey, newVal)
         valuesMemory[resolvedKey] = newVal
@@ -2098,7 +2131,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       JSON.stringify(previousProps[resolvedKey]) !==
       JSON.stringify(optionsConfig)
     ) {
-      onPropsChange(rev as any)
+      if (handlePropsChange) {
+        ;(onPropsChange as any)(rev as any)
+      }
       if (url !== '') {
         previousProps[resolvedKey] = optionsConfig
       }
@@ -2204,7 +2239,7 @@ useFetcher.extend = function extendFetcher(props: FetcherContextType = {}) {
     init: FetcherConfigType<T, BodyType> | string,
     options?: FetcherConfigTypeNoUrl<T, BodyType>
   ) {
-    const ctx = useContext(FetcherContext)
+    const ctx = useHRFContext()
 
     const {
       url = '',
@@ -2226,12 +2261,11 @@ useFetcher.extend = function extendFetcher(props: FetcherContextType = {}) {
       resolver:
         resolver || otherProps.resolver || ctx.resolver || (d => d.json()),
       config: {
-        baseUrl:
-          typeof config.baseUrl === 'undefined'
-            ? typeof ctx.baseUrl === 'undefined'
-              ? baseUrl
-              : ctx.baseUrl
-            : config.baseUrl,
+        baseUrl: !isDefined(config.baseUrl)
+          ? !isDefined(ctx.baseUrl)
+            ? baseUrl
+            : ctx.baseUrl
+          : config.baseUrl,
         method: config.method,
         headers: {
           ...headers,
@@ -2279,6 +2313,12 @@ interface IRequestParam {
    * (the last one is the default behaviour so in that case you can ignore it)
    */
   formatBody?: boolean | ((b: any) => any)
+}
+
+export const isFormData = (target: any) => {
+  if (typeof FormData !== 'undefined') {
+    return target instanceof FormData
+  } else return false
 }
 
 type requestType = <T>(path: string, data: IRequestParam) => Promise<T>
