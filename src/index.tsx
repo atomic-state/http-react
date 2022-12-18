@@ -1114,7 +1114,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 ) => {
   const ctx = useHRFContext()
 
-  const { cache = defaultCache } = {}
+  const { cache = defaultCache } = ctx
 
   const optionsConfig =
     typeof init === 'string'
@@ -1333,6 +1333,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     : isDefined(cache.get(resolvedKey))
     ? cache.get(resolvedKey)
     : def
+
   const [data, setData] = useState<FetchDataType | undefined>(
     memory ? initialDataValue : def
   )

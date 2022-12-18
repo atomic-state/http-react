@@ -679,7 +679,7 @@ var windowExists = typeof window !== 'undefined';
  */
 var useFetcher = function (init, options) {
     var ctx = useHRFContext();
-    var _a = {}.cache, cache = _a === void 0 ? defaultCache : _a;
+    var _a = ctx.cache, cache = _a === void 0 ? defaultCache : _a;
     var optionsConfig = typeof init === 'string'
         ? __assign({ 
             // Pass init as the url if init is a string
