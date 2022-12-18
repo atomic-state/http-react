@@ -452,6 +452,8 @@ type FetcherConfigTypeNoUrl<FetchDataType = any, BodyType = any> = Omit<
 
 const resolvedRequests: any = {}
 
+const resolvedHookCalls: any = {}
+
 const abortControllers: any = {}
 
 /**
@@ -1133,7 +1135,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     onError = () => {},
     auto = typeof ctx.auto === 'undefined' ? true : ctx.auto,
     memory = typeof ctx.memory === 'undefined' ? true : ctx.memory,
-    onResolve = () => {},
+    onResolve,
     onAbort = () => {},
     refresh = typeof ctx.refresh === 'undefined' ? 0 : ctx.refresh,
     cancelOnChange = false, //typeof ctx.refresh === "undefined" ? false : ctx.refresh,
@@ -1146,6 +1148,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     () => `${Math.random()}`.split('.')[1],
     []
   )
+
+  const willResolve = typeof onResolve !== 'undefined'
 
   const retryOnReconnect =
     optionsConfig.auto === false
@@ -1185,8 +1189,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     [JSON.stringify(reqParams), config.baseUrl, ctx.baseUrl, url]
   )
 
-  const realUrl = urlWithParams + (urlWithParams.includes('?') ? `&` : '?')
-
   const resolvedKey = JSON.stringify({
     uri: typeof id === 'undefined' ? rawUrl : undefined,
     idString: typeof id === 'undefined' ? undefined : idString,
@@ -1197,6 +1199,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           }
         : undefined
   })
+
+  const realUrl = urlWithParams + (urlWithParams.includes('?') ? `` : '?')
 
   if (typeof previousProps[resolvedKey] === 'undefined') {
     if (url !== '') {
@@ -1346,6 +1350,17 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     }
   }, [stringDeps, response, requestAbortController, requestCallId])
 
+  useEffect(() => {
+    if (url !== '') {
+      if (error) {
+        requestEmitter.emit(resolvedKey, {
+          requestCallId,
+          error: error
+        })
+      }
+    }
+  }, [url, error, resolvedKey, requestCallId])
+
   const fetchData = React.useCallback(
     async function fetchData(
       c: { headers?: any; body?: BodyType; query?: any; params?: any } = {}
@@ -1365,7 +1380,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
       const urlWithParams = setURLParams(rawUrl, c.params)
 
-      const realUrl = urlWithParams + (urlWithParams.includes('?') ? `&` : '?')
+      const realUrl =
+        urlWithParams +
+        (urlWithParams.includes('?') ? (c?.query !== '' ? `&` : '') : '?')
 
       const [resKey] = realUrl.split('?')
 
@@ -1444,16 +1461,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 cache.set(resolvedKey, _data)
                 valuesMemory[resolvedKey] = _data
               }
-              setData(_data)
-              cacheForMutation[idString] = _data
-              setError(null)
-              setLoading(false)
-              onResolve(_data, json)
 
-              runningRequests[resolvedKey] = false
-
-              // If a request completes succesfuly, we reset the error attempts to 0
-              setCompletedAttempts(0)
               requestEmitter.emit(resolvedKey, {
                 requestCallId,
                 data: _data,
@@ -1462,6 +1470,16 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 error: null,
                 completedAttempts: 0
               })
+              setData(_data)
+              cacheForMutation[idString] = _data
+              setError(null)
+              setLoading(false)
+              if (willResolve) {
+                onResolve(_data, json)
+              }
+              runningRequests[resolvedKey] = false
+              // If a request completes succesfuly, we reset the error attempts to 0
+              setCompletedAttempts(0)
               queue(() => {
                 cacheForMutation[resolvedKey] = _data
               })
@@ -1475,10 +1493,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 })
               }
               setError(true)
-              requestEmitter.emit(resolvedKey, {
-                requestCallId,
-                error: true
-              })
               onError(_data, json)
               runningRequests[resolvedKey] = false
             }
@@ -1486,6 +1500,11 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             const errorString = err?.toString()
             // Only set error if no abort
             if (!`${errorString}`.match(/abort/i)) {
+              let _error = new Error(err as any)
+              requestEmitter.emit(resolvedKey, {
+                requestCallId,
+                error: _error
+              })
               if (typeof requestCache === 'undefined') {
                 setData(def)
                 cacheForMutation[idString] = def
@@ -1501,12 +1520,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                   data: requestCache
                 })
               }
-              let _error = new Error(err as any)
               setError(_error)
-              requestEmitter.emit(resolvedKey, {
-                requestCallId,
-                error: _error
-              })
               onError(err as any)
             } else {
               if (typeof requestCache === 'undefined') {
@@ -1582,14 +1596,25 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     })
   }, [JSON.stringify(ctx)])
 
+  if (willResolve) {
+    if (resolvedHookCalls[resolvedKey]) {
+      if (typeof cache.get(resolvedKey) !== 'undefined') {
+        onResolve(cache.get(resolvedKey) as any, response)
+        queue(() => {
+          delete resolvedHookCalls[resolvedKey]
+        })
+      }
+    }
+  }
+
   useEffect(() => {
     async function waitFormUpdates(v: any) {
       if (v.requestCallId !== requestCallId) {
         const {
           isMutating,
-          isResolved,
           data: $data,
-          error,
+          error: $error,
+          isResolved,
           online,
           loading,
           response,
@@ -1602,6 +1627,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           completedAttempts
         } = v
 
+        if (typeof isResolved !== 'undefined') {
+          resolvedHookCalls[resolvedKey] = true
+        }
         if (typeof method !== 'undefined') {
           queue(() => {
             setReqMethod(method)
@@ -1657,9 +1685,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         }
         if (typeof $data !== 'undefined') {
           queue(() => {
-            if (isResolved) {
-              onResolve($data)
-            }
             if (
               JSON.stringify(data) !== JSON.stringify(cache.get(resolvedKey))
             ) {
@@ -1674,14 +1699,13 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 onMutate($data, imperativeFetcher)
               }
             }
-            setError(null)
           })
         }
-        if (typeof error !== 'undefined') {
+        if (typeof $error !== 'undefined') {
           queue(() => {
-            setError(error)
-            if (error !== null && error !== false) {
-              onError(error)
+            setError($error)
+            if ($error !== null) {
+              onError($error)
             }
           })
         }
@@ -1704,8 +1728,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     imperativeFetcher,
     reqMethod,
     id,
+    error,
     requestCallId,
-    stringDeps
+    stringDeps,
+    onResolve
   ])
 
   const reValidate = React.useCallback(
@@ -2072,13 +2098,13 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       JSON.stringify(previousProps[resolvedKey]) !==
       JSON.stringify(optionsConfig)
     ) {
-      if (cancelOnChange) {
-        if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
+      onPropsChange(rev as any)
+      if (url !== '') {
+        previousProps[resolvedKey] = optionsConfig
+      }
+      if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
+        if (cancelOnChange) {
           requestAbortController?.abort()
-        }
-        onPropsChange(rev as any)
-        if (url !== '') {
-          previousProps[resolvedKey] = optionsConfig
         }
       }
     }
