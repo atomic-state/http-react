@@ -723,11 +723,7 @@
           Object.assign(
             {
               url: graphqlPath,
-              id: query,
-              async resolver(gqlResponse) {
-                const gqlr = await gqlResponse.json()
-                return gqlr.data
-              }
+              id: query
             },
             otherArgs
           ),

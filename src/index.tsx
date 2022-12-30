@@ -1001,10 +1001,6 @@ function useGql(...args: any) {
     return usePOST<T>({
       url: graphqlPath,
       id: query,
-      async resolver(gqlResponse) {
-        const gqlr: any = await gqlResponse.json()
-        return gqlr.data as T
-      },
       ...otherArgs,
       config: {
         ...config,

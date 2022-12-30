@@ -636,19 +636,7 @@ function useGql() {
         var variables = _a.variables, _b = _a.graphqlPath, graphqlPath = _b === void 0 ? '/graphql' : _b, otherArgs = __rest(_a, ["variables", "graphqlPath"]);
         var query = args[0][0];
         var config = otherArgs.config;
-        return usePOST(__assign(__assign({ url: graphqlPath, id: query, resolver: function (gqlResponse) {
-                return __awaiter(this, void 0, void 0, function () {
-                    var gqlr;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0: return [4 /*yield*/, gqlResponse.json()];
-                            case 1:
-                                gqlr = _a.sent();
-                                return [2 /*return*/, gqlr.data];
-                        }
-                    });
-                });
-            } }, otherArgs), { config: __assign(__assign({}, config), { formatBody: function () {
+        return usePOST(__assign(__assign({ url: graphqlPath, id: query }, otherArgs), { config: __assign(__assign({}, config), { formatBody: function () {
                     return JSON.stringify({
                         query: query,
                         variables: variables
