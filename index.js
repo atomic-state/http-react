@@ -65,7 +65,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.isFormData = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useUNLINK = exports.useLINK = exports.usePURGE = exports.usePATCH = exports.usePUT = exports.usePOST = exports.useOPTIONS = exports.useHEAD = exports.useDELETE = exports.useGET = exports.useText = exports.useBlob = exports.useFetchId = exports.useMutate = exports.useError = exports.useCode = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useFetcherText = exports.useFetcherBlob = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherCode = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = exports.setURLParams = void 0;
+exports.createHttpClient = exports.isFormData = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useUNLINK = exports.useLINK = exports.usePURGE = exports.usePATCH = exports.usePUT = exports.usePOST = exports.useOPTIONS = exports.useHEAD = exports.useDELETE = exports.useGET = exports.useText = exports.useBlob = exports.useFetchId = exports.useMutate = exports.useError = exports.useCode = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.gql = exports.useFetcherText = exports.useFetcherBlob = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherCode = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = exports.setURLParams = void 0;
 var React = require("react");
 var react_1 = require("react");
 var events_1 = require("events");
@@ -623,6 +623,40 @@ function useFetcherText(init, options) {
 }
 exports.useFetcherText = useFetcherText;
 exports.useText = useFetcherText;
+/**
+ * Make a graphQL request
+ */
+function useGql() {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        args[_i] = arguments[_i];
+    }
+    return function (_a) {
+        if (_a === void 0) { _a = { variables: {}, graphqlPath: '/graphql' }; }
+        var variables = _a.variables, _b = _a.graphqlPath, graphqlPath = _b === void 0 ? '/graphql' : _b, otherArgs = __rest(_a, ["variables", "graphqlPath"]);
+        var query = args[0][0];
+        var config = otherArgs.config;
+        return usePOST(__assign(__assign({ url: graphqlPath, id: query, resolver: function (gqlResponse) {
+                return __awaiter(this, void 0, void 0, function () {
+                    var gqlr;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0: return [4 /*yield*/, gqlResponse.json()];
+                            case 1:
+                                gqlr = _a.sent();
+                                return [2 /*return*/, gqlr.data];
+                        }
+                    });
+                });
+            } }, otherArgs), { config: __assign(__assign({}, config), { formatBody: function () {
+                    return JSON.stringify({
+                        query: query,
+                        variables: variables
+                    });
+                } }) }));
+    };
+}
+exports.gql = useGql;
 var createImperativeFetcher = function (ctx) {
     var keys = [
         'GET',
