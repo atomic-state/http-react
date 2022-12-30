@@ -974,9 +974,48 @@ export function useFetcherText<FetchDataType = string, BodyType = any>(
   })
 }
 
-// "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK"
+/**
+ * Make a graphQL request
+ */
+function useGql(...args: any) {
+  return <T = any, VT = { [k: string]: any }>(
+    {
+      variables,
+      graphqlPath = '/graphql',
+      ...otherArgs
+    }: Omit<FetcherInit<T>, 'url'> & {
+      /**
+       * GraphQL variables
+       */
+      variables?: VT
+      /**
+       * Override the GraphQL path
+       *
+       * (default is `'/graphql'`)
+       */
+      graphqlPath?: string
+    } = { variables: {} as VT, graphqlPath: '/graphql' }
+  ) => {
+    const [[query]] = args
+    const { config } = otherArgs
+    return usePOST<T>({
+      url: graphqlPath,
+      id: query,
+      ...otherArgs,
+      config: {
+        ...config,
+        formatBody: () =>
+          JSON.stringify({
+            query,
+            variables
+          })
+      }
+    })
+  }
+}
 
 export {
+  useGql as gql,
   useFetcher as useFetch,
   useFetcherLoading as useLoading,
   useFetcherConfig as useConfig,

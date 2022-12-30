@@ -708,6 +708,39 @@
     )
   }
   // "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK"
+
+  /**
+   * Make a graphQL request
+   */
+  function useGql(...args) {
+    return (_a = { variables: {}, graphqlPath: '/graphql' }) => {
+      var { variables, graphqlPath = '/graphql' } = _a,
+        otherArgs = __rest(_a, ['variables', 'graphqlPath'])
+      const [[query]] = args
+      const { config } = otherArgs
+      return usePOST(
+        Object.assign(
+          Object.assign(
+            {
+              url: graphqlPath,
+              id: query
+            },
+            otherArgs
+          ),
+          {
+            config: Object.assign(Object.assign({}, config), {
+              formatBody: () =>
+                JSON.stringify({
+                  query,
+                  variables
+                })
+            })
+          }
+        )
+      )
+    }
+  }
+
   const createImperativeFetcher = ctx => {
     const keys = [
       'GET',
@@ -1975,6 +2008,7 @@
     return new HttpClient(url)
   }
 
+  window.gql = useGql
   window.FetcherConfig = FetcherConfig
   window.fetcher = fetcher
   window.isFormData = isFormData
