@@ -718,6 +718,12 @@
         otherArgs = __rest(_a, ['variables', 'graphqlPath'])
       const [[query]] = args
       const { config } = otherArgs
+
+      const JSONBody = JSON.stringify({
+        query,
+        variables
+      })
+
       return usePOST(
         Object.assign(
           Object.assign(
@@ -729,11 +735,8 @@
           ),
           {
             config: Object.assign(Object.assign({}, config), {
-              formatBody: () =>
-                JSON.stringify({
-                  query,
-                  variables
-                })
+              formatBody: () => JSONBody,
+              body: JSONBody
             })
           }
         )
