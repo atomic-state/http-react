@@ -713,10 +713,21 @@
    * Make a graphQL request
    */
   function useGql(...args) {
-    return (_a = { variables: {}, graphqlPath: '/graphql' }) => {
+    const isUsingExternalQuery = typeof args[0].query === 'string'
+
+    let query = ''
+
+    if (isUsingExternalQuery) {
+      query = args[0].query
+    } else {
+      query = args[0][0]
+    }
+
+    const returnFunction = (
+      _a = { variables: {}, graphqlPath: '/graphql' }
+    ) => {
       var { variables, graphqlPath = '/graphql' } = _a,
         otherArgs = __rest(_a, ['variables', 'graphqlPath'])
-      const [[query]] = args
       const { config } = otherArgs
 
       const JSONBody = JSON.stringify({
@@ -743,6 +754,12 @@
         )
       )
     }
+
+    if (!isUsingExternalQuery) {
+      returnFunction.query = query
+    }
+
+    return returnFunction
   }
 
   const createImperativeFetcher = ctx => {
@@ -2011,7 +2028,7 @@
   function createHttpClient(url) {
     return new HttpClient(url)
   }
-
+  window.useGql = useGql
   window.gql = useGql
   window.FetcherConfig = FetcherConfig
   window.fetcher = fetcher

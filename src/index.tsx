@@ -977,8 +977,18 @@ export function useFetcherText<FetchDataType = string, BodyType = any>(
 /**
  * Make a graphQL request
  */
-function useGql(...args: any) {
-  return <T = any, VT = { [k: string]: any }>(
+export function useGql(...args: any) {
+  const isUsingExternalQuery = typeof args[0].query === 'string'
+
+  let query: string = ''
+
+  if (isUsingExternalQuery) {
+    query = args[0].query
+  } else {
+    query = args[0][0]
+  }
+
+  const returnFunction = <T = any, VT = { [k: string]: any }>(
     {
       variables,
       graphqlPath = '/graphql',
@@ -996,7 +1006,6 @@ function useGql(...args: any) {
       graphqlPath?: string
     } = { variables: {} as VT, graphqlPath: '/graphql' }
   ) => {
-    const [[query]] = args
     const { config } = otherArgs
 
     const JSONBody = JSON.stringify({
@@ -1016,6 +1025,12 @@ function useGql(...args: any) {
       }
     })
   }
+
+  if (!isUsingExternalQuery) {
+    returnFunction.query = query
+  }
+
+  return returnFunction
 }
 
 export {

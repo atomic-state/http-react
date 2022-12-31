@@ -912,60 +912,63 @@ export declare function useFetcherText<FetchDataType = string, BodyType = any>(i
 /**
  * Make a graphQL request
  */
-declare function useGql(...args: any): <T = any, VT = {
-    [k: string]: any;
-}>({ variables, graphqlPath, ...otherArgs }?: Omit<FetcherInit<T, any>, "url"> & {
-    /**
-     * GraphQL variables
-     */
-    variables?: VT | undefined;
-    /**
-     * Override the GraphQL path
-     *
-     * (default is `'/graphql'`)
-     */
-    graphqlPath?: string | undefined;
-}) => {
-    data: T;
-    loading: boolean;
-    error: Error | null;
-    online: boolean;
-    code: number;
-    reFetch: () => Promise<void>;
-    mutate: (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
-    fetcher: ImperativeFetcher;
-    abort: () => void;
-    config: {
+export declare function useGql(...args: any): {
+    <T = any, VT = {
+        [k: string]: any;
+    }>({ variables, graphqlPath, ...otherArgs }?: Omit<FetcherInit<T, any>, "url"> & {
         /**
-         * Override base url
+         * GraphQL variables
          */
-        baseUrl?: string | undefined;
+        variables?: VT | undefined;
         /**
-         * Request method
+         * Override the GraphQL path
+         *
+         * (default is `'/graphql'`)
          */
-        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
-        headers?: object | Headers | undefined;
-        query?: any;
-        /**
-         * URL params
-         */
-        params?: any;
-        body?: any;
-        /**
-         * Customize how body is formated for the request. By default it will be sent in JSON format
-         * but you can set it to false if for example, you are sending a `FormData`
-         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
-         * (the last one is the default behaviour so in that case you can ignore it)
-         */
-        formatBody?: boolean | ((b: any) => any) | undefined;
-    } & {
-        baseUrl: string;
-        url: string;
-        rawUrl: string;
+        graphqlPath?: string | undefined;
+    }): {
+        data: T;
+        loading: boolean;
+        error: Error | null;
+        online: boolean;
+        code: number;
+        reFetch: () => Promise<void>;
+        mutate: (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
+        fetcher: ImperativeFetcher;
+        abort: () => void;
+        config: {
+            /**
+             * Override base url
+             */
+            baseUrl?: string | undefined;
+            /**
+             * Request method
+             */
+            method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+            headers?: object | Headers | undefined;
+            query?: any;
+            /**
+             * URL params
+             */
+            params?: any;
+            body?: any;
+            /**
+             * Customize how body is formated for the request. By default it will be sent in JSON format
+             * but you can set it to false if for example, you are sending a `FormData`
+             * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+             * (the last one is the default behaviour so in that case you can ignore it)
+             */
+            formatBody?: boolean | ((b: any) => any) | undefined;
+        } & {
+            baseUrl: string;
+            url: string;
+            rawUrl: string;
+        };
+        response: CustomResponse<T>;
+        id: any;
+        key: string;
     };
-    response: CustomResponse<T>;
-    id: any;
-    key: string;
+    query: string;
 };
 export { useGql as gql, useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherCode as useCode, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, useFetcherBlob as useBlob, useFetcherText as useText, useGET, useDELETE, useHEAD, useOPTIONS, usePOST, usePUT, usePATCH, usePURGE, useLINK, useUNLINK };
 /**
