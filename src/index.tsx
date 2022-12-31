@@ -977,7 +977,7 @@ export function useFetcherText<FetchDataType = string, BodyType = any>(
 /**
  * Make a graphQL request
  */
-export function useGql(...args: any) {
+export function useGql<T = any, VT = { [k: string]: any }>(...args: any) {
   const isUsingExternalQuery = typeof args[0].query === 'string'
 
   let query: string = ''
@@ -988,23 +988,23 @@ export function useGql(...args: any) {
     query = args[0][0]
   }
 
-  const returnFunction = <T = any, VT = { [k: string]: any }>(
+  const returnFunction = <$T = T, $VT = VT>(
     {
       variables,
       graphqlPath = '/graphql',
       ...otherArgs
-    }: Omit<FetcherInit<T>, 'url'> & {
+    }: Omit<FetcherInit<$T>, 'url'> & {
       /**
        * GraphQL variables
        */
-      variables?: VT
+      variables?: $VT
       /**
        * Override the GraphQL path
        *
        * (default is `'/graphql'`)
        */
       graphqlPath?: string
-    } = { variables: {} as VT, graphqlPath: '/graphql' }
+    } = { variables: {} as $VT, graphqlPath: '/graphql' }
   ) => {
     const { config } = otherArgs
 
@@ -1013,7 +1013,7 @@ export function useGql(...args: any) {
       variables
     })
 
-    return useFetcher<T>({
+    return useFetcher<$T>({
       url: graphqlPath,
       id: query,
       ...otherArgs,

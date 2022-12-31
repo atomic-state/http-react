@@ -912,14 +912,14 @@ export declare function useFetcherText<FetchDataType = string, BodyType = any>(i
 /**
  * Make a graphQL request
  */
-export declare function useGql(...args: any): {
-    <T = any, VT = {
-        [k: string]: any;
-    }>({ variables, graphqlPath, ...otherArgs }?: Omit<FetcherInit<T, any>, "url"> & {
+export declare function useGql<T = any, VT = {
+    [k: string]: any;
+}>(...args: any): {
+    <$T = T, $VT = VT>({ variables, graphqlPath, ...otherArgs }?: Omit<FetcherInit<$T, any>, "url"> & {
         /**
          * GraphQL variables
          */
-        variables?: VT | undefined;
+        variables?: $VT | undefined;
         /**
          * Override the GraphQL path
          *
@@ -927,13 +927,13 @@ export declare function useGql(...args: any): {
          */
         graphqlPath?: string | undefined;
     }): {
-        data: T;
+        data: $T;
         loading: boolean;
         error: Error | null;
         online: boolean;
         code: number;
         reFetch: () => Promise<void>;
-        mutate: (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
+        mutate: (update: $T | ((prev: $T) => $T), callback?: ((data: $T, fetcher: ImperativeFetcher) => void) | undefined) => $T;
         fetcher: ImperativeFetcher;
         abort: () => void;
         config: {
@@ -964,7 +964,7 @@ export declare function useGql(...args: any): {
             url: string;
             rawUrl: string;
         };
-        response: CustomResponse<T>;
+        response: CustomResponse<$T>;
         id: any;
         key: string;
     };
