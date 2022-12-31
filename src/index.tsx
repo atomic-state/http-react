@@ -974,29 +974,57 @@ export function useFetcherText<FetchDataType = string, BodyType = any>(
   })
 }
 
+export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
+  let query = (args as any)[0][0]
+
+  const returnObj = {
+    query: query as T,
+    vars: {} as VT
+  }
+
+  return returnObj
+}
+
 /**
  * Make a graphQL request
  */
-function useGql(...args: any) {
-  return <T = any, VT = { [k: string]: any }>(
+export function useGql<T = any, VT = { [k: string]: any }>(
+  ...args: {
+    query: T
+    vars: VT
+  }[]
+) {
+  const isUsingExternalQuery = typeof args[0].query === 'string'
+
+  let query: T
+
+  if (isUsingExternalQuery) {
+    query = args[0].query
+  } else {
+    query = (args as any)[0][0]
+  }
+
+  const returnFunction = <
+    $T = T | typeof args[0]['query'],
+    $VT = VT | typeof args[0]['vars']
+  >(
     {
       variables,
       graphqlPath = '/graphql',
       ...otherArgs
-    }: Omit<FetcherInit<T>, 'url'> & {
+    }: Omit<FetcherInit<$T>, 'url'> & {
       /**
        * GraphQL variables
        */
-      variables?: VT
+      variables?: $VT
       /**
        * Override the GraphQL path
        *
        * (default is `'/graphql'`)
        */
       graphqlPath?: string
-    } = { variables: {} as VT, graphqlPath: '/graphql' }
+    } = { variables: {} as $VT, graphqlPath: '/graphql' }
   ) => {
-    const [[query]] = args
     const { config } = otherArgs
 
     const JSONBody = JSON.stringify({
@@ -1004,7 +1032,7 @@ function useGql(...args: any) {
       variables
     })
 
-    return useFetcher<T>({
+    return useFetcher<$T>({
       url: graphqlPath,
       id: query,
       ...otherArgs,
@@ -1016,10 +1044,17 @@ function useGql(...args: any) {
       }
     })
   }
+
+  if (!isUsingExternalQuery) {
+    returnFunction.query = query
+  }
+
+  return returnFunction as unknown as typeof returnFunction & {
+    query: T
+  }
 }
 
 export {
-  useGql as gql,
   useFetcher as useFetch,
   useFetcherLoading as useLoading,
   useFetcherConfig as useConfig,
