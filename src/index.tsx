@@ -1004,14 +1004,15 @@ function useGql(...args: any) {
       variables
     })
 
-    return usePOST<T>({
+    return useFetcher<T>({
       url: graphqlPath,
       id: query,
       ...otherArgs,
       config: {
         ...config,
         formatBody: () => JSONBody,
-        body: JSONBody
+        body: JSONBody,
+        method: 'POST'
       }
     })
   }

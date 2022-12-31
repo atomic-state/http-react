@@ -736,7 +736,8 @@
           {
             config: Object.assign(Object.assign({}, config), {
               formatBody: () => JSONBody,
-              body: JSONBody
+              body: JSONBody,
+              method: 'POST'
             })
           }
         )
