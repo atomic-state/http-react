@@ -640,7 +640,7 @@ function useGql() {
             query: query,
             variables: variables
         });
-        return usePOST(__assign(__assign({ url: graphqlPath, id: query }, otherArgs), { config: __assign(__assign({}, config), { formatBody: function () { return JSONBody; }, body: JSONBody }) }));
+        return useFetcher(__assign(__assign({ url: graphqlPath, id: query }, otherArgs), { config: __assign(__assign({}, config), { formatBody: function () { return JSONBody; }, body: JSONBody, method: 'POST' }) }));
     };
 }
 exports.gql = useGql;
