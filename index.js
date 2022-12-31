@@ -639,33 +639,23 @@ exports.gql = gql;
 /**
  * Make a graphQL request
  */
-function useGql() {
-    var args = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-        args[_i] = arguments[_i];
-    }
-    var isUsingExternalQuery = typeof args[0].query === 'string';
+function useGql(arg1, cfg) {
+    if (cfg === void 0) { cfg = {}; }
+    var isUsingExternalQuery = typeof arg1.query === 'string';
     var query;
     if (isUsingExternalQuery) {
-        query = args[0].query;
+        query = arg1.query;
     }
     else {
-        query = args[0][0];
+        query = arg1[0][0];
     }
-    var returnFunction = function (_a) {
-        if (_a === void 0) { _a = { variables: {}, graphqlPath: '/graphql' }; }
-        var variables = _a.variables, _b = _a.graphqlPath, graphqlPath = _b === void 0 ? '/graphql' : _b, otherArgs = __rest(_a, ["variables", "graphqlPath"]);
-        var config = otherArgs.config;
-        var JSONBody = JSON.stringify({
-            query: query,
-            variables: variables
-        });
-        return useFetcher(__assign(__assign({ url: graphqlPath, id: query }, otherArgs), { config: __assign(__assign({}, config), { formatBody: function () { return JSONBody; }, body: JSONBody, method: 'POST' }) }));
-    };
-    if (!isUsingExternalQuery) {
-        returnFunction.query = query;
-    }
-    return returnFunction;
+    var _a = cfg.variables, variables = _a === void 0 ? {} : _a, _b = cfg.graphqlPath, graphqlPath = _b === void 0 ? '/graphql' : _b, otherArgs = __rest(cfg, ["variables", "graphqlPath"]);
+    var _c = otherArgs.config, config = _c === void 0 ? {} : _c;
+    var JSONBody = JSON.stringify({
+        query: query,
+        variables: variables
+    });
+    return useFetcher(__assign(__assign({ url: graphqlPath, id: query }, otherArgs), { config: __assign(__assign({}, config), { formatBody: function () { return JSONBody; }, body: JSONBody, method: 'POST' }) }));
 }
 exports.useGql = useGql;
 var createImperativeFetcher = function (ctx) {

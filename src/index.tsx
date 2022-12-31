@@ -989,69 +989,53 @@ export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
  * Make a graphQL request
  */
 export function useGql<T = any, VT = { [k: string]: any }>(
-  ...args: {
-    query: T
+  arg1: {
+    query: string
     vars: VT
-  }[]
+  },
+  cfg: FetcherConfigTypeNoUrl<T, any> & {
+    /**
+     * GraphQL variables
+     */
+    variables?: T | typeof arg1['vars']
+    /**
+     * Override the GraphQL path
+     *
+     * (default is `'/graphql'`)
+     */
+    graphqlPath?: string
+  } = {}
 ) {
-  const isUsingExternalQuery = typeof args[0].query === 'string'
+  const isUsingExternalQuery = typeof arg1.query === 'string'
 
-  let query: T
+  let query: string
 
   if (isUsingExternalQuery) {
-    query = args[0].query
+    query = arg1.query
   } else {
-    query = (args as any)[0][0]
+    query = (arg1 as any)[0][0]
   }
 
-  const returnFunction = <
-    $T = T | typeof args[0]['query'],
-    $VT = VT | typeof args[0]['vars']
-  >(
-    {
-      variables,
-      graphqlPath = '/graphql',
-      ...otherArgs
-    }: Omit<FetcherInit<$T>, 'url'> & {
-      /**
-       * GraphQL variables
-       */
-      variables?: $VT
-      /**
-       * Override the GraphQL path
-       *
-       * (default is `'/graphql'`)
-       */
-      graphqlPath?: string
-    } = { variables: {} as $VT, graphqlPath: '/graphql' }
-  ) => {
-    const { config } = otherArgs
+  const { variables = {}, graphqlPath = '/graphql', ...otherArgs } = cfg
 
-    const JSONBody = JSON.stringify({
-      query,
-      variables
-    })
+  const { config = {} } = otherArgs
 
-    return useFetcher<$T>({
-      url: graphqlPath,
-      id: query,
-      ...otherArgs,
-      config: {
-        ...config,
-        formatBody: () => JSONBody,
-        body: JSONBody,
-        method: 'POST'
-      }
-    })
-  }
+  const JSONBody = JSON.stringify({
+    query,
+    variables
+  })
 
-  if (!isUsingExternalQuery) {
-    returnFunction.query = query
-  }
-
-  return returnFunction as unknown as typeof returnFunction & {
-    query: T
-  }
+  return useFetcher<T>({
+    url: graphqlPath,
+    id: query,
+    ...otherArgs,
+    config: {
+      ...config,
+      formatBody: () => JSONBody,
+      body: JSONBody,
+      method: 'POST'
+    }
+  })
 }
 
 export {

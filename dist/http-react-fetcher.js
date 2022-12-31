@@ -51,6 +51,7 @@
       return t
     }
   const { useState, useEffect, createContext, useContext } = React
+
   /**
    *
    * @param str The target string
@@ -198,6 +199,7 @@
   const previousProps = {}
   const createRequestEmitter = () => {
     const emitter = new EventEmitter()
+    emitter.setMaxListeners(10e10)
     return emitter
   }
   const requestEmitter = createRequestEmitter()
@@ -707,70 +709,41 @@
       })
     )
   }
-  // "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK"
-
   function gql(...args) {
     let query = args[0][0]
-
     const returnObj = {
       query: query,
       vars: {}
     }
-
     return returnObj
   }
-
   /**
    * Make a graphQL request
    */
-  function useGql(...args) {
-    const isUsingExternalQuery = typeof args[0].query === 'string'
-
-    let query = ''
-
+  function useGql(arg1, cfg = {}) {
+    const isUsingExternalQuery = typeof arg1.query === 'string'
+    let query
     if (isUsingExternalQuery) {
-      query = args[0].query
+      query = arg1.query
     } else {
-      query = args[0][0]
+      query = arg1[0][0]
     }
-
-    const returnFunction = (
-      _a = { variables: {}, graphqlPath: '/graphql' }
-    ) => {
-      var { variables, graphqlPath = '/graphql' } = _a,
-        otherArgs = __rest(_a, ['variables', 'graphqlPath'])
-      const { config } = otherArgs
-
-      const JSONBody = JSON.stringify({
-        query,
-        variables
+    const { variables = {}, graphqlPath = '/graphql' } = cfg,
+      otherArgs = __rest(cfg, ['variables', 'graphqlPath'])
+    const { config = {} } = otherArgs
+    const JSONBody = JSON.stringify({
+      query,
+      variables
+    })
+    return useFetcher(
+      Object.assign(Object.assign({ url: graphqlPath, id: query }, otherArgs), {
+        config: Object.assign(Object.assign({}, config), {
+          formatBody: () => JSONBody,
+          body: JSONBody,
+          method: 'POST'
+        })
       })
-
-      return usePOST(
-        Object.assign(
-          Object.assign(
-            {
-              url: graphqlPath,
-              id: query
-            },
-            otherArgs
-          ),
-          {
-            config: Object.assign(Object.assign({}, config), {
-              formatBody: () => JSONBody,
-              body: JSONBody,
-              method: 'POST'
-            })
-          }
-        )
-      )
-    }
-
-    if (!isUsingExternalQuery) {
-      returnFunction.query = query
-    }
-
-    return returnFunction
+    )
   }
 
   const createImperativeFetcher = ctx => {
@@ -1911,6 +1884,9 @@
   useFetcher.purge = createRequestFn('PURGE', '', {})
   useFetcher.link = createRequestFn('LINK', '', {})
   useFetcher.unlink = createRequestFn('UNLINK', '', {})
+  {
+    useFetcher
+  }
   /**
    * @deprecated Everything with `extend` can be achieved with `useFetch` alone
    *
@@ -2032,13 +2008,14 @@
     }
   }
   /**
-   * @deprecated - Use the fetcher instead
+   * @deprecated - Use the fetcher {instead}
    *
    * Basic HttpClient
    */
   function createHttpClient(url) {
     return new HttpClient(url)
   }
+
   window.useGql = useGql
   window.gql = gql
   window.FetcherConfig = FetcherConfig
