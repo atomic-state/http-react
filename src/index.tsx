@@ -998,17 +998,20 @@ function useGql(...args: any) {
   ) => {
     const [[query]] = args
     const { config } = otherArgs
+
+    const JSONBody = JSON.stringify({
+      query,
+      variables
+    })
+
     return usePOST<T>({
       url: graphqlPath,
       id: query,
       ...otherArgs,
       config: {
         ...config,
-        formatBody: () =>
-          JSON.stringify({
-            query,
-            variables
-          })
+        formatBody: () => JSONBody,
+        body: JSONBody
       }
     })
   }
