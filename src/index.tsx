@@ -974,21 +974,40 @@ export function useFetcherText<FetchDataType = string, BodyType = any>(
   })
 }
 
+export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
+  let query = (args as any)[0][0]
+
+  const returnObj = {
+    query: query as T,
+    vars: {} as VT
+  }
+
+  return returnObj
+}
+
 /**
  * Make a graphQL request
  */
-export function useGql<T = any, VT = { [k: string]: any }>(...args: any) {
+export function useGql<T = any, VT = { [k: string]: any }>(
+  ...args: {
+    query: T
+    vars: VT
+  }[]
+) {
   const isUsingExternalQuery = typeof args[0].query === 'string'
 
-  let query: string = ''
+  let query: T
 
   if (isUsingExternalQuery) {
     query = args[0].query
   } else {
-    query = args[0][0]
+    query = (args as any)[0][0]
   }
 
-  const returnFunction = <$T = T, $VT = VT>(
+  const returnFunction = <
+    $T = T | typeof args[0]['query'],
+    $VT = VT | typeof args[0]['vars']
+  >(
     {
       variables,
       graphqlPath = '/graphql',
@@ -1030,11 +1049,12 @@ export function useGql<T = any, VT = { [k: string]: any }>(...args: any) {
     returnFunction.query = query
   }
 
-  return returnFunction
+  return returnFunction as unknown as typeof returnFunction & {
+    query: T
+  }
 }
 
 export {
-  useGql as gql,
   useFetcher as useFetch,
   useFetcherLoading as useLoading,
   useFetcherConfig as useConfig,

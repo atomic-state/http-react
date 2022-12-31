@@ -709,6 +709,17 @@
   }
   // "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK"
 
+  function gql(...args) {
+    let query = args[0][0]
+
+    const returnObj = {
+      query: query,
+      vars: {}
+    }
+
+    return returnObj
+  }
+
   /**
    * Make a graphQL request
    */
@@ -2029,7 +2040,7 @@
     return new HttpClient(url)
   }
   window.useGql = useGql
-  window.gql = useGql
+  window.gql = gql
   window.FetcherConfig = FetcherConfig
   window.fetcher = fetcher
   window.isFormData = isFormData

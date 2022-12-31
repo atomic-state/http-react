@@ -909,12 +909,21 @@ export declare function useFetcherText<FetchDataType = string, BodyType = any>(i
     id: any;
     key: string;
 };
+export declare function gql<T = any, VT = {
+    [k: string]: any;
+}>(...args: any): {
+    query: T;
+    vars: VT;
+};
 /**
  * Make a graphQL request
  */
 export declare function useGql<T = any, VT = {
     [k: string]: any;
-}>(...args: any): {
+}>(...args: {
+    query: T;
+    vars: VT;
+}[]): {
     <$T = T, $VT = VT>({ variables, graphqlPath, ...otherArgs }?: Omit<FetcherInit<$T, any>, "url"> & {
         /**
          * GraphQL variables
@@ -968,9 +977,11 @@ export declare function useGql<T = any, VT = {
         id: any;
         key: string;
     };
-    query: string;
+    query: T;
+} & {
+    query: T;
 };
-export { useGql as gql, useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherCode as useCode, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, useFetcherBlob as useBlob, useFetcherText as useText, useGET, useDELETE, useHEAD, useOPTIONS, usePOST, usePUT, usePATCH, usePURGE, useLINK, useUNLINK };
+export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherCode as useCode, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, useFetcherBlob as useBlob, useFetcherText as useText, useGET, useDELETE, useHEAD, useOPTIONS, usePOST, usePUT, usePATCH, usePURGE, useLINK, useUNLINK };
 /**
  * Create a configuration object to use in a 'useFetcher' call
  */
