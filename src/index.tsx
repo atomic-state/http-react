@@ -652,8 +652,18 @@ export function useFetcherConfig(id?: string) {
  * Get the data state of a request using its id
  */
 export function useFetcherData<T = any>(
-  id: any,
-  onResolve?: (data: T) => void
+  id:
+    | string
+    | number
+    | object
+    | {
+        $$query?: T
+      },
+  onResolve?: (
+    data: typeof id extends string | number | object
+      ? T
+      : (Required<typeof id> & { $$query: ResponseType })['$$query']
+  ) => void
 ) {
   const { cache = defaultCache } = useHRFContext()
 
@@ -754,8 +764,18 @@ export function useFetcherId<ResponseType = any, BodyType = any>(id: any) {
  * Create an effect for when the request completes
  */
 export function useResolve<ResponseType = any>(
-  id: any,
-  onResolve: (data: ResponseType) => void
+  id:
+    | string
+    | number
+    | object
+    | {
+        $$query?: ResponseType
+      },
+  onResolve: (
+    data: typeof id extends string | number | object
+      ? ResponseType
+      : (Required<typeof id> & { $$query: ResponseType })['$$query']
+  ) => void
 ) {
   const defaultsKey = JSON.stringify({
     idString: JSON.stringify(id)
@@ -872,6 +892,7 @@ function usePUT<FetchDataType = any, BodyType = any>(
     }
   })
 }
+
 /**
  * Use a `PATCH` request
  */
@@ -986,8 +1007,8 @@ export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
   let query = (args as any)[0][0]
 
   const returnObj = {
-    query: query as T,
-    vars: {} as VT
+    $$query: query as T,
+    $$vars: {} as VT
   }
 
   return returnObj
@@ -997,15 +1018,19 @@ export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
  * Make a graphQL request
  */
 export function useGql<T = any, VT = { [k: string]: any }>(
-  arg1: {
-    query: T
-    vars: VT
-  },
+  arg1:
+    | undefined
+    | {
+        $$query: T
+        $$vars: VT
+      },
   cfg: FetcherConfigTypeNoUrl<T, any> & {
     /**
      * GraphQL variables
      */
-    variables?: VT | typeof arg1['vars']
+    variables?: typeof arg1 extends undefined
+      ? VT
+      : (typeof arg1 & { $$query: T; $$vars: VT })['$$vars']
     /**
      * Override the GraphQL path
      *
@@ -1014,12 +1039,12 @@ export function useGql<T = any, VT = { [k: string]: any }>(
     graphqlPath?: string
   } = {}
 ) {
-  const isUsingExternalQuery = typeof arg1.query === 'string'
+  const isUsingExternalQuery = typeof (arg1 as any).$$query === 'string'
 
   let query: T
 
   if (isUsingExternalQuery) {
-    query = arg1.query
+    query = (arg1 as any).$$query
   } else {
     query = (arg1 as any)[0][0]
   }
