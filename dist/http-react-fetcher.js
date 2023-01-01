@@ -419,9 +419,11 @@
     const def = cache.get(defaultsKey)
     const { data } = useFetcher({
       default: def,
-      onResolve,
       id: id
     })
+
+    useResolve(id, onResolve)
+
     return data
   }
   function useFetcherCode(id) {
@@ -491,12 +493,25 @@
     const defaultsKey = JSON.stringify({
       idString: JSON.stringify(id)
     })
-    const def = fetcherDefaults[defaultsKey]
+
     useFetcher({
-      id,
-      onResolve,
-      default: def
+      id
     })
+
+    useEffect(() => {
+      async function resolve(v) {
+        const { isResolved, data } = v
+        if (isResolved) {
+          if (isFunction(onResolve)) {
+            onResolve(data)
+          }
+        }
+      }
+      requestEmitter.addListener(defaultsKey, resolve)
+      return () => {
+        requestEmitter.removeListener(defaultsKey, resolve)
+      }
+    }, [defaultsKey, onResolve])
   }
   /**
    * User a `GET` request
@@ -736,7 +751,7 @@
       variables
     })
     return useFetcher(
-      Object.assign(Object.assign({ url: graphqlPath, id: query }, otherArgs), {
+      Object.assign(Object.assign({ url: graphqlPath, id: arg1 }, otherArgs), {
         config: Object.assign(Object.assign({}, config), {
           formatBody: () => JSONBody,
           body: JSONBody,

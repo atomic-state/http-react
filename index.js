@@ -412,9 +412,9 @@ function useFetcherData(id, onResolve) {
     var def = cache.get(defaultsKey);
     var data = useFetcher({
         default: def,
-        onResolve: onResolve,
         id: id
     }).data;
+    useResolve(id, onResolve);
     return data;
 }
 exports.useFetcherData = useFetcherData;
@@ -495,12 +495,26 @@ function useResolve(id, onResolve) {
     var defaultsKey = JSON.stringify({
         idString: JSON.stringify(id)
     });
-    var def = fetcherDefaults[defaultsKey];
-    useFetcher({
-        id: id,
-        onResolve: onResolve,
-        default: def
-    });
+    (0, react_1.useEffect)(function () {
+        function resolve(v) {
+            return __awaiter(this, void 0, void 0, function () {
+                var isResolved, data;
+                return __generator(this, function (_a) {
+                    isResolved = v.isResolved, data = v.data;
+                    if (isResolved) {
+                        if (isFunction(onResolve)) {
+                            onResolve(data);
+                        }
+                    }
+                    return [2 /*return*/];
+                });
+            });
+        }
+        requestEmitter.addListener(defaultsKey, resolve);
+        return function () {
+            requestEmitter.removeListener(defaultsKey, resolve);
+        };
+    }, [defaultsKey, onResolve]);
 }
 exports.useResolve = useResolve;
 /**
@@ -655,7 +669,7 @@ function useGql(arg1, cfg) {
         query: query,
         variables: variables
     });
-    return useFetcher(__assign(__assign({ url: graphqlPath, id: query }, otherArgs), { config: __assign(__assign({}, config), { formatBody: function () { return JSONBody; }, body: JSONBody, method: 'POST' }) }));
+    return useFetcher(__assign(__assign({ url: graphqlPath, id: arg1 }, otherArgs), { config: __assign(__assign({}, config), { formatBody: function () { return JSONBody; }, body: JSONBody, method: 'POST' }) }));
 }
 exports.useGql = useGql;
 var createImperativeFetcher = function (ctx) {
