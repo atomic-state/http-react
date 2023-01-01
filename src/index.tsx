@@ -872,7 +872,6 @@ function usePUT<FetchDataType = any, BodyType = any>(
     }
   })
 }
-
 /**
  * Use a `PATCH` request
  */
