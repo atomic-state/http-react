@@ -644,8 +644,8 @@ function gql() {
     }
     var query = args[0][0];
     var returnObj = {
-        query: query,
-        vars: {}
+        $$query: query,
+        $$vars: {}
     };
     return returnObj;
 }
@@ -655,10 +655,10 @@ exports.gql = gql;
  */
 function useGql(arg1, cfg) {
     if (cfg === void 0) { cfg = {}; }
-    var isUsingExternalQuery = typeof arg1.query === 'string';
+    var isUsingExternalQuery = typeof arg1.$$query === 'string';
     var query;
     if (isUsingExternalQuery) {
-        query = arg1.query;
+        query = arg1.$$query;
     }
     else {
         query = arg1[0][0];

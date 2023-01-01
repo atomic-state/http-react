@@ -290,7 +290,11 @@ export declare function useFetcherConfig(id?: string): FetcherContextType | ({
 /**
  * Get the data state of a request using its id
  */
-export declare function useFetcherData<T = any>(id: any, onResolve?: (data: T) => void): T;
+export declare function useFetcherData<T = any>(id: string | number | object | {
+    $$query?: T;
+}, onResolve?: (data: typeof id extends string | number | object ? T : (Required<typeof id> & {
+    $$query: ResponseType;
+})['$$query']) => void): T;
 export declare function useFetcherCode(id: any): number;
 /**
  * Get the loading state of a request using its id
@@ -364,7 +368,11 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
 /**
  * Create an effect for when the request completes
  */
-export declare function useResolve<ResponseType = any>(id: any, onResolve: (data: ResponseType) => void): void;
+export declare function useResolve<ResponseType = any>(id: string | number | object | {
+    $$query?: ResponseType;
+}, onResolve: (data: typeof id extends string | number | object ? ResponseType : (Required<typeof id> & {
+    $$query: ResponseType;
+})['$$query']) => void): void;
 /**
  * User a `GET` request
  */
@@ -912,22 +920,25 @@ export declare function useFetcherText<FetchDataType = string, BodyType = any>(i
 export declare function gql<T = any, VT = {
     [k: string]: any;
 }>(...args: any): {
-    query: T;
-    vars: VT;
+    $$query: T;
+    $$vars: VT;
 };
 /**
  * Make a graphQL request
  */
 export declare function useGql<T = any, VT = {
     [k: string]: any;
-}>(arg1: {
-    query: T;
-    vars: VT;
+}>(arg1: undefined | {
+    $$query: T;
+    $$vars: VT;
 }, cfg?: FetcherConfigTypeNoUrl<T, any> & {
     /**
      * GraphQL variables
      */
-    variables?: VT | typeof arg1['vars'];
+    variables?: typeof arg1 extends undefined ? VT : (typeof arg1 & {
+        $$query: T;
+        $$vars: VT;
+    })['$$vars'];
     /**
      * Override the GraphQL path
      *
