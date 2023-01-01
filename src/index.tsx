@@ -665,9 +665,10 @@ export function useFetcherData<T = any>(
 
   const { data } = useFetcher<T>({
     default: def,
-    onResolve,
     id: id
   })
+
+  useResolve(id, onResolve as any)
 
   return data
 }
@@ -759,13 +760,21 @@ export function useResolve<ResponseType = any>(
   const defaultsKey = JSON.stringify({
     idString: JSON.stringify(id)
   })
-  const def = fetcherDefaults[defaultsKey]
 
-  useFetcher<ResponseType>({
-    id,
-    onResolve,
-    default: def
-  })
+  useEffect(() => {
+    async function resolve(v: any) {
+      const { isResolved, data } = v
+      if (isResolved) {
+        if (isFunction(onResolve)) {
+          onResolve(data)
+        }
+      }
+    }
+    requestEmitter.addListener(defaultsKey, resolve)
+    return () => {
+      requestEmitter.removeListener(defaultsKey, resolve)
+    }
+  }, [defaultsKey, onResolve])
 }
 
 /**
@@ -1027,7 +1036,7 @@ export function useGql<T = any, VT = { [k: string]: any }>(
 
   return useFetcher<T>({
     url: graphqlPath,
-    id: query,
+    id: arg1,
     ...otherArgs,
     config: {
       ...config,
