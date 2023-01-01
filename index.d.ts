@@ -921,13 +921,13 @@ export declare function gql<T = any, VT = {
 export declare function useGql<T = any, VT = {
     [k: string]: any;
 }>(arg1: {
-    query: string;
+    query: T;
     vars: VT;
 }, cfg?: FetcherConfigTypeNoUrl<T, any> & {
     /**
      * GraphQL variables
      */
-    variables?: T | typeof arg1['vars'];
+    variables?: VT | typeof arg1['vars'];
     /**
      * Override the GraphQL path
      *

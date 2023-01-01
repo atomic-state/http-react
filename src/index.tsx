@@ -990,14 +990,14 @@ export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
  */
 export function useGql<T = any, VT = { [k: string]: any }>(
   arg1: {
-    query: string
+    query: T
     vars: VT
   },
   cfg: FetcherConfigTypeNoUrl<T, any> & {
     /**
      * GraphQL variables
      */
-    variables?: T | typeof arg1['vars']
+    variables?: VT | typeof arg1['vars']
     /**
      * Override the GraphQL path
      *
@@ -1008,7 +1008,7 @@ export function useGql<T = any, VT = { [k: string]: any }>(
 ) {
   const isUsingExternalQuery = typeof arg1.query === 'string'
 
-  let query: string
+  let query: T
 
   if (isUsingExternalQuery) {
     query = arg1.query
