@@ -1,6 +1,6 @@
 {
   "name": "http-react-fetcher",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "React hooks for data fetching",
   "main": "index.js",
   "scripts": {
@@ -19,7 +19,9 @@
     "fetching hook",
     "use fetch",
     "http request",
-    "fetching utilities"
+    "fetching utilities",
+    "graphql",
+    "gql"
   ],
   "author": "Dany Beltran",
   "license": "MIT",
