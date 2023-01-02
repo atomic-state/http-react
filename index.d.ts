@@ -5,7 +5,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-import * as React from 'react';
+/// <reference types="react" />
 declare type CustomResponse<T> = Omit<Response, 'json'> & {
     json(): Promise<T>;
 };
@@ -133,17 +133,20 @@ export declare type FetcherConfigType<FetchDataType = any, BodyType = any> = {
     default?: FetchDataType;
     /**
      * Refresh interval (in seconds) to re-fetch the resource
+     * @default 0
      */
     refresh?: number;
     /**
      * This will prevent automatic requests.
      * By setting this to `false`, requests will
      * only be made by calling `reFetch()`
+     * @default true
      */
     auto?: boolean;
     /**
-     * Default is true. Responses are saved in memory and used as default data.
+     * Responses are saved in memory and used as default data.
      * If `false`, the `default` prop will be used instead.
+     * @default true
      */
     memory?: boolean;
     /**
@@ -189,16 +192,32 @@ export declare type FetcherConfigType<FetchDataType = any, BodyType = any> = {
     resolver?: (d: CustomResponse<FetchDataType>) => any;
     /**
      * The ammount of attempts if request fails
+     * @default 1
      */
     attempts?: number;
     /**
      * The interval at which to run attempts on request fail
+     * @default 0
      */
     attemptInterval?: number;
     /**
      * If a request should be made when the tab is focused. This currently works on browsers
+     * @default false
      */
     revalidateOnFocus?: boolean;
+    /**
+     * If `false`, revalidation will only happen when props passed to the `useFetch` change.
+     * For example, you may want to have a component that should
+     * fetch with `useFetch` only once during the application lifetime
+     * or when its props change but not when, for example, navigating
+     * between pages (web) or screens (React Native). This is very useful
+     * when you have components that should persist their state, like layouts.
+     * This is also a way of revalidating when props change.
+     *
+     * Note that the behaviour when props change is the same.
+     * @default true
+     */
+    revalidateOnMount?: boolean;
     /**
      * This will run when connection is interrupted
      */
@@ -211,6 +230,7 @@ export declare type FetcherConfigType<FetchDataType = any, BodyType = any> = {
     }) => void;
     /**
      * If the request should retry when connection is restored
+     * @default true
      */
     retryOnReconnect?: boolean;
     /**
@@ -240,11 +260,6 @@ export declare type FetcherConfigType<FetchDataType = any, BodyType = any> = {
          */
         formatBody?: boolean | ((b: BodyType) => any);
     };
-    children?: React.FC<{
-        data: FetchDataType | undefined;
-        error: Error | null;
-        loading: boolean;
-    }>;
 };
 declare type FetcherConfigTypeNoUrl<FetchDataType = any, BodyType = any> = Omit<FetcherConfigType<FetchDataType, BodyType>, 'url'>;
 export declare function FetcherConfig(props: FetcherContextType): JSX.Element;

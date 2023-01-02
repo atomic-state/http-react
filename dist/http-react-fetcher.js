@@ -855,6 +855,7 @@
       onOffline = ctx.onOffline,
       onMutate,
       onPropsChange,
+      revalidateOnMount = true,
       url = '',
       id,
       config = {
@@ -1644,8 +1645,10 @@
       resolvedKey
     ])
     useEffect(() => {
-      previousConfig[resolvedKey] = undefined
-    }, [requestCallId, resolvedKey])
+      if (revalidateOnMount) {
+        previousConfig[resolvedKey] = undefined
+      }
+    }, [requestCallId, resolvedKey, revalidateOnMount])
     useEffect(() => {
       // Attempts will be made after a request fails
       const tm = queue(() => {
