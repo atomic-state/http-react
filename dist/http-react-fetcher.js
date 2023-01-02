@@ -199,7 +199,6 @@
   const previousProps = {}
   const createRequestEmitter = () => {
     const emitter = new EventEmitter()
-    emitter.setMaxListeners(10e10)
     return emitter
   }
   const requestEmitter = createRequestEmitter()
