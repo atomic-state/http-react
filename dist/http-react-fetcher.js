@@ -205,7 +205,7 @@
   const FetcherContext = createContext({
     defaults: {},
     attempts: 0,
-    // By default its 5 seconds
+    // By default its 2 seconds
     attemptInterval: 2,
     revalidateOnFocus: false,
     query: {},
@@ -213,7 +213,8 @@
     onOffline() {},
     onOnline() {},
     online: true,
-    retryOnReconnect: true
+    retryOnReconnect: true,
+    revalidateOnMount: true
   })
   const resolvedRequests = {}
   const resolvedHookCalls = {}
@@ -855,6 +856,7 @@
       onOffline = ctx.onOffline,
       onMutate,
       onPropsChange,
+      revalidateOnMount = ctx.revalidateOnMount,
       url = '',
       id,
       config = {
@@ -1644,8 +1646,10 @@
       resolvedKey
     ])
     useEffect(() => {
-      previousConfig[resolvedKey] = undefined
-    }, [requestCallId, resolvedKey])
+      if (revalidateOnMount) {
+        previousConfig[resolvedKey] = undefined
+      }
+    }, [requestCallId, resolvedKey, revalidateOnMount])
     useEffect(() => {
       // Attempts will be made after a request fails
       const tm = queue(() => {
