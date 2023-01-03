@@ -284,12 +284,13 @@ type FetcherContextType = {
   online?: boolean
   retryOnReconnect?: boolean
   cache?: CacheStoreType
+  revalidateOnMount?: boolean
 }
 
 const FetcherContext = createContext<FetcherContextType>({
   defaults: {},
   attempts: 0,
-  // By default its 5 seconds
+  // By default its 2 seconds
   attemptInterval: 2,
   revalidateOnFocus: false,
   query: {},
@@ -297,7 +298,8 @@ const FetcherContext = createContext<FetcherContextType>({
   onOffline() {},
   onOnline() {},
   online: true,
-  retryOnReconnect: true
+  retryOnReconnect: true,
+  revalidateOnMount: true
 })
 
 export type FetcherConfigType<FetchDataType = any, BodyType = any> = {
@@ -1240,7 +1242,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     onOffline = ctx.onOffline,
     onMutate,
     onPropsChange,
-    revalidateOnMount = true,
+    revalidateOnMount = ctx.revalidateOnMount,
     url = '',
     id,
     config = {

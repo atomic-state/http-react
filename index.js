@@ -213,7 +213,7 @@ var requestEmitter = createRequestEmitter();
 var FetcherContext = (0, react_1.createContext)({
     defaults: {},
     attempts: 0,
-    // By default its 5 seconds
+    // By default its 2 seconds
     attemptInterval: 2,
     revalidateOnFocus: false,
     query: {},
@@ -221,7 +221,8 @@ var FetcherContext = (0, react_1.createContext)({
     onOffline: function () { },
     onOnline: function () { },
     online: true,
-    retryOnReconnect: true
+    retryOnReconnect: true,
+    revalidateOnMount: true
 });
 var resolvedRequests = {};
 var resolvedHookCalls = {};
@@ -733,7 +734,7 @@ var useFetcher = function (init, options) {
         ? __assign({ 
             // Pass init as the url if init is a string
             url: init }, options) : init;
-    var _b = optionsConfig.onOnline, onOnline = _b === void 0 ? ctx.onOnline : _b, _c = optionsConfig.onOffline, onOffline = _c === void 0 ? ctx.onOffline : _c, onMutate = optionsConfig.onMutate, onPropsChange = optionsConfig.onPropsChange, _d = optionsConfig.revalidateOnMount, revalidateOnMount = _d === void 0 ? true : _d, _e = optionsConfig.url, url = _e === void 0 ? '' : _e, id = optionsConfig.id, _f = optionsConfig.config, config = _f === void 0 ? {
+    var _b = optionsConfig.onOnline, onOnline = _b === void 0 ? ctx.onOnline : _b, _c = optionsConfig.onOffline, onOffline = _c === void 0 ? ctx.onOffline : _c, onMutate = optionsConfig.onMutate, onPropsChange = optionsConfig.onPropsChange, _d = optionsConfig.revalidateOnMount, revalidateOnMount = _d === void 0 ? ctx.revalidateOnMount : _d, _e = optionsConfig.url, url = _e === void 0 ? '' : _e, id = optionsConfig.id, _f = optionsConfig.config, config = _f === void 0 ? {
         query: {},
         params: {},
         baseUrl: undefined,

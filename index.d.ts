@@ -117,6 +117,7 @@ declare type FetcherContextType = {
     online?: boolean;
     retryOnReconnect?: boolean;
     cache?: CacheStoreType;
+    revalidateOnMount?: boolean;
 };
 export declare type FetcherConfigType<FetchDataType = any, BodyType = any> = {
     /**
