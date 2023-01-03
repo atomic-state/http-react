@@ -1217,6 +1217,8 @@ function useHRFContext() {
 
 const windowExists = typeof window !== 'undefined'
 
+const hasErrors: any = {}
+
 /**
  * Fetcher hook
  */
@@ -1463,7 +1465,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   const [response, setResponse] = useState<CustomResponse<FetchDataType>>()
 
   const [statusCode, setStatusCode] = useState<number>()
-  const [error, setError] = useState<any>(null)
+  const [error, setError] = useState<any>(hasErrors[resolvedKey])
   const [loading, setLoading] = useState(true)
   const [completedAttempts, setCompletedAttempts] = useState(0)
   const [requestAbortController, setRequestAbortController] =
@@ -1539,6 +1541,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           let newAbortController = new AbortController()
           setRequestAbortController(newAbortController)
           setError(null)
+          hasErrors[resolvedKey] = null
           requestEmitter.emit(resolvedKey, {
             requestCallId,
             loading,
@@ -1600,6 +1603,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               setData(_data)
               cacheForMutation[idString] = _data
               setError(null)
+              hasErrors[resolvedKey] = null
               setLoading(false)
               if (willResolve) {
                 ;(onResolve as any)(_data, json)
@@ -1620,6 +1624,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 })
               }
               setError(true)
+              hasErrors[resolvedKey] = true
               if (handleError) {
                 ;(onError as any)(_data, json)
               }
@@ -1650,6 +1655,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 })
               }
               setError(_error)
+              hasErrors[resolvedKey] = true
               if (handleError) {
                 ;(onError as any)(err as any)
               }
@@ -1841,6 +1847,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           queue(() => {
             setError($error)
             if ($error !== null) {
+              hasErrors[resolvedKey] = true
               if (handleError) {
                 ;(onError as any)($error)
               }
@@ -1929,6 +1936,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       } else {
         setLoading(true)
         setError(null)
+        hasErrors[resolvedKey] = null
         if (!runningRequests[resolvedKey]) {
           // We are preventing revalidation where we only need updates about
           // 'loading', 'error' and 'data' because the url can be ommited.
@@ -2119,7 +2127,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       }
       // It means a url is not passed
       else {
-        setError(null)
+        setError(hasErrors[resolvedKey])
         setLoading(false)
       }
     } else {
@@ -2128,6 +2136,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
         cacheForMutation[idString] = def
       }
       setError(null)
+      hasErrors[resolvedKey] = null
       setLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2283,7 +2292,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     abort: () => {
       abortControllers[resolvedKey]?.abort()
       if (loading) {
-        setError(false)
+        setError(null)
+        hasErrors[resolvedKey] = null
         setLoading(false)
         setData(requestCache)
         requestEmitter.emit(resolvedKey, {

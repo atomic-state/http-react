@@ -724,6 +724,7 @@ function useHRFContext() {
     return (0, react_1.useContext)(FetcherContext);
 }
 var windowExists = typeof window !== 'undefined';
+var hasErrors = {};
 /**
  * Fetcher hook
  */
@@ -872,7 +873,7 @@ var useFetcher = function (init, options) {
     var _w = (0, react_1.useState)(__assign(__assign({}, ctx.headers), config.headers)), requestHeaders = _w[0], setRequestHeades = _w[1];
     var _x = (0, react_1.useState)(), response = _x[0], setResponse = _x[1];
     var _y = (0, react_1.useState)(), statusCode = _y[0], setStatusCode = _y[1];
-    var _z = (0, react_1.useState)(null), error = _z[0], setError = _z[1];
+    var _z = (0, react_1.useState)(hasErrors[resolvedKey]), error = _z[0], setError = _z[1];
     var _0 = (0, react_1.useState)(true), loading = _0[0], setLoading = _0[1];
     var _1 = (0, react_1.useState)(0), completedAttempts = _1[0], setCompletedAttempts = _1[1];
     var _2 = (0, react_1.useState)(new AbortController()), requestAbortController = _2[0], setRequestAbortController = _2[1];
@@ -940,6 +941,7 @@ var useFetcher = function (init, options) {
                         newAbortController = new AbortController();
                         setRequestAbortController(newAbortController);
                         setError(null);
+                        hasErrors[resolvedKey] = null;
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
                             loading: loading,
@@ -999,6 +1001,7 @@ var useFetcher = function (init, options) {
                             setData(_data_1);
                             cacheForMutation[idString] = _data_1;
                             setError(null);
+                            hasErrors[resolvedKey] = null;
                             setLoading(false);
                             if (willResolve) {
                                 ;
@@ -1021,6 +1024,7 @@ var useFetcher = function (init, options) {
                                 });
                             }
                             setError(true);
+                            hasErrors[resolvedKey] = true;
                             if (handleError) {
                                 ;
                                 onError(_data_1, json);
@@ -1055,6 +1059,7 @@ var useFetcher = function (init, options) {
                                 });
                             }
                             setError(_error);
+                            hasErrors[resolvedKey] = true;
                             if (handleError) {
                                 ;
                                 onError(err_2);
@@ -1220,6 +1225,7 @@ var useFetcher = function (init, options) {
                             queue(function () {
                                 setError($error_1);
                                 if ($error_1 !== null) {
+                                    hasErrors[resolvedKey] = true;
                                     if (handleError) {
                                         ;
                                         onError($error_1);
@@ -1310,6 +1316,7 @@ var useFetcher = function (init, options) {
                     else {
                         setLoading(true);
                         setError(null);
+                        hasErrors[resolvedKey] = null;
                         if (!runningRequests[resolvedKey]) {
                             // We are preventing revalidation where we only need updates about
                             // 'loading', 'error' and 'data' because the url can be ommited.
@@ -1473,7 +1480,7 @@ var useFetcher = function (init, options) {
             }
             // It means a url is not passed
             else {
-                setError(null);
+                setError(hasErrors[resolvedKey]);
                 setLoading(false);
             }
         }
@@ -1483,6 +1490,7 @@ var useFetcher = function (init, options) {
                 cacheForMutation[idString] = def;
             }
             setError(null);
+            hasErrors[resolvedKey] = null;
             setLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1617,7 +1625,8 @@ var useFetcher = function (init, options) {
             var _a;
             (_a = abortControllers[resolvedKey]) === null || _a === void 0 ? void 0 : _a.abort();
             if (loading) {
-                setError(false);
+                setError(null);
+                hasErrors[resolvedKey] = null;
                 setLoading(false);
                 setData(requestCache);
                 requestEmitter.emit(resolvedKey, {

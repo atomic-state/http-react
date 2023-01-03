@@ -835,6 +835,9 @@
     return useContext(FetcherContext)
   }
   const windowExists = typeof window !== 'undefined'
+
+  const hasErrors = {}
+
   /**
    * Fetcher hook
    */
@@ -1052,7 +1055,7 @@
     )
     const [response, setResponse] = useState()
     const [statusCode, setStatusCode] = useState()
-    const [error, setError] = useState(null)
+    const [error, setError] = useState(hasErrors[resolvedKey])
     const [loading, setLoading] = useState(true)
     const [completedAttempts, setCompletedAttempts] = useState(0)
     const [requestAbortController, setRequestAbortController] = useState(
@@ -1123,6 +1126,7 @@
             let newAbortController = new AbortController()
             setRequestAbortController(newAbortController)
             setError(null)
+            hasErrors[resolvedKey] = null
             requestEmitter.emit(resolvedKey, {
               requestCallId,
               loading,
@@ -1198,6 +1202,7 @@
                 setData(_data)
                 cacheForMutation[idString] = _data
                 setError(null)
+                hasErrors[resolvedKey] = null
                 setLoading(false)
                 if (willResolve) {
                   onResolve(_data, json)
@@ -1218,6 +1223,7 @@
                   })
                 }
                 setError(true)
+                hasErrors[resolvedKey] = true
                 if (handleError) {
                   onError(_data, json)
                 }
@@ -1249,6 +1255,7 @@
                   })
                 }
                 setError(_error)
+                hasErrors[resolvedKey] = true
                 if (handleError) {
                   onError(err)
                 }
@@ -1454,6 +1461,7 @@
             queue(() => {
               setError($error)
               if ($error !== null) {
+                hasErrors[resolvedKey] = true
                 if (handleError) {
                   onError($error)
                 }
@@ -1538,6 +1546,7 @@
         } else {
           setLoading(true)
           setError(null)
+          hasErrors[resolvedKey] = null
           if (!runningRequests[resolvedKey]) {
             // We are preventing revalidation where we only need updates about
             // 'loading', 'error' and 'data' because the url can be ommited.
@@ -1712,7 +1721,7 @@
         }
         // It means a url is not passed
         else {
-          setError(null)
+          setError(hasErrors[resolvedKey])
           setLoading(false)
         }
       } else {
@@ -1721,6 +1730,7 @@
           cacheForMutation[idString] = def
         }
         setError(null)
+        hasErrors[resolvedKey] = null
         setLoading(false)
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1873,7 +1883,8 @@
           ? void 0
           : _a.abort()
         if (loading) {
-          setError(false)
+          setError(null)
+          hasErrors[resolvedKey] = null
           setLoading(false)
           setData(requestCache)
           requestEmitter.emit(resolvedKey, {
