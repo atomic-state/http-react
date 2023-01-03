@@ -1273,6 +1273,8 @@
               })
             }
           }
+        } else {
+          setLoading(false)
         }
       },
       [

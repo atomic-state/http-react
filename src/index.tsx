@@ -1674,6 +1674,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             })
           }
         }
+      } else {
+        setLoading(false)
       }
     },
     [

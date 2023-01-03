@@ -918,7 +918,7 @@ var useFetcher = function (init, options) {
                         realUrl = urlWithParams +
                             (urlWithParams.includes('?') ? ((c === null || c === void 0 ? void 0 : c.query) !== '' ? "&" : '') : '?');
                         resKey = realUrl.split('?')[0];
-                        if (!(previousConfig[resolvedKey] !== JSON.stringify(optionsConfig))) return [3 /*break*/, 6];
+                        if (!(previousConfig[resolvedKey] !== JSON.stringify(optionsConfig))) return [3 /*break*/, 7];
                         queue(function () {
                             setReqMethod(config.method);
                             if (url !== '') {
@@ -1081,7 +1081,11 @@ var useFetcher = function (init, options) {
                             loading: false
                         });
                         return [7 /*endfinally*/];
-                    case 6: return [2 /*return*/];
+                    case 6: return [3 /*break*/, 8];
+                    case 7:
+                        setLoading(false);
+                        _b.label = 8;
+                    case 8: return [2 /*return*/];
                 }
             });
         });
