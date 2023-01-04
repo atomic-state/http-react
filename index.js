@@ -645,8 +645,8 @@ function gql() {
     }
     var query = args[0][0];
     var returnObj = {
-        $$query: query,
-        $$vars: {}
+        value: query,
+        variables: {}
     };
     return returnObj;
 }
@@ -656,10 +656,13 @@ exports.gql = gql;
  * @param queries
  * @returns A hook that has full TypeScript support and offers autocomplete for every query passed
  */
-function queryProvider(queries) {
+function queryProvider(queries, providerConfig) {
     return function useQuery(queryName, otherConfig) {
         var _this = this;
-        return useGql(queries[queryName], __assign({ resolver: function (d) { return __awaiter(_this, void 0, void 0, function () {
+        var _a;
+        var defaults = (providerConfig || {}).defaults;
+        var thisDefaults = (_a = (defaults || {})) === null || _a === void 0 ? void 0 : _a[queryName];
+        return useGql(queries[queryName], __assign(__assign({ resolver: function (d) { return __awaiter(_this, void 0, void 0, function () {
                 var data;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
@@ -669,7 +672,7 @@ function queryProvider(queries) {
                             return [2 /*return*/, data.data];
                     }
                 });
-            }); } }, otherConfig));
+            }); }, default: thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.value }, otherConfig), { variables: __assign(__assign({}, thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.variables), otherConfig === null || otherConfig === void 0 ? void 0 : otherConfig.variables) }));
     };
 }
 exports.queryProvider = queryProvider;
@@ -678,10 +681,10 @@ exports.queryProvider = queryProvider;
  */
 function useGql(arg1, cfg) {
     if (cfg === void 0) { cfg = {}; }
-    var isUsingExternalQuery = typeof arg1.$$query === 'string';
+    var isUsingExternalQuery = typeof arg1.value === 'string';
     var query;
     if (isUsingExternalQuery) {
-        query = arg1.$$query;
+        query = arg1.value;
     }
     else {
         query = arg1[0][0];

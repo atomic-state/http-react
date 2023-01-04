@@ -674,12 +674,12 @@ export function useFetcherData<T = any>(
     | number
     | object
     | {
-        $$query?: T
+        value?: T
       },
   onResolve?: (
     data: typeof id extends string | number | object
       ? T
-      : (Required<typeof id> & { $$query: ResponseType })['$$query']
+      : (Required<typeof id> & { value: ResponseType })['value']
   ) => void
 ) {
   const { cache = defaultCache } = useHRFContext()
@@ -786,12 +786,12 @@ export function useResolve<ResponseType = any>(
     | number
     | object
     | {
-        $$query?: ResponseType
+        value?: ResponseType
       },
   onResolve: (
     data: typeof id extends string | number | object
       ? ResponseType
-      : (Required<typeof id> & { $$query: ResponseType })['$$query']
+      : (Required<typeof id> & { value: ResponseType })['value']
   ) => void
 ) {
   const defaultsKey = JSON.stringify({
@@ -1024,8 +1024,8 @@ export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
   let query = (args as any)[0][0]
 
   const returnObj = {
-    $$query: query as T,
-    $$vars: {} as VT
+    value: query as T,
+    variables: {} as VT
   }
 
   return returnObj
@@ -1036,9 +1036,16 @@ export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
  * @param queries
  * @returns A hook that has full TypeScript support and offers autocomplete for every query passed
  */
-export function queryProvider<R>(queries: {
-  [e in keyof R]: R[e]
-}) {
+export function queryProvider<R>(
+  queries: {
+    [e in keyof R]: R[e]
+  },
+  providerConfig?: {
+    defaults?: {
+      [key in keyof R]?: Partial<ReturnType<typeof gql<R[key]>>['value']>
+    }
+  }
+) {
   type QuerysType = typeof queries
 
   return function useQuery<P extends keyof R>(
@@ -1046,24 +1053,33 @@ export function queryProvider<R>(queries: {
     otherConfig?: Omit<
       FetcherInit<
         QuerysType[P] extends ReturnType<typeof gql>
-          ? QuerysType[P]['$$query']
+          ? QuerysType[P]['value']
           : any
       >,
       'url'
     > & {
       variables?: QuerysType[P] extends ReturnType<typeof gql>
-        ? QuerysType[P]['$$vars']
+        ? QuerysType[P]['variables']
         : any
       graphqlPath?: string
     }
   ) {
+    const { defaults } = providerConfig || {}
+
+    const thisDefaults = (defaults || ({} as any))?.[queryName]
+
     return useGql((queries as any)[queryName], {
       resolver: async d => {
         const data = await d.json()
 
         return (data as any).data
       },
-      ...otherConfig
+      default: thisDefaults?.value,
+      ...otherConfig,
+      variables: {
+        ...thisDefaults?.variables,
+        ...(otherConfig as any)?.variables
+      }
     })
   }
 }
@@ -1075,8 +1091,8 @@ export function useGql<T = any, VT = { [k: string]: any }>(
   arg1:
     | undefined
     | {
-        $$query: T
-        $$vars: VT
+        value: T
+        variables: VT
       },
   cfg: FetcherConfigTypeNoUrl<T, any> & {
     /**
@@ -1084,7 +1100,7 @@ export function useGql<T = any, VT = { [k: string]: any }>(
      */
     variables?: typeof arg1 extends undefined
       ? VT
-      : (typeof arg1 & { $$query: T; $$vars: VT })['$$vars']
+      : (typeof arg1 & { value: T; variables: VT })['variables']
     /**
      * Override the GraphQL path
      *
@@ -1093,12 +1109,12 @@ export function useGql<T = any, VT = { [k: string]: any }>(
     graphqlPath?: string
   } = {}
 ) {
-  const isUsingExternalQuery = typeof (arg1 as any).$$query === 'string'
+  const isUsingExternalQuery = typeof (arg1 as any).value === 'string'
 
   let query: T
 
   if (isUsingExternalQuery) {
-    query = (arg1 as any).$$query
+    query = (arg1 as any).value
   } else {
     query = (arg1 as any)[0][0]
   }
