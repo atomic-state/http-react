@@ -307,10 +307,10 @@ export declare function useFetcherConfig(id?: string): FetcherContextType | ({
  * Get the data state of a request using its id
  */
 export declare function useFetcherData<T = any>(id: string | number | object | {
-    $$query?: T;
+    value?: T;
 }, onResolve?: (data: typeof id extends string | number | object ? T : (Required<typeof id> & {
-    $$query: ResponseType;
-})['$$query']) => void): T;
+    value: ResponseType;
+})['value']) => void): T;
 export declare function useFetcherCode(id: any): number;
 /**
  * Get the loading state of a request using its id
@@ -385,10 +385,10 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
  * Create an effect for when the request completes
  */
 export declare function useResolve<ResponseType = any>(id: string | number | object | {
-    $$query?: ResponseType;
+    value?: ResponseType;
 }, onResolve: (data: typeof id extends string | number | object ? ResponseType : (Required<typeof id> & {
-    $$query: ResponseType;
-})['$$query']) => void): void;
+    value: ResponseType;
+})['value']) => void): void;
 /**
  * User a `GET` request
  */
@@ -936,8 +936,8 @@ export declare function useFetcherText<FetchDataType = string, BodyType = any>(i
 export declare function gql<T = any, VT = {
     [k: string]: any;
 }>(...args: any): {
-    $$query: T;
-    $$vars: VT;
+    value: T;
+    variables: VT;
 };
 /**
  *
@@ -946,41 +946,45 @@ export declare function gql<T = any, VT = {
  */
 export declare function queryProvider<R>(queries: {
     [e in keyof R]: R[e];
+}, providerConfig?: {
+    defaults?: {
+        [key in keyof R]?: Partial<ReturnType<typeof gql<R[key]>>['value']>;
+    };
 }): <P extends keyof R>(queryName: P, otherConfig?: (Omit<FetcherInit<{ [e in keyof R]: R[e]; }[P] extends {
-    $$query: unknown;
-    $$vars: unknown;
-} ? { [e in keyof R]: R[e]; }[P]["$$query"] : any, any>, "url"> & {
+    value: unknown;
+    variables: unknown;
+} ? { [e in keyof R]: R[e]; }[P]["value"] : any, any>, "url"> & {
     variables?: ({ [e in keyof R]: R[e]; }[P] extends {
-        $$query: unknown;
-        $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["$$vars"] : any) | undefined;
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["variables"] : any) | undefined;
     graphqlPath?: string | undefined;
 }) | undefined) => {
     data: { [e in keyof R]: R[e]; }[P] extends {
-        $$query: unknown;
-        $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any;
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any;
     loading: boolean;
     error: Error | null;
     online: boolean;
     code: number;
     reFetch: () => Promise<void>;
     mutate: (update: ({ [e in keyof R]: R[e]; }[P] extends {
-        $$query: unknown;
-        $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any) | ((prev: { [e in keyof R]: R[e]; }[P] extends {
-        $$query: unknown;
-        $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any) => { [e in keyof R]: R[e]; }[P] extends {
-        $$query: unknown;
-        $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any), callback?: ((data: { [e in keyof R]: R[e]; }[P] extends {
-        $$query: unknown;
-        $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any, fetcher: ImperativeFetcher) => void) | undefined) => { [e in keyof R]: R[e]; }[P] extends {
-        $$query: unknown;
-        $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any;
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any) | ((prev: { [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any) => { [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any), callback?: ((data: { [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any, fetcher: ImperativeFetcher) => void) | undefined) => { [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any;
     fetcher: ImperativeFetcher;
     abort: () => void;
     config: {
@@ -1012,9 +1016,9 @@ export declare function queryProvider<R>(queries: {
         rawUrl: string;
     };
     response: CustomResponse<{ [e in keyof R]: R[e]; }[P] extends {
-        $$query: unknown;
-        $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any>;
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any>;
     id: any;
     key: string;
 };
@@ -1024,16 +1028,16 @@ export declare function queryProvider<R>(queries: {
 export declare function useGql<T = any, VT = {
     [k: string]: any;
 }>(arg1: undefined | {
-    $$query: T;
-    $$vars: VT;
+    value: T;
+    variables: VT;
 }, cfg?: FetcherConfigTypeNoUrl<T, any> & {
     /**
      * GraphQL variables
      */
     variables?: typeof arg1 extends undefined ? VT : (typeof arg1 & {
-        $$query: T;
-        $$vars: VT;
-    })['$$vars'];
+        value: T;
+        variables: VT;
+    })['variables'];
     /**
      * Override the GraphQL path
      *
