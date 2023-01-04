@@ -940,6 +940,100 @@ export declare function gql<T = any, VT = {
     $$vars: VT;
 };
 /**
+ *
+ * @param queries
+ * @returns A hook that has full TypeScript support and offers autocomplete for every query passed
+ */
+export declare function queryProvider<R>(queries: {
+    [e in keyof R]: {
+        $$query: R[e];
+        $$vars: {
+            [k: string]: any;
+        };
+    };
+}): <T = Exclude<keyof R, string>>(queryName: keyof typeof queries, otherConfig?: Omit<FetcherInit<T | { [e in keyof R]: {
+    $$query: R[e];
+    $$vars: {
+        [k: string]: any;
+    };
+}; }[keyof R]["$$query"], any>, "url"> | undefined) => {
+    data: T | { [e in keyof R]: {
+        $$query: R[e];
+        $$vars: {
+            [k: string]: any;
+        };
+    }; }[keyof R]["$$query"];
+    loading: boolean;
+    error: Error | null;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    mutate: (update: T | { [e in keyof R]: {
+        $$query: R[e];
+        $$vars: {
+            [k: string]: any;
+        };
+    }; }[keyof R]["$$query"] | ((prev: T | { [e in keyof R]: {
+        $$query: R[e];
+        $$vars: {
+            [k: string]: any;
+        };
+    }; }[keyof R]["$$query"]) => T | { [e in keyof R]: {
+        $$query: R[e];
+        $$vars: {
+            [k: string]: any;
+        };
+    }; }[keyof R]["$$query"]), callback?: ((data: T | { [e in keyof R]: {
+        $$query: R[e];
+        $$vars: {
+            [k: string]: any;
+        };
+    }; }[keyof R]["$$query"], fetcher: ImperativeFetcher) => void) | undefined) => T | { [e in keyof R]: {
+        $$query: R[e];
+        $$vars: {
+            [k: string]: any;
+        };
+    }; }[keyof R]["$$query"];
+    fetcher: ImperativeFetcher;
+    abort: () => void;
+    config: {
+        /**
+         * Override base url
+         */
+        baseUrl?: string | undefined;
+        /**
+         * Request method
+         */
+        method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
+        headers?: object | Headers | undefined;
+        query?: any;
+        /**
+         * URL params
+         */
+        params?: any;
+        body?: any;
+        /**
+         * Customize how body is formated for the request. By default it will be sent in JSON format
+         * but you can set it to false if for example, you are sending a `FormData`
+         * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
+         * (the last one is the default behaviour so in that case you can ignore it)
+         */
+        formatBody?: boolean | ((b: any) => any) | undefined;
+    } & {
+        baseUrl: string;
+        url: string;
+        rawUrl: string;
+    };
+    response: CustomResponse<T | { [e in keyof R]: {
+        $$query: R[e];
+        $$vars: {
+            [k: string]: any;
+        };
+    }; }[keyof R]["$$query"]>;
+    id: any;
+    key: string;
+};
+/**
  * Make a graphQL request
  */
 export declare function useGql<T = any, VT = {
