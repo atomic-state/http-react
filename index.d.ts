@@ -946,41 +946,41 @@ export declare function gql<T = any, VT = {
  */
 export declare function queryProvider<R>(queries: {
     [e in keyof R]: R[e];
-}): <T = Exclude<keyof R, string>, V = keyof R>(queryName: keyof typeof queries, otherConfig?: (Omit<FetcherInit<{ [e in keyof R]: R[e]; }[keyof R] extends {
+}): <P extends keyof R>(queryName: P, otherConfig?: (Omit<FetcherInit<{ [e in keyof R]: R[e]; }[P] extends {
     $$query: unknown;
     $$vars: unknown;
-} ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any, any>, "url"> & {
-    variables?: ({ [e in keyof R]: R[e]; }[keyof R] extends {
+} ? { [e in keyof R]: R[e]; }[P]["$$query"] : any, any>, "url"> & {
+    variables?: ({ [e in keyof R]: R[e]; }[P] extends {
         $$query: unknown;
         $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[keyof R]["$$vars"] : any) | undefined;
+    } ? { [e in keyof R]: R[e]; }[P]["$$vars"] : any) | undefined;
     graphqlPath?: string | undefined;
 }) | undefined) => {
-    data: { [e in keyof R]: R[e]; }[keyof R] extends {
+    data: { [e in keyof R]: R[e]; }[P] extends {
         $$query: unknown;
         $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any;
+    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any;
     loading: boolean;
     error: Error | null;
     online: boolean;
     code: number;
     reFetch: () => Promise<void>;
-    mutate: (update: ({ [e in keyof R]: R[e]; }[keyof R] extends {
+    mutate: (update: ({ [e in keyof R]: R[e]; }[P] extends {
         $$query: unknown;
         $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any) | ((prev: { [e in keyof R]: R[e]; }[keyof R] extends {
+    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any) | ((prev: { [e in keyof R]: R[e]; }[P] extends {
         $$query: unknown;
         $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any) => { [e in keyof R]: R[e]; }[keyof R] extends {
+    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any) => { [e in keyof R]: R[e]; }[P] extends {
         $$query: unknown;
         $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any), callback?: ((data: { [e in keyof R]: R[e]; }[keyof R] extends {
+    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any), callback?: ((data: { [e in keyof R]: R[e]; }[P] extends {
         $$query: unknown;
         $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any, fetcher: ImperativeFetcher) => void) | undefined) => { [e in keyof R]: R[e]; }[keyof R] extends {
+    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any, fetcher: ImperativeFetcher) => void) | undefined) => { [e in keyof R]: R[e]; }[P] extends {
         $$query: unknown;
         $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any;
+    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any;
     fetcher: ImperativeFetcher;
     abort: () => void;
     config: {
@@ -1011,10 +1011,10 @@ export declare function queryProvider<R>(queries: {
         url: string;
         rawUrl: string;
     };
-    response: CustomResponse<{ [e in keyof R]: R[e]; }[keyof R] extends {
+    response: CustomResponse<{ [e in keyof R]: R[e]; }[P] extends {
         $$query: unknown;
         $$vars: unknown;
-    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any>;
+    } ? { [e in keyof R]: R[e]; }[P]["$$query"] : any>;
     id: any;
     key: string;
 };

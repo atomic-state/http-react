@@ -1039,20 +1039,20 @@ export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
 export function queryProvider<R>(queries: {
   [e in keyof R]: R[e]
 }) {
-  return function useQuery<T = keyof Omit<R, string>, V = keyof R>(
-    queryName: keyof typeof queries,
+  type QuerysType = typeof queries
+
+  return function useQuery<P extends keyof R>(
+    queryName: P,
     otherConfig?: Omit<
       FetcherInit<
-        typeof queries[typeof queryName] extends ReturnType<typeof gql>
-          ? typeof queries[typeof queryName]['$$query']
+        QuerysType[P] extends ReturnType<typeof gql>
+          ? QuerysType[P]['$$query']
           : any
       >,
       'url'
     > & {
-      variables?: typeof queries[typeof queryName] extends ReturnType<
-        typeof gql
-      >
-        ? typeof queries[typeof queryName]['$$vars']
+      variables?: QuerysType[P] extends ReturnType<typeof gql>
+        ? QuerysType[P]['$$vars']
         : any
       graphqlPath?: string
     }
