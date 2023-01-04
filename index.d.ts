@@ -960,13 +960,31 @@ export declare function queryProvider<R>(queries: {
     } ? { [e in keyof R]: R[e]; }[P]["variables"] : any) | undefined;
     graphqlPath?: string | undefined;
 }) | undefined) => {
-    data: any;
+    data: { [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any;
     loading: boolean;
     error: Error | null;
     online: boolean;
     code: number;
     reFetch: () => Promise<void>;
-    mutate: (update: any, callback?: ((data: any, fetcher: ImperativeFetcher) => void) | undefined) => any;
+    mutate: (update: ({ [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any) | ((prev: { [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any) => { [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any), callback?: ((data: { [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any, fetcher: ImperativeFetcher) => void) | undefined) => { [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any;
     fetcher: ImperativeFetcher;
     abort: () => void;
     config: {
@@ -997,7 +1015,10 @@ export declare function queryProvider<R>(queries: {
         url: string;
         rawUrl: string;
     };
-    response: CustomResponse<any>;
+    response: CustomResponse<{ [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any>;
     id: any;
     key: string;
 };

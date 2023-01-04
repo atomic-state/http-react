@@ -1068,13 +1068,13 @@ export function queryProvider<R>(
 
     const thisDefaults = (defaults || ({} as any))?.[queryName]
 
-    return useGql((queries as any)[queryName], {
+    return useGql(queries[queryName] as any, {
       resolver: async d => {
         const data = await d.json()
 
         return (data as any).data
       },
-      default: thisDefaults?.value,
+      default: thisDefaults?.value as R[P]['value'],
       ...otherConfig,
       variables: {
         ...thisDefaults?.variables,
@@ -1128,7 +1128,7 @@ export function useGql<T = any, VT = { [k: string]: any }>(
     variables
   })
 
-  return useFetcher<T>({
+  return useFetcher({
     url: graphqlPath,
     id: arg1,
     ...otherArgs,
