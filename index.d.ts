@@ -945,55 +945,42 @@ export declare function gql<T = any, VT = {
  * @returns A hook that has full TypeScript support and offers autocomplete for every query passed
  */
 export declare function queryProvider<R>(queries: {
-    [e in keyof R]: {
-        $$query: R[e];
-        $$vars: {
-            [k: string]: any;
-        };
-    };
-}): <T = Exclude<keyof R, string>>(queryName: keyof typeof queries, otherConfig?: Omit<FetcherInit<T | { [e in keyof R]: {
-    $$query: R[e];
-    $$vars: {
-        [k: string]: any;
-    };
-}; }[keyof R]["$$query"], any>, "url"> | undefined) => {
-    data: T | { [e in keyof R]: {
-        $$query: R[e];
-        $$vars: {
-            [k: string]: any;
-        };
-    }; }[keyof R]["$$query"];
+    [e in keyof R]: R[e];
+}): <T = Exclude<keyof R, string>, V = keyof R>(queryName: keyof typeof queries, otherConfig?: (Omit<FetcherInit<{ [e in keyof R]: R[e]; }[keyof R] extends {
+    $$query: unknown;
+    $$vars: unknown;
+} ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any, any>, "url"> & {
+    variables?: ({ [e in keyof R]: R[e]; }[keyof R] extends {
+        $$query: unknown;
+        $$vars: unknown;
+    } ? { [e in keyof R]: R[e]; }[keyof R]["$$vars"] : any) | undefined;
+    graphqlPath?: string | undefined;
+}) | undefined) => {
+    data: { [e in keyof R]: R[e]; }[keyof R] extends {
+        $$query: unknown;
+        $$vars: unknown;
+    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any;
     loading: boolean;
     error: Error | null;
     online: boolean;
     code: number;
     reFetch: () => Promise<void>;
-    mutate: (update: T | { [e in keyof R]: {
-        $$query: R[e];
-        $$vars: {
-            [k: string]: any;
-        };
-    }; }[keyof R]["$$query"] | ((prev: T | { [e in keyof R]: {
-        $$query: R[e];
-        $$vars: {
-            [k: string]: any;
-        };
-    }; }[keyof R]["$$query"]) => T | { [e in keyof R]: {
-        $$query: R[e];
-        $$vars: {
-            [k: string]: any;
-        };
-    }; }[keyof R]["$$query"]), callback?: ((data: T | { [e in keyof R]: {
-        $$query: R[e];
-        $$vars: {
-            [k: string]: any;
-        };
-    }; }[keyof R]["$$query"], fetcher: ImperativeFetcher) => void) | undefined) => T | { [e in keyof R]: {
-        $$query: R[e];
-        $$vars: {
-            [k: string]: any;
-        };
-    }; }[keyof R]["$$query"];
+    mutate: (update: ({ [e in keyof R]: R[e]; }[keyof R] extends {
+        $$query: unknown;
+        $$vars: unknown;
+    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any) | ((prev: { [e in keyof R]: R[e]; }[keyof R] extends {
+        $$query: unknown;
+        $$vars: unknown;
+    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any) => { [e in keyof R]: R[e]; }[keyof R] extends {
+        $$query: unknown;
+        $$vars: unknown;
+    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any), callback?: ((data: { [e in keyof R]: R[e]; }[keyof R] extends {
+        $$query: unknown;
+        $$vars: unknown;
+    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any, fetcher: ImperativeFetcher) => void) | undefined) => { [e in keyof R]: R[e]; }[keyof R] extends {
+        $$query: unknown;
+        $$vars: unknown;
+    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any;
     fetcher: ImperativeFetcher;
     abort: () => void;
     config: {
@@ -1024,12 +1011,10 @@ export declare function queryProvider<R>(queries: {
         url: string;
         rawUrl: string;
     };
-    response: CustomResponse<T | { [e in keyof R]: {
-        $$query: R[e];
-        $$vars: {
-            [k: string]: any;
-        };
-    }; }[keyof R]["$$query"]>;
+    response: CustomResponse<{ [e in keyof R]: R[e]; }[keyof R] extends {
+        $$query: unknown;
+        $$vars: unknown;
+    } ? { [e in keyof R]: R[e]; }[keyof R]["$$query"] : any>;
     id: any;
     key: string;
 };

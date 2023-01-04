@@ -1037,24 +1037,27 @@ export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
  * @returns A hook that has full TypeScript support and offers autocomplete for every query passed
  */
 export function queryProvider<R>(queries: {
-  [e in keyof R]: {
-    $$query: R[e]
-    $$vars: {
-      [k: string]: any
-    }
-  }
+  [e in keyof R]: R[e]
 }) {
-  return function useQuery<T = keyof Omit<R, string>>(
+  return function useQuery<T = keyof Omit<R, string>, V = keyof R>(
     queryName: keyof typeof queries,
     otherConfig?: Omit<
-      FetcherInit<typeof queries[keyof typeof queries]['$$query'] | T>,
+      FetcherInit<
+        typeof queries[typeof queryName] extends ReturnType<typeof gql>
+          ? typeof queries[typeof queryName]['$$query']
+          : any
+      >,
       'url'
-    >
+    > & {
+      variables?: typeof queries[typeof queryName] extends ReturnType<
+        typeof gql
+      >
+        ? typeof queries[typeof queryName]['$$vars']
+        : any
+      graphqlPath?: string
+    }
   ) {
-    return useGql<typeof queries[keyof typeof queries]['$$query'] | T>(
-      queries[queryName],
-      otherConfig
-    )
+    return useGql((queries as any)[queryName], otherConfig)
   }
 }
 
