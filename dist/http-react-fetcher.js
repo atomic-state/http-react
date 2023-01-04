@@ -732,6 +732,18 @@
     }
     return returnObj
   }
+
+  /**
+   *
+   * @param queries
+   * @returns A hook that has full TypeScript support and offers autocomplete for every query passed
+   */
+  function queryProvider(queries) {
+    return function useQuery(queryName, otherConfig) {
+      return useGql(queries[queryName], otherConfig)
+    }
+  }
+
   /**
    * Make a graphQL request
    */
@@ -2048,6 +2060,7 @@
   }
 
   window.useGql = useGql
+  window.queryProvider = queryProvider
   window.gql = gql
   window.FetcherConfig = FetcherConfig
   window.fetcher = fetcher
