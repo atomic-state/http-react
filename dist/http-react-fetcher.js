@@ -740,7 +740,14 @@
    */
   function queryProvider(queries) {
     return function useQuery(queryName, otherConfig) {
-      return useGql(queries[queryName], otherConfig)
+      return useGql(queries[queryName], {
+        resolver: async d => {
+          const data = await d.json()
+
+          return data.data
+        },
+        ...otherConfig
+      })
     }
   }
 
