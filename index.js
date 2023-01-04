@@ -658,7 +658,18 @@ exports.gql = gql;
  */
 function queryProvider(queries) {
     return function useQuery(queryName, otherConfig) {
-        return useGql(queries[queryName], otherConfig);
+        var _this = this;
+        return useGql(queries[queryName], __assign({ resolver: function (d) { return __awaiter(_this, void 0, void 0, function () {
+                var data;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, d.json()];
+                        case 1:
+                            data = _a.sent();
+                            return [2 /*return*/, data.data];
+                    }
+                });
+            }); } }, otherConfig));
     };
 }
 exports.queryProvider = queryProvider;

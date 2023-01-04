@@ -1057,7 +1057,14 @@ export function queryProvider<R>(queries: {
       graphqlPath?: string
     }
   ) {
-    return useGql((queries as any)[queryName], otherConfig)
+    return useGql((queries as any)[queryName], {
+      resolver: async d => {
+        const data = await d.json()
+
+        return (data as any).data
+      },
+      ...otherConfig
+    })
   }
 }
 
