@@ -1607,7 +1607,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     if (url !== '') {
-      if (error) {
+      if (error && !hasErrors[resolvedKey]) {
         requestEmitter.emit(resolvedKey, {
           requestCallId,
           error: error
@@ -1721,6 +1721,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
               if (_data?.errors && isGqlRequest) {
                 setError(true)
+                hasErrors[resolvedKey] = true
+                if (handleError) {
+                  ;(onError as any)(true)
+                }
               }
               if (memory) {
                 cache.set(resolvedKey, __data)
@@ -1768,12 +1772,12 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                     requestCallId,
                     data: newData
                   })
-                  if (handleError) {
-                    ;(onError as any)(newData.errors, json)
-                  }
                   cache.set(resolvedKey, newData)
                   return newData
                 })
+                if (handleError) {
+                  ;(onError as any)(true, json)
+                }
               } else {
                 if (def) {
                   setData(def)
@@ -1782,9 +1786,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                     requestCallId,
                     data: def
                   })
-                  if (handleError) {
-                    ;(onError as any)(_data, json)
-                  }
+                }
+                if (handleError) {
+                  ;(onError as any)(_data, json)
                 }
               }
               setError(true)
