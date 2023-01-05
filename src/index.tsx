@@ -1585,9 +1585,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   const [statusCode, setStatusCode] = useState<number>()
   const [error, setError] = useState<any>(hasErrors[resolvedKey])
   const [loading, setLoading] = useState(
-    previousConfig[resolvedKey] === JSON.stringify(optionsConfig)
-      ? revalidateOnMount
-      : true
+    revalidateOnMount
+      ? true
+      : previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)
   )
   const [completedAttempts, setCompletedAttempts] = useState(0)
   const [requestAbortController, setRequestAbortController] =
@@ -1841,8 +1841,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             })
           }
         }
-      } else {
-        setLoading(false)
       }
     },
     [

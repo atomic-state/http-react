@@ -903,9 +903,9 @@ var useFetcher = function (init, options) {
     var _x = (0, react_1.useState)(), response = _x[0], setResponse = _x[1];
     var _y = (0, react_1.useState)(), statusCode = _y[0], setStatusCode = _y[1];
     var _z = (0, react_1.useState)(hasErrors[resolvedKey]), error = _z[0], setError = _z[1];
-    var _0 = (0, react_1.useState)(previousConfig[resolvedKey] === JSON.stringify(optionsConfig)
-        ? revalidateOnMount
-        : true), loading = _0[0], setLoading = _0[1];
+    var _0 = (0, react_1.useState)(revalidateOnMount
+        ? true
+        : previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)), loading = _0[0], setLoading = _0[1];
     var _1 = (0, react_1.useState)(0), completedAttempts = _1[0], setCompletedAttempts = _1[1];
     var _2 = (0, react_1.useState)(new AbortController()), requestAbortController = _2[0], setRequestAbortController = _2[1];
     var _3 = (0, react_1.useState)(config.method), reqMethod = _3[0], setReqMethod = _3[1];
@@ -951,7 +951,7 @@ var useFetcher = function (init, options) {
                         realUrl = urlWithParams +
                             (urlWithParams.includes('?') ? ((c === null || c === void 0 ? void 0 : c.query) !== '' ? "&" : '') : '?');
                         resKey = realUrl.split('?')[0];
-                        if (!(previousConfig[resolvedKey] !== JSON.stringify(optionsConfig))) return [3 /*break*/, 7];
+                        if (!(previousConfig[resolvedKey] !== JSON.stringify(optionsConfig))) return [3 /*break*/, 6];
                         queue(function () {
                             setReqMethod(config.method);
                             if (url !== '') {
@@ -1146,11 +1146,7 @@ var useFetcher = function (init, options) {
                             loading: false
                         });
                         return [7 /*endfinally*/];
-                    case 6: return [3 /*break*/, 8];
-                    case 7:
-                        setLoading(false);
-                        _b.label = 8;
-                    case 8: return [2 /*return*/];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
