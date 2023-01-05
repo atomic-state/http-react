@@ -668,18 +668,27 @@ export function useFetcherConfig(id?: string) {
 /**
  * Get the data state of a request using its id
  */
-export function useFetcherData<T = any>(
-  id:
-    | string
-    | number
-    | object
-    | {
-        value?: T
+export function useFetcherData<ResponseType = any, VT = any>(
+  id: ResponseType extends { variables: any }
+    ? string | number | object
+    : {
+        value: ResponseType
+        variables: VT
+        errors?: any[]
       },
   onResolve?: (
-    data: typeof id extends string | number | object
-      ? T
-      : (Required<typeof id> & { value: ResponseType })['value']
+    data: typeof id extends { variables: any }
+      ? {
+          data: (Required<typeof id> & {
+            value: ResponseType
+            variables: VT
+          })['value']
+          variables: (Required<typeof id> & {
+            value: ResponseType
+            variables: VT
+          })['variables']
+        }
+      : ResponseType
   ) => void
 ) {
   const { cache = defaultCache } = useHRFContext()
@@ -690,7 +699,7 @@ export function useFetcherData<T = any>(
 
   const def = cache.get(defaultsKey)
 
-  const { data } = useFetcher<T>({
+  const { data } = useFetcher<typeof id>({
     default: def,
     id: id
   })
@@ -726,7 +735,7 @@ export function useFetcherLoading(id: any): boolean {
 /**
  * Get the error state of a request using its id
  */
-export function useFetcherError(id: any, onError?: () => void) {
+export function useFetcherError(id: any, onError?: (err?: any) => void) {
   const { error } = useFetcher({
     id: id,
     onError
@@ -780,18 +789,28 @@ export function useFetcherId<ResponseType = any, BodyType = any>(id: any) {
 /**
  * Create an effect for when the request completes
  */
-export function useResolve<ResponseType = any>(
-  id:
-    | string
-    | number
-    | object
-    | {
-        value?: ResponseType
+export function useResolve<ResponseType = any, VT = any>(
+  id: ResponseType extends { variables: any }
+    ? string | number | object
+    : {
+        value: ResponseType
+        variables: VT
+        errors?: any[]
       },
   onResolve: (
-    data: typeof id extends string | number | object
-      ? ResponseType
-      : (Required<typeof id> & { value: ResponseType })['value']
+    data: typeof id extends { variables: any }
+      ? {
+          data: (Required<typeof id> & {
+            value: ResponseType
+          })['value']
+          variables: (Required<typeof id> & {
+            variables: VT
+          })['variables']
+          errors: (Required<typeof id> & {
+            errors?: any[]
+          })['errors']
+        }
+      : ResponseType
   ) => void
 ) {
   const defaultsKey = JSON.stringify({
@@ -1058,6 +1077,9 @@ export function queryProvider<R>(
       >,
       'url'
     > & {
+      default?: QuerysType[P] extends ReturnType<typeof gql>
+        ? QuerysType[P]['value']
+        : any
       variables?: QuerysType[P] extends ReturnType<typeof gql>
         ? QuerysType[P]['variables']
         : any
@@ -1068,19 +1090,44 @@ export function queryProvider<R>(
 
     const thisDefaults = (defaults || ({} as any))?.[queryName]
 
-    return useGql(queries[queryName] as any, {
-      resolver: async d => {
-        const data = await d.json()
+    const queryVariables = {
+      ...thisDefaults?.variables,
+      ...(otherConfig as any)?.variables
+    }
 
-        return (data as any).data
-      },
-      default: thisDefaults?.value as R[P]['value'],
+    const g = useGql(queries[queryName] as any, {
       ...otherConfig,
-      variables: {
-        ...thisDefaults?.variables,
-        ...(otherConfig as any)?.variables
-      }
+      ...{ __fromProvider: true },
+      default: {
+        data: (isDefined(thisDefaults?.value)
+          ? thisDefaults.value
+          : otherConfig?.default) as R[P]['value']
+      },
+      variables: queryVariables
     })
+
+    const thisData = React.useMemo(
+      () => ({
+        ...g?.data,
+        variables: queryVariables
+      }),
+      [JSON.stringify({ data: g?.data, queryVariables })]
+    )
+
+    return {
+      ...g,
+      data: thisData
+    } as Omit<typeof g, 'data'> & {
+      data: {
+        data: QuerysType[P] extends ReturnType<typeof gql>
+          ? QuerysType[P]['value']
+          : any
+        errors?: any[]
+        variables: QuerysType[P] extends ReturnType<typeof gql>
+          ? QuerysType[P]['variables']
+          : any
+      }
+    }
   }
 }
 
@@ -1128,10 +1175,21 @@ export function useGql<T = any, VT = { [k: string]: any }>(
     variables
   })
 
-  return useFetcher({
+  const usingProvider = isDefined((cfg as any)['__fromProvider'])
+
+  const g = useFetcher({
     url: graphqlPath,
     id: arg1,
+    ...{ variables: (cfg as any).variables || ({} as VT) },
     ...otherArgs,
+    default: usingProvider
+      ? otherArgs.default
+      : ({
+          data: cfg?.default as T,
+          errors: undefined,
+          variables: (cfg as any).variables || ({} as VT)
+        } as any),
+    ...{ __gql: true },
     config: {
       ...config,
       formatBody: () => JSONBody,
@@ -1139,6 +1197,13 @@ export function useGql<T = any, VT = { [k: string]: any }>(
       method: 'POST'
     }
   })
+  return g as Omit<typeof g, 'data'> & {
+    data: {
+      data: T
+      errors: any[]
+      variables: VT
+    }
+  }
 }
 
 export {
@@ -1519,7 +1584,11 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   const [statusCode, setStatusCode] = useState<number>()
   const [error, setError] = useState<any>(hasErrors[resolvedKey])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(
+    previousConfig[resolvedKey] === JSON.stringify(optionsConfig)
+      ? revalidateOnMount
+      : true
+  )
   const [completedAttempts, setCompletedAttempts] = useState(0)
   const [requestAbortController, setRequestAbortController] =
     useState<AbortController>(new AbortController())
@@ -1546,6 +1615,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       }
     }
   }, [url, error, resolvedKey, requestCallId])
+
+  const isGqlRequest = isDefined((optionsConfig as any)['__gql'])
 
   const fetchData = React.useCallback(
     async function fetchData(
@@ -1640,47 +1711,84 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
             })
             const _data = await (resolver as any)(json)
             if (code >= 200 && code < 400) {
+              let __data = isGqlRequest
+                ? {
+                    ..._data,
+                    variables: (optionsConfig as any)?.variables,
+                    errors: _data?.errors ? _data.errors : undefined
+                  }
+                : _data
+
+              if (_data?.errors && isGqlRequest) {
+                setError(true)
+              }
               if (memory) {
-                cache.set(resolvedKey, _data)
-                valuesMemory[resolvedKey] = _data
+                cache.set(resolvedKey, __data)
+                valuesMemory[resolvedKey] = __data
               }
 
               requestEmitter.emit(resolvedKey, {
                 requestCallId,
-                data: _data,
+                data: __data,
                 isResolved: true,
                 loading: false,
-                error: null,
+                error: _data?.errors && isGqlRequest ? true : null,
+                variables: isGqlRequest
+                  ? (optionsConfig as any)?.variables || {}
+                  : undefined,
                 completedAttempts: 0
               })
-              setData(_data)
-              cacheForMutation[idString] = _data
-              setError(null)
-              hasErrors[resolvedKey] = null
+              setData(__data)
+              cacheForMutation[idString] = __data
+
+              if (!_data?.errors && isGqlRequest) {
+                setError(null)
+                hasErrors[resolvedKey] = null
+              }
               setLoading(false)
               if (willResolve) {
-                ;(onResolve as any)(_data, json)
+                ;(onResolve as any)(__data, json)
               }
               runningRequests[resolvedKey] = false
               // If a request completes succesfuly, we reset the error attempts to 0
               setCompletedAttempts(0)
               queue(() => {
-                cacheForMutation[resolvedKey] = _data
+                cacheForMutation[resolvedKey] = __data
               })
             } else {
-              if (def) {
-                setData(def)
-                cacheForMutation[idString] = def
-                requestEmitter.emit(resolvedKey, {
-                  requestCallId,
-                  data: def
+              if (_data.errors && isGqlRequest) {
+                setData(previous => {
+                  const newData = {
+                    ...previous,
+                    variables: (optionsConfig as any)?.variables,
+                    errors: _data.errors
+                  } as any
+                  cacheForMutation[idString] = newData
+                  requestEmitter.emit(resolvedKey, {
+                    requestCallId,
+                    data: newData
+                  })
+                  if (handleError) {
+                    ;(onError as any)(newData.errors, json)
+                  }
+                  cache.set(resolvedKey, newData)
+                  return newData
                 })
+              } else {
+                if (def) {
+                  setData(def)
+                  cacheForMutation[idString] = def
+                  requestEmitter.emit(resolvedKey, {
+                    requestCallId,
+                    data: def
+                  })
+                  if (handleError) {
+                    ;(onError as any)(_data, json)
+                  }
+                }
               }
               setError(true)
               hasErrors[resolvedKey] = true
-              if (handleError) {
-                ;(onError as any)(_data, json)
-              }
               runningRequests[resolvedKey] = false
             }
           } catch (err) {

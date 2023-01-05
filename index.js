@@ -658,21 +658,17 @@ exports.gql = gql;
  */
 function queryProvider(queries, providerConfig) {
     return function useQuery(queryName, otherConfig) {
-        var _this = this;
         var _a;
         var defaults = (providerConfig || {}).defaults;
         var thisDefaults = (_a = (defaults || {})) === null || _a === void 0 ? void 0 : _a[queryName];
-        return useGql(queries[queryName], __assign(__assign({ resolver: function (d) { return __awaiter(_this, void 0, void 0, function () {
-                var data;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, d.json()];
-                        case 1:
-                            data = _a.sent();
-                            return [2 /*return*/, data.data];
-                    }
-                });
-            }); }, default: thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.value }, otherConfig), { variables: __assign(__assign({}, thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.variables), otherConfig === null || otherConfig === void 0 ? void 0 : otherConfig.variables) }));
+        var queryVariables = __assign(__assign({}, thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.variables), otherConfig === null || otherConfig === void 0 ? void 0 : otherConfig.variables);
+        var g = useGql(queries[queryName], __assign(__assign(__assign({}, otherConfig), { __fromProvider: true }), { default: {
+                data: (isDefined(thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.value)
+                    ? thisDefaults.value
+                    : otherConfig === null || otherConfig === void 0 ? void 0 : otherConfig.default)
+            }, variables: queryVariables }));
+        var thisData = React.useMemo(function () { return (__assign(__assign({}, g === null || g === void 0 ? void 0 : g.data), { variables: queryVariables })); }, [JSON.stringify({ data: g === null || g === void 0 ? void 0 : g.data, queryVariables: queryVariables })]);
+        return __assign(__assign({}, g), { data: thisData });
     };
 }
 exports.queryProvider = queryProvider;
@@ -695,7 +691,15 @@ function useGql(arg1, cfg) {
         query: query,
         variables: variables
     });
-    return useFetcher(__assign(__assign({ url: graphqlPath, id: arg1 }, otherArgs), { config: __assign(__assign({}, config), { formatBody: function () { return JSONBody; }, body: JSONBody, method: 'POST' }) }));
+    var usingProvider = isDefined(cfg['__fromProvider']);
+    var g = useFetcher(__assign(__assign(__assign(__assign(__assign({ url: graphqlPath, id: arg1 }, { variables: cfg.variables || {} }), otherArgs), { default: usingProvider
+            ? otherArgs.default
+            : {
+                data: cfg === null || cfg === void 0 ? void 0 : cfg.default,
+                errors: undefined,
+                variables: cfg.variables || {}
+            } }), { __gql: true }), { config: __assign(__assign({}, config), { formatBody: function () { return JSONBody; }, body: JSONBody, method: 'POST' }) }));
+    return g;
 }
 exports.useGql = useGql;
 var createImperativeFetcher = function (ctx) {
@@ -899,7 +903,9 @@ var useFetcher = function (init, options) {
     var _x = (0, react_1.useState)(), response = _x[0], setResponse = _x[1];
     var _y = (0, react_1.useState)(), statusCode = _y[0], setStatusCode = _y[1];
     var _z = (0, react_1.useState)(hasErrors[resolvedKey]), error = _z[0], setError = _z[1];
-    var _0 = (0, react_1.useState)(true), loading = _0[0], setLoading = _0[1];
+    var _0 = (0, react_1.useState)(previousConfig[resolvedKey] === JSON.stringify(optionsConfig)
+        ? revalidateOnMount
+        : true), loading = _0[0], setLoading = _0[1];
     var _1 = (0, react_1.useState)(0), completedAttempts = _1[0], setCompletedAttempts = _1[1];
     var _2 = (0, react_1.useState)(new AbortController()), requestAbortController = _2[0], setRequestAbortController = _2[1];
     var _3 = (0, react_1.useState)(config.method), reqMethod = _3[0], setReqMethod = _3[1];
@@ -922,11 +928,12 @@ var useFetcher = function (init, options) {
             }
         }
     }, [url, error, resolvedKey, requestCallId]);
+    var isGqlRequest = isDefined(optionsConfig['__gql']);
     var fetchData = React.useCallback(function fetchData(c) {
         var _a;
         if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var rawUrl, urlWithParams, realUrl, resKey, newAbortController, json, code, _data_1, err_2, errorString, _error;
+            var rawUrl, urlWithParams, realUrl, resKey, newAbortController, json_1, code, _data_1, __data_1, err_2, errorString, _error;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -996,64 +1003,92 @@ var useFetcher = function (init, options) {
                                     : undefined
                             })];
                     case 2:
-                        json = _b.sent();
+                        json_1 = _b.sent();
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
-                            response: json
+                            response: json_1
                         });
-                        code = json.status;
+                        code = json_1.status;
                         setStatusCode(code);
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
                             code: code
                         });
-                        return [4 /*yield*/, resolver(json)];
+                        return [4 /*yield*/, resolver(json_1)];
                     case 3:
                         _data_1 = _b.sent();
                         if (code >= 200 && code < 400) {
+                            __data_1 = isGqlRequest
+                                ? __assign(__assign({}, _data_1), { variables: optionsConfig === null || optionsConfig === void 0 ? void 0 : optionsConfig.variables, errors: (_data_1 === null || _data_1 === void 0 ? void 0 : _data_1.errors) ? _data_1.errors : undefined }) : _data_1;
+                            if ((_data_1 === null || _data_1 === void 0 ? void 0 : _data_1.errors) && isGqlRequest) {
+                                setError(true);
+                            }
                             if (memory) {
-                                cache.set(resolvedKey, _data_1);
-                                valuesMemory[resolvedKey] = _data_1;
+                                cache.set(resolvedKey, __data_1);
+                                valuesMemory[resolvedKey] = __data_1;
                             }
                             requestEmitter.emit(resolvedKey, {
                                 requestCallId: requestCallId,
-                                data: _data_1,
+                                data: __data_1,
                                 isResolved: true,
                                 loading: false,
-                                error: null,
+                                error: (_data_1 === null || _data_1 === void 0 ? void 0 : _data_1.errors) && isGqlRequest ? true : null,
+                                variables: isGqlRequest
+                                    ? (optionsConfig === null || optionsConfig === void 0 ? void 0 : optionsConfig.variables) || {}
+                                    : undefined,
                                 completedAttempts: 0
                             });
-                            setData(_data_1);
-                            cacheForMutation[idString] = _data_1;
-                            setError(null);
-                            hasErrors[resolvedKey] = null;
+                            setData(__data_1);
+                            cacheForMutation[idString] = __data_1;
+                            if (!(_data_1 === null || _data_1 === void 0 ? void 0 : _data_1.errors) && isGqlRequest) {
+                                setError(null);
+                                hasErrors[resolvedKey] = null;
+                            }
                             setLoading(false);
                             if (willResolve) {
                                 ;
-                                onResolve(_data_1, json);
+                                onResolve(__data_1, json_1);
                             }
                             runningRequests[resolvedKey] = false;
                             // If a request completes succesfuly, we reset the error attempts to 0
                             setCompletedAttempts(0);
                             queue(function () {
-                                cacheForMutation[resolvedKey] = _data_1;
+                                cacheForMutation[resolvedKey] = __data_1;
                             });
                         }
                         else {
-                            if (def) {
-                                setData(def);
-                                cacheForMutation[idString] = def;
-                                requestEmitter.emit(resolvedKey, {
-                                    requestCallId: requestCallId,
-                                    data: def
+                            if (_data_1.errors && isGqlRequest) {
+                                setData(function (previous) {
+                                    var newData = __assign(__assign({}, previous), { variables: optionsConfig === null || optionsConfig === void 0 ? void 0 : optionsConfig.variables, errors: _data_1.errors });
+                                    cacheForMutation[idString] = newData;
+                                    requestEmitter.emit(resolvedKey, {
+                                        requestCallId: requestCallId,
+                                        data: newData
+                                    });
+                                    if (handleError) {
+                                        ;
+                                        onError(newData.errors, json_1);
+                                    }
+                                    cache.set(resolvedKey, newData);
+                                    return newData;
                                 });
+                            }
+                            else {
+                                if (def) {
+                                    setData(def);
+                                    cacheForMutation[idString] = def;
+                                    requestEmitter.emit(resolvedKey, {
+                                        requestCallId: requestCallId,
+                                        data: def
+                                    });
+                                    if (handleError) {
+                                        ;
+                                        onError(_data_1, json_1);
+                                    }
+                                }
                             }
                             setError(true);
                             hasErrors[resolvedKey] = true;
-                            if (handleError) {
-                                ;
-                                onError(_data_1, json);
-                            }
                             runningRequests[resolvedKey] = false;
                         }
                         return [3 /*break*/, 6];
