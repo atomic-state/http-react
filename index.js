@@ -920,7 +920,7 @@ var useFetcher = function (init, options) {
     }, [stringDeps, response, requestAbortController, requestCallId]);
     (0, react_1.useEffect)(function () {
         if (url !== '') {
-            if (error) {
+            if (error && !hasErrors[resolvedKey]) {
                 requestEmitter.emit(resolvedKey, {
                     requestCallId: requestCallId,
                     error: error
@@ -933,7 +933,7 @@ var useFetcher = function (init, options) {
         var _a;
         if (c === void 0) { c = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var rawUrl, urlWithParams, realUrl, resKey, newAbortController, json_1, code, _data_1, __data_1, err_2, errorString, _error;
+            var rawUrl, urlWithParams, realUrl, resKey, newAbortController, json, code, _data_1, __data_1, err_2, errorString, _error;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -1003,18 +1003,18 @@ var useFetcher = function (init, options) {
                                     : undefined
                             })];
                     case 2:
-                        json_1 = _b.sent();
+                        json = _b.sent();
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
-                            response: json_1
+                            response: json
                         });
-                        code = json_1.status;
+                        code = json.status;
                         setStatusCode(code);
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
                             code: code
                         });
-                        return [4 /*yield*/, resolver(json_1)];
+                        return [4 /*yield*/, resolver(json)];
                     case 3:
                         _data_1 = _b.sent();
                         if (code >= 200 && code < 400) {
@@ -1022,6 +1022,11 @@ var useFetcher = function (init, options) {
                                 ? __assign(__assign({}, _data_1), { variables: optionsConfig === null || optionsConfig === void 0 ? void 0 : optionsConfig.variables, errors: (_data_1 === null || _data_1 === void 0 ? void 0 : _data_1.errors) ? _data_1.errors : undefined }) : _data_1;
                             if ((_data_1 === null || _data_1 === void 0 ? void 0 : _data_1.errors) && isGqlRequest) {
                                 setError(true);
+                                hasErrors[resolvedKey] = true;
+                                if (handleError) {
+                                    ;
+                                    onError(true);
+                                }
                             }
                             if (memory) {
                                 cache.set(resolvedKey, __data_1);
@@ -1047,7 +1052,7 @@ var useFetcher = function (init, options) {
                             setLoading(false);
                             if (willResolve) {
                                 ;
-                                onResolve(__data_1, json_1);
+                                onResolve(__data_1, json);
                             }
                             runningRequests[resolvedKey] = false;
                             // If a request completes succesfuly, we reset the error attempts to 0
@@ -1065,13 +1070,13 @@ var useFetcher = function (init, options) {
                                         requestCallId: requestCallId,
                                         data: newData
                                     });
-                                    if (handleError) {
-                                        ;
-                                        onError(newData.errors, json_1);
-                                    }
                                     cache.set(resolvedKey, newData);
                                     return newData;
                                 });
+                                if (handleError) {
+                                    ;
+                                    onError(true, json);
+                                }
                             }
                             else {
                                 if (def) {
@@ -1081,10 +1086,10 @@ var useFetcher = function (init, options) {
                                         requestCallId: requestCallId,
                                         data: def
                                     });
-                                    if (handleError) {
-                                        ;
-                                        onError(_data_1, json_1);
-                                    }
+                                }
+                                if (handleError) {
+                                    ;
+                                    onError(_data_1, json);
                                 }
                             }
                             setError(true);
