@@ -306,11 +306,30 @@ export declare function useFetcherConfig(id?: string): FetcherContextType | ({
 /**
  * Get the data state of a request using its id
  */
-export declare function useFetcherData<T = any>(id: string | number | object | {
-    value?: T;
-}, onResolve?: (data: typeof id extends string | number | object ? T : (Required<typeof id> & {
+export declare function useFetcherData<ResponseType = any, VT = any>(id: ResponseType extends {
+    variables: any;
+} ? string | number | object : {
     value: ResponseType;
-})['value']) => void): T;
+    variables: VT;
+    errors?: any[];
+}, onResolve?: (data: typeof id extends {
+    variables: any;
+} ? {
+    data: (Required<typeof id> & {
+        value: ResponseType;
+        variables: VT;
+    })['value'];
+    variables: (Required<typeof id> & {
+        value: ResponseType;
+        variables: VT;
+    })['variables'];
+} : ResponseType) => void): ResponseType extends {
+    variables: any;
+} ? string | number | object : {
+    value: ResponseType;
+    variables: VT;
+    errors?: any[] | undefined;
+};
 export declare function useFetcherCode(id: any): number;
 /**
  * Get the loading state of a request using its id
@@ -319,7 +338,7 @@ export declare function useFetcherLoading(id: any): boolean;
 /**
  * Get the error state of a request using its id
  */
-export declare function useFetcherError(id: any, onError?: () => void): Error | null;
+export declare function useFetcherError(id: any, onError?: (err?: any) => void): Error | null;
 /**
  * Get the mutate the request data using its id
  */
@@ -384,11 +403,25 @@ export declare function useFetcherId<ResponseType = any, BodyType = any>(id: any
 /**
  * Create an effect for when the request completes
  */
-export declare function useResolve<ResponseType = any>(id: string | number | object | {
-    value?: ResponseType;
-}, onResolve: (data: typeof id extends string | number | object ? ResponseType : (Required<typeof id> & {
+export declare function useResolve<ResponseType = any, VT = any>(id: ResponseType extends {
+    variables: any;
+} ? string | number | object : {
     value: ResponseType;
-})['value']) => void): void;
+    variables: VT;
+    errors?: any[];
+}, onResolve: (data: typeof id extends {
+    variables: any;
+} ? {
+    data: (Required<typeof id> & {
+        value: ResponseType;
+    })['value'];
+    variables: (Required<typeof id> & {
+        variables: VT;
+    })['variables'];
+    errors: (Required<typeof id> & {
+        errors?: any[];
+    })['errors'];
+} : ResponseType) => void): void;
 /**
  * User a `GET` request
  */
@@ -954,37 +987,23 @@ export declare function queryProvider<R>(queries: {
     value: unknown;
     variables: unknown;
 } ? { [e in keyof R]: R[e]; }[P]["value"] : any, any>, "url"> & {
+    default?: ({ [e in keyof R]: R[e]; }[P] extends {
+        value: unknown;
+        variables: unknown;
+    } ? { [e in keyof R]: R[e]; }[P]["value"] : any) | undefined;
     variables?: ({ [e in keyof R]: R[e]; }[P] extends {
         value: unknown;
         variables: unknown;
     } ? { [e in keyof R]: R[e]; }[P]["variables"] : any) | undefined;
     graphqlPath?: string | undefined;
-}) | undefined) => {
-    data: { [e in keyof R]: R[e]; }[P] extends {
-        value: unknown;
-        variables: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["value"] : any;
+}) | undefined) => Omit<Omit<{
+    data: any;
     loading: boolean;
     error: Error | null;
     online: boolean;
     code: number;
     reFetch: () => Promise<void>;
-    mutate: (update: ({ [e in keyof R]: R[e]; }[P] extends {
-        value: unknown;
-        variables: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["value"] : any) | ((prev: { [e in keyof R]: R[e]; }[P] extends {
-        value: unknown;
-        variables: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["value"] : any) => { [e in keyof R]: R[e]; }[P] extends {
-        value: unknown;
-        variables: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["value"] : any), callback?: ((data: { [e in keyof R]: R[e]; }[P] extends {
-        value: unknown;
-        variables: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["value"] : any, fetcher: ImperativeFetcher) => void) | undefined) => { [e in keyof R]: R[e]; }[P] extends {
-        value: unknown;
-        variables: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["value"] : any;
+    mutate: (update: any, callback?: ((data: any, fetcher: ImperativeFetcher) => void) | undefined) => any;
     fetcher: ImperativeFetcher;
     abort: () => void;
     config: {
@@ -1015,12 +1034,30 @@ export declare function queryProvider<R>(queries: {
         url: string;
         rawUrl: string;
     };
-    response: CustomResponse<{ [e in keyof R]: R[e]; }[P] extends {
-        value: unknown;
-        variables: unknown;
-    } ? { [e in keyof R]: R[e]; }[P]["value"] : any>;
+    response: CustomResponse<any>;
     id: any;
     key: string;
+}, "data"> & {
+    data: {
+        data: { [e in keyof R]: R[e]; }[P] extends {
+            value: unknown;
+            variables: unknown;
+        } ? { [e in keyof R]: R[e]; }[P]["value"] : any;
+        errors: any[];
+        variables: any;
+    };
+}, "data"> & {
+    data: {
+        data: { [e in keyof R]: R[e]; }[P] extends {
+            value: unknown;
+            variables: unknown;
+        } ? { [e in keyof R]: R[e]; }[P]["value"] : any;
+        errors?: any[] | undefined;
+        variables: { [e in keyof R]: R[e]; }[P] extends {
+            value: unknown;
+            variables: unknown;
+        } ? { [e in keyof R]: R[e]; }[P]["variables"] : any;
+    };
 };
 /**
  * Make a graphQL request
@@ -1044,14 +1081,14 @@ export declare function useGql<T = any, VT = {
      * (default is `'/graphql'`)
      */
     graphqlPath?: string;
-}): {
-    data: T;
+}): Omit<{
+    data: any;
     loading: boolean;
     error: Error | null;
     online: boolean;
     code: number;
     reFetch: () => Promise<void>;
-    mutate: (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
+    mutate: (update: any, callback?: ((data: any, fetcher: ImperativeFetcher) => void) | undefined) => any;
     fetcher: ImperativeFetcher;
     abort: () => void;
     config: {
@@ -1082,9 +1119,15 @@ export declare function useGql<T = any, VT = {
         url: string;
         rawUrl: string;
     };
-    response: CustomResponse<T>;
+    response: CustomResponse<any>;
     id: any;
     key: string;
+}, "data"> & {
+    data: {
+        data: T;
+        errors: any[];
+        variables: VT;
+    };
 };
 export { useFetcher as useFetch, useFetcherLoading as useLoading, useFetcherConfig as useConfig, useFetcherData as useData, useFetcherCode as useCode, useFetcherError as useError, useFetcherMutate as useMutate, useFetcherId as useFetchId, useFetcherBlob as useBlob, useFetcherText as useText, useGET, useDELETE, useHEAD, useOPTIONS, usePOST, usePUT, usePATCH, usePURGE, useLINK, useUNLINK };
 /**
