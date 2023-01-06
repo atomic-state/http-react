@@ -247,7 +247,7 @@ const requestEmitter = createRequestEmitter()
 export type CacheStoreType = {
   get(k?: any): any
   set(k?: any, v?: any): any
-  delete(k?: any): any
+  delete?(k?: any): any
 }
 
 type FetcherContextType = {
@@ -337,6 +337,10 @@ export type FetcherConfigType<FetchDataType = any, BodyType = any> = {
    * Function to run when request is resolved succesfuly
    */
   onResolve?: (data: FetchDataType, req?: Response) => void
+  /**
+   * Override the cache for this specific request
+   */
+  cache?: CacheStoreType
   /**
    * Function to run when data is mutated
    */
@@ -471,7 +475,7 @@ const abortControllers: any = {}
 /**
  * Default store cache
  */
-const defaultCache: CacheStoreType = {
+export const defaultCache: CacheStoreType = {
   get(k) {
     return resolvedRequests[k]
   },
@@ -1063,6 +1067,22 @@ export function queryProvider<R>(
     defaults?: {
       [key in keyof R]?: Partial<ReturnType<typeof gql<R[key]>>['value']>
     }
+    config?: {
+      /**
+       * The base url
+       */
+      baseUrl?: string
+      /**
+       * Any aditional headers
+       */
+      headers?: {
+        [key: string]: any
+      }
+      /**
+       * The caching mechanism
+       */
+      cache?: CacheStoreType
+    }
   }
 ) {
   type QuerysType = typeof queries
@@ -1095,8 +1115,23 @@ export function queryProvider<R>(
       ...(otherConfig as any)?.variables
     }
 
+    const { config = {} } = providerConfig || {}
+
+    const { cache, ...others } = config
+
     const g = useGql(queries[queryName] as any, {
+      cache: config?.cache,
       ...otherConfig,
+      config: {
+        // These two can have a 'url' property and they are in that
+        // order because 'otherConfig' can overwrite the configured url
+        ...others,
+        ...otherConfig,
+        headers: {
+          ...others?.headers,
+          ...otherConfig?.config?.headers
+        }
+      },
       ...{ __fromProvider: true },
       default: {
         data: (isDefined(thisDefaults?.value)
@@ -1116,6 +1151,10 @@ export function queryProvider<R>(
 
     return {
       ...g,
+      config: {
+        ...g?.config,
+        config: undefined
+      },
       data: thisData
     } as Omit<typeof g, 'data'> & {
       data: {
@@ -1346,8 +1385,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 ) => {
   const ctx = useHRFContext()
 
-  const { cache = defaultCache } = ctx
-
   const optionsConfig =
     typeof init === 'string'
       ? {
@@ -1386,6 +1423,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus
   } = optionsConfig
+
+  const { cache: $cache = defaultCache } = ctx
+
+  const { cache = $cache } = optionsConfig
 
   const requestCallId = React.useMemo(
     () => `${Math.random()}`.split('.')[1],

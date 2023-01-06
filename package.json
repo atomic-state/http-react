@@ -1,6 +1,6 @@
 {
   "name": "http-react-fetcher",
-  "version": "2.3.6",
+  "version": "2.3.7",
   "description": "React hooks for data fetching",
   "main": "index.js",
   "scripts": {
@@ -20,12 +20,14 @@
     "use fetch",
     "http request",
     "fetching utilities",
+    "cache",
+    "graphql-client",
     "graphql",
     "gql"
   ],
   "author": "Dany Beltran",
   "license": "MIT",
-  "homepage": "https://fetcher.atomic-state.org",
+  "homepage": "https://http-react-fetcher.netlify.app",
   "devDependencies": {
     "@babel/preset-env": "^7.16.11",
     "@babel/preset-react": "^7.16.7",
