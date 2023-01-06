@@ -79,7 +79,7 @@ export declare function setURLParams(str?: string, $params?: any): string;
 export declare type CacheStoreType = {
     get(k?: any): any;
     set(k?: any, v?: any): any;
-    delete(k?: any): any;
+    delete?(k?: any): any;
 };
 declare type FetcherContextType = {
     headers?: any;
@@ -154,6 +154,10 @@ export declare type FetcherConfigType<FetchDataType = any, BodyType = any> = {
      * Function to run when request is resolved succesfuly
      */
     onResolve?: (data: FetchDataType, req?: Response) => void;
+    /**
+     * Override the cache for this specific request
+     */
+    cache?: CacheStoreType;
     /**
      * Function to run when data is mutated
      */
@@ -263,6 +267,10 @@ export declare type FetcherConfigType<FetchDataType = any, BodyType = any> = {
     };
 };
 declare type FetcherConfigTypeNoUrl<FetchDataType = any, BodyType = any> = Omit<FetcherConfigType<FetchDataType, BodyType>, 'url'>;
+/**
+ * Default store cache
+ */
+export declare const defaultCache: CacheStoreType;
 export declare function FetcherConfig(props: FetcherContextType): JSX.Element;
 /**
  * Revalidate requests that match an id or ids
@@ -982,6 +990,22 @@ export declare function queryProvider<R>(queries: {
 }, providerConfig?: {
     defaults?: {
         [key in keyof R]?: Partial<ReturnType<typeof gql<R[key]>>['value']>;
+    };
+    config?: {
+        /**
+         * The base url
+         */
+        baseUrl?: string;
+        /**
+         * Any aditional headers
+         */
+        headers?: {
+            [key: string]: any;
+        };
+        /**
+         * The caching mechanism
+         */
+        cache?: CacheStoreType;
     };
 }): <P extends keyof R>(queryName: P, otherConfig?: (Omit<FetcherInit<{ [e in keyof R]: R[e]; }[P] extends {
     value: unknown;
