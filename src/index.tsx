@@ -1770,7 +1770,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                   cacheForMutation[idString] = newData
                   requestEmitter.emit(resolvedKey, {
                     requestCallId,
-                    data: newData
+                    data: newData,
+                    error: true
                   })
                   cache.set(resolvedKey, newData)
                   return newData
@@ -1790,6 +1791,10 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                 if (handleError) {
                   ;(onError as any)(_data, json)
                 }
+                requestEmitter.emit(resolvedKey, {
+                  requestCallId,
+                  error: true
+                })
               }
               setError(true)
               hasErrors[resolvedKey] = true
