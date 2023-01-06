@@ -1068,7 +1068,8 @@ var useFetcher = function (init, options) {
                                     cacheForMutation[idString] = newData;
                                     requestEmitter.emit(resolvedKey, {
                                         requestCallId: requestCallId,
-                                        data: newData
+                                        data: newData,
+                                        error: true
                                     });
                                     cache.set(resolvedKey, newData);
                                     return newData;
@@ -1091,6 +1092,10 @@ var useFetcher = function (init, options) {
                                     ;
                                     onError(_data_1, json);
                                 }
+                                requestEmitter.emit(resolvedKey, {
+                                    requestCallId: requestCallId,
+                                    error: true
+                                });
                             }
                             setError(true);
                             hasErrors[resolvedKey] = true;
