@@ -1,6 +1,6 @@
 {
   "name": "http-react-fetcher",
-  "version": "2.3.7",
+  "version": "2.3.8",
   "description": "React hooks for data fetching",
   "main": "index.js",
   "scripts": {
@@ -11,6 +11,8 @@
     "url": "https://github.com/atomic-state/http-react-fetcher"
   },
   "keywords": [
+    "ssr",
+    "caching",
     "swr",
     "request deduplication",
     "http",
