@@ -10,6 +10,10 @@ import * as React from 'react'
 import { useState, useEffect, createContext, useContext } from 'react'
 import { EventEmitter } from 'events'
 
+// Constants
+const DEFAULT_GRAPHQL_PATH = '/graphql'
+const DEFAULT_RESOLVER = (e: any) => e.json()
+
 type CustomResponse<T> = Omit<Response, 'json'> & {
   json(): Promise<T>
 }
@@ -137,7 +141,7 @@ function createRequestFn(
   return async function (url, init = {}) {
     const {
       default: def,
-      resolver = e => e.json(),
+      resolver = DEFAULT_RESOLVER,
       config: c = {},
       onResolve = () => {},
       onError = () => {}
@@ -1048,7 +1052,12 @@ export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
 
   const returnObj = {
     value: query as T,
-    variables: {} as VT
+    variables: {} as VT,
+    baseUrl: undefined as unknown as string,
+    graphqlPath: undefined as unknown as string,
+    headers: {} as {
+      [key: string]: any
+    }
   }
 
   return returnObj
@@ -1121,14 +1130,24 @@ export function queryProvider<R>(
 
     const g = useGql(queries[queryName] as any, {
       cache: config?.cache,
+      graphqlPath: isDefined(thisDefaults?.graphqlPath)
+        ? thisDefaults?.graphqlPath
+        : undefined,
       ...otherConfig,
       config: {
         // These two can have a 'url' property and they are in that
         // order because 'otherConfig' can overwrite the configured url
         ...others,
-        ...otherConfig,
+        ...thisDefaults?.headers,
+        baseUrl: isDefined(thisDefaults?.baseUrl)
+          ? thisDefaults?.baseUrl
+          : isDefined(providerConfig?.config?.baseUrl)
+          ? providerConfig?.config?.baseUrl
+          : undefined,
+        ...otherConfig?.config,
         headers: {
           ...others?.headers,
+          ...thisDefaults?.headers,
           ...otherConfig?.config?.headers
         }
       },
@@ -1205,7 +1224,11 @@ export function useGql<T = any, VT = { [k: string]: any }>(
     query = (arg1 as any)[0][0]
   }
 
-  const { variables = {}, graphqlPath = '/graphql', ...otherArgs } = cfg
+  const {
+    variables = {},
+    graphqlPath = DEFAULT_GRAPHQL_PATH,
+    ...otherArgs
+  } = cfg
 
   const { config = {} } = otherArgs
 
@@ -1411,7 +1434,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       body: undefined as unknown as Body,
       formatBody: false
     },
-    resolver = isFunction(ctx.resolver) ? ctx.resolver : (d: any) => d.json(),
+    resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
     auto = isDefined(ctx.auto) ? ctx.auto : true,
     memory = isDefined(ctx.memory) ? ctx.memory : true,
@@ -2596,7 +2619,7 @@ useFetcher.extend = function extendFetcher(props: FetcherContextType = {}) {
       url: `${url}`,
       // If resolver is present is hook call, use that instead
       resolver:
-        resolver || otherProps.resolver || ctx.resolver || (d => d.json()),
+        resolver || otherProps.resolver || ctx.resolver || DEFAULT_RESOLVER,
       config: {
         baseUrl: !isDefined(config.baseUrl)
           ? !isDefined(ctx.baseUrl)

@@ -979,6 +979,11 @@ export declare function gql<T = any, VT = {
 }>(...args: any): {
     value: T;
     variables: VT;
+    baseUrl: string;
+    graphqlPath: string;
+    headers: {
+        [key: string]: any;
+    };
 };
 /**
  *
@@ -1010,14 +1015,29 @@ export declare function queryProvider<R>(queries: {
 }): <P extends keyof R>(queryName: P, otherConfig?: (Omit<FetcherInit<{ [e in keyof R]: R[e]; }[P] extends {
     value: unknown;
     variables: unknown;
+    baseUrl: string;
+    graphqlPath: string;
+    headers: {
+        [key: string]: any;
+    };
 } ? { [e in keyof R]: R[e]; }[P]["value"] : any, any>, "url"> & {
     default?: ({ [e in keyof R]: R[e]; }[P] extends {
         value: unknown;
         variables: unknown;
+        baseUrl: string;
+        graphqlPath: string;
+        headers: {
+            [key: string]: any;
+        };
     } ? { [e in keyof R]: R[e]; }[P]["value"] : any) | undefined;
     variables?: ({ [e in keyof R]: R[e]; }[P] extends {
         value: unknown;
         variables: unknown;
+        baseUrl: string;
+        graphqlPath: string;
+        headers: {
+            [key: string]: any;
+        };
     } ? { [e in keyof R]: R[e]; }[P]["variables"] : any) | undefined;
     graphqlPath?: string | undefined;
 }) | undefined) => Omit<Omit<{
@@ -1066,6 +1086,11 @@ export declare function queryProvider<R>(queries: {
         data: { [e in keyof R]: R[e]; }[P] extends {
             value: unknown;
             variables: unknown;
+            baseUrl: string;
+            graphqlPath: string;
+            headers: {
+                [key: string]: any;
+            };
         } ? { [e in keyof R]: R[e]; }[P]["value"] : any;
         errors: any[];
         variables: any;
@@ -1075,11 +1100,21 @@ export declare function queryProvider<R>(queries: {
         data: { [e in keyof R]: R[e]; }[P] extends {
             value: unknown;
             variables: unknown;
+            baseUrl: string;
+            graphqlPath: string;
+            headers: {
+                [key: string]: any;
+            };
         } ? { [e in keyof R]: R[e]; }[P]["value"] : any;
         errors?: any[] | undefined;
         variables: { [e in keyof R]: R[e]; }[P] extends {
             value: unknown;
             variables: unknown;
+            baseUrl: string;
+            graphqlPath: string;
+            headers: {
+                [key: string]: any;
+            };
         } ? { [e in keyof R]: R[e]; }[P]["variables"] : any;
     };
 };

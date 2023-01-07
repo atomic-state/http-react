@@ -69,6 +69,9 @@ exports.createHttpClient = exports.isFormData = exports.fetcher = exports.useFet
 var React = require("react");
 var react_1 = require("react");
 var events_1 = require("events");
+// Constants
+var DEFAULT_GRAPHQL_PATH = '/graphql';
+var DEFAULT_RESOLVER = function (e) { return e.json(); };
 /**
  *
  * @param str The target string
@@ -126,7 +129,7 @@ function createRequestFn(method, baseUrl, $headers, q) {
             return __generator(this, function (_j) {
                 switch (_j.label) {
                     case 0:
-                        def = init.default, _a = init.resolver, resolver = _a === void 0 ? function (e) { return e.json(); } : _a, _b = init.config, c = _b === void 0 ? {} : _b, _c = init.onResolve, onResolve = _c === void 0 ? function () { } : _c, _d = init.onError, onError = _d === void 0 ? function () { } : _d;
+                        def = init.default, _a = init.resolver, resolver = _a === void 0 ? DEFAULT_RESOLVER : _a, _b = init.config, c = _b === void 0 ? {} : _b, _c = init.onResolve, onResolve = _c === void 0 ? function () { } : _c, _d = init.onError, onError = _d === void 0 ? function () { } : _d;
                         _e = (c || {}).params, params = _e === void 0 ? {} : _e;
                         query = __assign(__assign({}, q), c.query);
                         rawUrl = setURLParams(url, params);
@@ -646,7 +649,10 @@ function gql() {
     var query = args[0][0];
     var returnObj = {
         value: query,
-        variables: {}
+        variables: {},
+        baseUrl: undefined,
+        graphqlPath: undefined,
+        headers: {}
     };
     return returnObj;
 }
@@ -658,13 +664,19 @@ exports.gql = gql;
  */
 function queryProvider(queries, providerConfig) {
     return function useQuery(queryName, otherConfig) {
-        var _a, _b;
+        var _a, _b, _c, _d;
         var defaults = (providerConfig || {}).defaults;
         var thisDefaults = (_a = (defaults || {})) === null || _a === void 0 ? void 0 : _a[queryName];
         var queryVariables = __assign(__assign({}, thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.variables), otherConfig === null || otherConfig === void 0 ? void 0 : otherConfig.variables);
-        var _c = (providerConfig || {}).config, config = _c === void 0 ? {} : _c;
+        var _e = (providerConfig || {}).config, config = _e === void 0 ? {} : _e;
         var cache = config.cache, others = __rest(config, ["cache"]);
-        var g = useGql(queries[queryName], __assign(__assign(__assign(__assign({ cache: config === null || config === void 0 ? void 0 : config.cache }, otherConfig), { config: __assign(__assign(__assign({}, others), otherConfig), { headers: __assign(__assign({}, others === null || others === void 0 ? void 0 : others.headers), (_b = otherConfig === null || otherConfig === void 0 ? void 0 : otherConfig.config) === null || _b === void 0 ? void 0 : _b.headers) }) }), { __fromProvider: true }), { default: {
+        var g = useGql(queries[queryName], __assign(__assign(__assign(__assign({ cache: config === null || config === void 0 ? void 0 : config.cache, graphqlPath: isDefined(thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.graphqlPath)
+                ? thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.graphqlPath
+                : undefined }, otherConfig), { config: __assign(__assign(__assign(__assign(__assign({}, others), thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.headers), { baseUrl: isDefined(thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.baseUrl)
+                    ? thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.baseUrl
+                    : isDefined((_b = providerConfig === null || providerConfig === void 0 ? void 0 : providerConfig.config) === null || _b === void 0 ? void 0 : _b.baseUrl)
+                        ? (_c = providerConfig === null || providerConfig === void 0 ? void 0 : providerConfig.config) === null || _c === void 0 ? void 0 : _c.baseUrl
+                        : undefined }), otherConfig === null || otherConfig === void 0 ? void 0 : otherConfig.config), { headers: __assign(__assign(__assign({}, others === null || others === void 0 ? void 0 : others.headers), thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.headers), (_d = otherConfig === null || otherConfig === void 0 ? void 0 : otherConfig.config) === null || _d === void 0 ? void 0 : _d.headers) }) }), { __fromProvider: true }), { default: {
                 data: (isDefined(thisDefaults === null || thisDefaults === void 0 ? void 0 : thisDefaults.value)
                     ? thisDefaults.value
                     : otherConfig === null || otherConfig === void 0 ? void 0 : otherConfig.default)
@@ -687,7 +699,7 @@ function useGql(arg1, cfg) {
     else {
         query = arg1[0][0];
     }
-    var _a = cfg.variables, variables = _a === void 0 ? {} : _a, _b = cfg.graphqlPath, graphqlPath = _b === void 0 ? '/graphql' : _b, otherArgs = __rest(cfg, ["variables", "graphqlPath"]);
+    var _a = cfg.variables, variables = _a === void 0 ? {} : _a, _b = cfg.graphqlPath, graphqlPath = _b === void 0 ? DEFAULT_GRAPHQL_PATH : _b, otherArgs = __rest(cfg, ["variables", "graphqlPath"]);
     var _c = otherArgs.config, config = _c === void 0 ? {} : _c;
     var JSONBody = JSON.stringify({
         query: query,
@@ -773,7 +785,7 @@ var useFetcher = function (init, options) {
         headers: {},
         body: undefined,
         formatBody: false
-    } : _e, _f = optionsConfig.resolver, resolver = _f === void 0 ? isFunction(ctx.resolver) ? ctx.resolver : function (d) { return d.json(); } : _f, onError = optionsConfig.onError, _g = optionsConfig.auto, auto = _g === void 0 ? isDefined(ctx.auto) ? ctx.auto : true : _g, _h = optionsConfig.memory, memory = _h === void 0 ? isDefined(ctx.memory) ? ctx.memory : true : _h, onResolve = optionsConfig.onResolve, onAbort = optionsConfig.onAbort, _j = optionsConfig.refresh, refresh = _j === void 0 ? isDefined(ctx.refresh) ? ctx.refresh : 0 : _j, _k = optionsConfig.cancelOnChange, cancelOnChange = _k === void 0 ? false : _k, _l = optionsConfig.attempts, attempts = _l === void 0 ? ctx.attempts : _l, _m = optionsConfig.attemptInterval, attemptInterval = _m === void 0 ? ctx.attemptInterval : _m, _o = optionsConfig.revalidateOnFocus, revalidateOnFocus = _o === void 0 ? ctx.revalidateOnFocus : _o;
+    } : _e, _f = optionsConfig.resolver, resolver = _f === void 0 ? isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER : _f, onError = optionsConfig.onError, _g = optionsConfig.auto, auto = _g === void 0 ? isDefined(ctx.auto) ? ctx.auto : true : _g, _h = optionsConfig.memory, memory = _h === void 0 ? isDefined(ctx.memory) ? ctx.memory : true : _h, onResolve = optionsConfig.onResolve, onAbort = optionsConfig.onAbort, _j = optionsConfig.refresh, refresh = _j === void 0 ? isDefined(ctx.refresh) ? ctx.refresh : 0 : _j, _k = optionsConfig.cancelOnChange, cancelOnChange = _k === void 0 ? false : _k, _l = optionsConfig.attempts, attempts = _l === void 0 ? ctx.attempts : _l, _m = optionsConfig.attemptInterval, attemptInterval = _m === void 0 ? ctx.attemptInterval : _m, _o = optionsConfig.revalidateOnFocus, revalidateOnFocus = _o === void 0 ? ctx.revalidateOnFocus : _o;
     var _p = ctx.cache, $cache = _p === void 0 ? exports.defaultCache : _p;
     var _q = optionsConfig.cache, cache = _q === void 0 ? $cache : _q;
     var requestCallId = React.useMemo(function () { return "".concat(Math.random()).split('.')[1]; }, []);
@@ -1748,7 +1760,7 @@ useFetcher.extend = function extendFetcher(props) {
             init, _b = _a.url, url = _b === void 0 ? '' : _b, _c = _a.config, config = _c === void 0 ? {} : _c, otherProps = __rest(_a, ["url", "config"]);
         return useFetcher(__assign(__assign({}, otherProps), { url: "".concat(url), 
             // If resolver is present is hook call, use that instead
-            resolver: resolver || otherProps.resolver || ctx.resolver || (function (d) { return d.json(); }), config: {
+            resolver: resolver || otherProps.resolver || ctx.resolver || DEFAULT_RESOLVER, config: {
                 baseUrl: !isDefined(config.baseUrl)
                     ? !isDefined(ctx.baseUrl)
                         ? baseUrl
