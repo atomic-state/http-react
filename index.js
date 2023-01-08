@@ -1676,6 +1676,16 @@ var useFetcher = function (init, options) {
                 ;
                 onPropsChange(rev);
             }
+            if (cancelOnChange) {
+                ;
+                (function (_a) {
+                    var cancel = _a.cancel, revalidate = _a.revalidate;
+                    cancel();
+                    if (auto && url !== '') {
+                        revalidate();
+                    }
+                })(rev);
+            }
             if (url !== '') {
                 previousProps[resolvedKey] = optionsConfig;
             }
@@ -1687,6 +1697,7 @@ var useFetcher = function (init, options) {
         }
     }, [
         url,
+        auto,
         cancelOnChange,
         JSON.stringify(id),
         JSON.stringify(optionsConfig),
