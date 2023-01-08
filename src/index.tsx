@@ -2493,6 +2493,14 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       if (handlePropsChange) {
         ;(onPropsChange as any)(rev as any)
       }
+      if (cancelOnChange) {
+        ;(({ cancel, revalidate }) => {
+          cancel()
+          if (auto && url !== '') {
+            revalidate()
+          }
+        })(rev)
+      }
       if (url !== '') {
         previousProps[resolvedKey] = optionsConfig
       }
@@ -2504,6 +2512,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     }
   }, [
     url,
+    auto,
     cancelOnChange,
     JSON.stringify(id),
     JSON.stringify(optionsConfig),
