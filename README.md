@@ -1,5 +1,19 @@
 ### HTTP React Fetcher
+----
 
+######
+
+**This package have been renamed to `http-react` (see  [here](https://npmjs.org/package/http-react)). For stability, `http-react-fetcher` has not been deprecated but may be in the near future.**
+
+**You can install the new library by running:**
+
+```bash
+yarn add http-react
+# Or
+npm install http-react
+```
+
+---
 React hooks for data fetching
 
 <p align="center">
