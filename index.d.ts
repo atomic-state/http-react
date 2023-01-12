@@ -1,5 +1,5 @@
 /**
- * @license http-react-fetcher
+ * @license http-react
  * Copyright (c) Dany Beltran
  *
  * This source code is licensed under the MIT license found in the
