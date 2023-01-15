@@ -1582,19 +1582,7 @@ var useFetcher = function (init, options) {
                 return [2 /*return*/];
             });
         });
-    }, [
-        JSON.stringify([
-            suspense,
-            requestCallId,
-            initMemo,
-            url,
-            stringDeps,
-            refresh,
-            JSON.stringify(config),
-            auto,
-            ctx.auto
-        ])
-    ]);
+    }, [JSON.stringify(JSON.stringify(optionsConfig))]);
     if (!suspense) {
         suspenseInitialized[resolvedKey] = true;
     }
@@ -1603,30 +1591,20 @@ var useFetcher = function (init, options) {
     }
     (0, react_1.useEffect)(function () {
         if (suspense) {
-            if (JSON.stringify(previousProps[resolvedKey]) !==
-                JSON.stringify(optionsConfig)) {
-                if (suspenseInitialized[resolvedKey]) {
-                    initializeRevalidation();
-                }
+            if (suspenseInitialized[resolvedKey]) {
+                initializeRevalidation();
             }
         }
         else {
-            initializeRevalidation();
+            if (revalidateOnMount
+                ? true
+                : JSON.stringify(previousConfig[resolvedKey]) !==
+                    JSON.stringify(optionsConfig)) {
+                initializeRevalidation();
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
-        JSON.stringify([
-            suspense,
-            requestCallId,
-            initMemo,
-            url,
-            stringDeps,
-            refresh,
-            JSON.stringify(config),
-            auto,
-            ctx.auto
-        ])
-    ]);
+    }, [JSON.stringify(optionsConfig)]);
     (0, react_1.useEffect)(function () {
         function addFocusListener() {
             if (revalidateOnFocus && windowExists) {
