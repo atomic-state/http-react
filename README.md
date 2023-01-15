@@ -20,20 +20,5 @@ Or
 yarn add http-react
 ```
 
-### Browser
-
-With React
-
-```html
-<script src="https://unpkg.com/http-react@2.2.9/dist/http-react.min.js"></script>
-```
-
-
-Without React
-
-```html
-<script src="https://unpkg.com/http-react@2.2.9/dist/vanilla.min.js"></script>
-```
-
 [Getting started](https://http-react.netlify.app)
 

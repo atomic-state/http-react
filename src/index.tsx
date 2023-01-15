@@ -426,6 +426,10 @@ export type FetcherConfigType<FetchDataType = any, BodyType = any> = {
    */
   retryOnReconnect?: boolean
   /**
+   * If using inside a `<Suspense>`
+   */
+  suspense?: boolean
+  /**
    * Request configuration
    */
   config?: {
@@ -1399,6 +1403,8 @@ const windowExists = typeof window !== 'undefined'
 
 const hasErrors: any = {}
 
+const suspenseInitialized: any = {}
+
 /**
  * Fetcher hook
  */
@@ -1444,7 +1450,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     cancelOnChange = false,
     attempts = ctx.attempts,
     attemptInterval = ctx.attemptInterval,
-    revalidateOnFocus = ctx.revalidateOnFocus
+    revalidateOnFocus = ctx.revalidateOnFocus,
+    suspense
   } = optionsConfig
 
   const { cache: $cache = defaultCache } = ctx
@@ -1763,6 +1770,8 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                   : JSON.stringify({ ...config.body, ...c.body })
                 : undefined
             })
+            suspenseInitialized[resolvedKey] = true
+
             requestEmitter.emit(resolvedKey, {
               requestCallId,
               response: json
@@ -2336,51 +2345,93 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   const initMemo = React.useMemo(() => JSON.stringify(optionsConfig), [])
 
-  useEffect(() => {
-    if (auto) {
-      if (url !== '') {
-        if (runningRequests[resolvedKey]) {
-          setLoading(true)
+  const initializeRevalidation = React.useCallback(
+    async function initializeRevalidation() {
+      if (auto) {
+        if (url !== '') {
+          if (runningRequests[resolvedKey]) {
+            setLoading(true)
+          }
+          const reqQ = {
+            ...ctx.query,
+            ...config.query
+          }
+          const reqP = {
+            ...ctx.params,
+            ...config.params
+          }
+          fetchData({
+            query: Object.keys(reqQ)
+              .map(q => [q, reqQ[q]].join('='))
+              .join('&'),
+            params: reqP
+          })
         }
-        const reqQ = {
-          ...ctx.query,
-          ...config.query
+        // It means a url is not passed
+        else {
+          setError(hasErrors[resolvedKey])
+          setLoading(false)
         }
-        const reqP = {
-          ...ctx.params,
-          ...config.params
+      } else {
+        if (!isDefined(data)) {
+          setData(def)
+          cacheForMutation[idString] = def
         }
-        fetchData({
-          query: Object.keys(reqQ)
-            .map(q => [q, reqQ[q]].join('='))
-            .join('&'),
-          params: reqP
-        })
-      }
-      // It means a url is not passed
-      else {
-        setError(hasErrors[resolvedKey])
+        setError(null)
+        hasErrors[resolvedKey] = null
         setLoading(false)
       }
-    } else {
-      if (!isDefined(data)) {
-        setData(def)
-        cacheForMutation[idString] = def
+    },
+    [
+      JSON.stringify([
+        suspense,
+        requestCallId,
+        initMemo,
+        url,
+        stringDeps,
+        refresh,
+        JSON.stringify(config),
+        auto,
+        ctx.auto
+      ])
+    ]
+  )
+
+  if (!suspense) {
+    suspenseInitialized[resolvedKey] = true
+  }
+
+  if (!suspenseInitialized[resolvedKey]) {
+    throw initializeRevalidation()
+  }
+
+  useEffect(() => {
+    if (suspense) {
+      if (
+        JSON.stringify(previousProps[resolvedKey]) !==
+        JSON.stringify(optionsConfig)
+      ) {
+        if (suspenseInitialized[resolvedKey]) {
+          initializeRevalidation()
+        }
       }
-      setError(null)
-      hasErrors[resolvedKey] = null
-      setLoading(false)
+    } else {
+      initializeRevalidation()
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    requestCallId,
-    initMemo,
-    url,
-    stringDeps,
-    refresh,
-    JSON.stringify(config),
-    auto,
-    ctx.auto
+    JSON.stringify([
+      suspense,
+      requestCallId,
+      initMemo,
+      url,
+      stringDeps,
+      refresh,
+      JSON.stringify(config),
+      auto,
+      ctx.auto
+    ])
   ])
 
   useEffect(() => {

@@ -768,6 +768,7 @@ function useHRFContext() {
 }
 var windowExists = typeof window !== 'undefined';
 var hasErrors = {};
+var suspenseInitialized = {};
 /**
  * Fetcher hook
  */
@@ -785,7 +786,7 @@ var useFetcher = function (init, options) {
         headers: {},
         body: undefined,
         formatBody: false
-    } : _e, _f = optionsConfig.resolver, resolver = _f === void 0 ? isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER : _f, onError = optionsConfig.onError, _g = optionsConfig.auto, auto = _g === void 0 ? isDefined(ctx.auto) ? ctx.auto : true : _g, _h = optionsConfig.memory, memory = _h === void 0 ? isDefined(ctx.memory) ? ctx.memory : true : _h, onResolve = optionsConfig.onResolve, onAbort = optionsConfig.onAbort, _j = optionsConfig.refresh, refresh = _j === void 0 ? isDefined(ctx.refresh) ? ctx.refresh : 0 : _j, _k = optionsConfig.cancelOnChange, cancelOnChange = _k === void 0 ? false : _k, _l = optionsConfig.attempts, attempts = _l === void 0 ? ctx.attempts : _l, _m = optionsConfig.attemptInterval, attemptInterval = _m === void 0 ? ctx.attemptInterval : _m, _o = optionsConfig.revalidateOnFocus, revalidateOnFocus = _o === void 0 ? ctx.revalidateOnFocus : _o;
+    } : _e, _f = optionsConfig.resolver, resolver = _f === void 0 ? isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER : _f, onError = optionsConfig.onError, _g = optionsConfig.auto, auto = _g === void 0 ? isDefined(ctx.auto) ? ctx.auto : true : _g, _h = optionsConfig.memory, memory = _h === void 0 ? isDefined(ctx.memory) ? ctx.memory : true : _h, onResolve = optionsConfig.onResolve, onAbort = optionsConfig.onAbort, _j = optionsConfig.refresh, refresh = _j === void 0 ? isDefined(ctx.refresh) ? ctx.refresh : 0 : _j, _k = optionsConfig.cancelOnChange, cancelOnChange = _k === void 0 ? false : _k, _l = optionsConfig.attempts, attempts = _l === void 0 ? ctx.attempts : _l, _m = optionsConfig.attemptInterval, attemptInterval = _m === void 0 ? ctx.attemptInterval : _m, _o = optionsConfig.revalidateOnFocus, revalidateOnFocus = _o === void 0 ? ctx.revalidateOnFocus : _o, suspense = optionsConfig.suspense;
     var _p = ctx.cache, $cache = _p === void 0 ? exports.defaultCache : _p;
     var _q = optionsConfig.cache, cache = _q === void 0 ? $cache : _q;
     var requestCallId = React.useMemo(function () { return "".concat(Math.random()).split('.')[1]; }, []);
@@ -1019,6 +1020,7 @@ var useFetcher = function (init, options) {
                             })];
                     case 2:
                         json = _b.sent();
+                        suspenseInitialized[resolvedKey] = true;
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
                             response: json
@@ -1544,46 +1546,86 @@ var useFetcher = function (init, options) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh, loading, error, rawJSON, completedAttempts, config]);
     var initMemo = React.useMemo(function () { return JSON.stringify(optionsConfig); }, []);
-    (0, react_1.useEffect)(function () {
-        if (auto) {
-            if (url !== '') {
-                if (runningRequests[resolvedKey]) {
-                    setLoading(true);
+    var initializeRevalidation = React.useCallback(function initializeRevalidation() {
+        return __awaiter(this, void 0, void 0, function () {
+            var reqQ_3, reqP;
+            return __generator(this, function (_a) {
+                if (auto) {
+                    if (url !== '') {
+                        if (runningRequests[resolvedKey]) {
+                            setLoading(true);
+                        }
+                        reqQ_3 = __assign(__assign({}, ctx.query), config.query);
+                        reqP = __assign(__assign({}, ctx.params), config.params);
+                        fetchData({
+                            query: Object.keys(reqQ_3)
+                                .map(function (q) { return [q, reqQ_3[q]].join('='); })
+                                .join('&'),
+                            params: reqP
+                        });
+                    }
+                    // It means a url is not passed
+                    else {
+                        setError(hasErrors[resolvedKey]);
+                        setLoading(false);
+                    }
                 }
-                var reqQ_3 = __assign(__assign({}, ctx.query), config.query);
-                var reqP = __assign(__assign({}, ctx.params), config.params);
-                fetchData({
-                    query: Object.keys(reqQ_3)
-                        .map(function (q) { return [q, reqQ_3[q]].join('='); })
-                        .join('&'),
-                    params: reqP
-                });
-            }
-            // It means a url is not passed
-            else {
-                setError(hasErrors[resolvedKey]);
-                setLoading(false);
+                else {
+                    if (!isDefined(data)) {
+                        setData(def);
+                        cacheForMutation[idString] = def;
+                    }
+                    setError(null);
+                    hasErrors[resolvedKey] = null;
+                    setLoading(false);
+                }
+                return [2 /*return*/];
+            });
+        });
+    }, [
+        JSON.stringify([
+            suspense,
+            requestCallId,
+            initMemo,
+            url,
+            stringDeps,
+            refresh,
+            JSON.stringify(config),
+            auto,
+            ctx.auto
+        ])
+    ]);
+    if (!suspense) {
+        suspenseInitialized[resolvedKey] = true;
+    }
+    if (!suspenseInitialized[resolvedKey]) {
+        throw initializeRevalidation();
+    }
+    (0, react_1.useEffect)(function () {
+        if (suspense) {
+            if (JSON.stringify(previousProps[resolvedKey]) !==
+                JSON.stringify(optionsConfig)) {
+                if (suspenseInitialized[resolvedKey]) {
+                    initializeRevalidation();
+                }
             }
         }
         else {
-            if (!isDefined(data)) {
-                setData(def);
-                cacheForMutation[idString] = def;
-            }
-            setError(null);
-            hasErrors[resolvedKey] = null;
-            setLoading(false);
+            initializeRevalidation();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
-        requestCallId,
-        initMemo,
-        url,
-        stringDeps,
-        refresh,
-        JSON.stringify(config),
-        auto,
-        ctx.auto
+        JSON.stringify([
+            suspense,
+            requestCallId,
+            initMemo,
+            url,
+            stringDeps,
+            refresh,
+            JSON.stringify(config),
+            auto,
+            ctx.auto
+        ])
     ]);
     (0, react_1.useEffect)(function () {
         function addFocusListener() {
