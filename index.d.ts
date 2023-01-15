@@ -239,6 +239,10 @@ export declare type FetcherConfigType<FetchDataType = any, BodyType = any> = {
      */
     retryOnReconnect?: boolean;
     /**
+     * If using inside a `<Suspense>`
+     */
+    suspense?: boolean;
+    /**
      * Request configuration
      */
     config?: {
