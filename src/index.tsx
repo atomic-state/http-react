@@ -2294,9 +2294,17 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     if (revalidateOnMount) {
-      previousConfig[resolvedKey] = undefined
+      if (suspense) {
+        if (suspenseInitialized[resolvedKey]) {
+          queue(() => {
+            previousConfig[resolvedKey] = undefined
+          })
+        }
+      } else {
+        previousConfig[resolvedKey] = undefined
+      }
     }
-  }, [requestCallId, resolvedKey, revalidateOnMount])
+  }, [requestCallId, resolvedKey, revalidateOnMount, suspense])
 
   useEffect(() => {
     // Attempts will be made after a request fails
@@ -2392,11 +2400,15 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   if (!suspenseInitialized[resolvedKey]) {
     throw initializeRevalidation()
   }
-
   useEffect(() => {
     if (suspense) {
-      if (suspenseInitialized[resolvedKey]) {
-        initializeRevalidation()
+      if (
+        JSON.stringify(previousConfig[resolvedKey]) !==
+        JSON.stringify(optionsConfig)
+      ) {
+        if (suspenseInitialized[resolvedKey]) {
+          initializeRevalidation()
+        }
       }
     } else {
       if (
