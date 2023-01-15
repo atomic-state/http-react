@@ -1502,9 +1502,18 @@ var useFetcher = function (init, options) {
     }, [JSON.stringify(__assign(__assign({}, ctx.headers), config.headers)), resolvedKey]);
     (0, react_1.useEffect)(function () {
         if (revalidateOnMount) {
-            previousConfig[resolvedKey] = undefined;
+            if (suspense) {
+                if (suspenseInitialized[resolvedKey]) {
+                    queue(function () {
+                        previousConfig[resolvedKey] = undefined;
+                    });
+                }
+            }
+            else {
+                previousConfig[resolvedKey] = undefined;
+            }
         }
-    }, [requestCallId, resolvedKey, revalidateOnMount]);
+    }, [requestCallId, resolvedKey, revalidateOnMount, suspense]);
     (0, react_1.useEffect)(function () {
         // Attempts will be made after a request fails
         var tm = queue(function () {
@@ -1591,8 +1600,11 @@ var useFetcher = function (init, options) {
     }
     (0, react_1.useEffect)(function () {
         if (suspense) {
-            if (suspenseInitialized[resolvedKey]) {
-                initializeRevalidation();
+            if (JSON.stringify(previousConfig[resolvedKey]) !==
+                JSON.stringify(optionsConfig)) {
+                if (suspenseInitialized[resolvedKey]) {
+                    initializeRevalidation();
+                }
             }
         }
         else {
