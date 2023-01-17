@@ -4,7 +4,8 @@
   "description": "React hooks for data fetching",
   "main": "dist/index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "compile": "tsc"
   },
   "repository": {
     "type": "git",
