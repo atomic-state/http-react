@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "outDir": "./",
-    "module": "commonjs",
+    "outDir": "./dist",
+    "module": "NodeNext",
     "target": "es5",
     "lib": ["es6", "dom", "es2019"],
     "sourceMap": false,
