@@ -77,7 +77,7 @@ export function setURLParams(str: string = '', $params: any = {}) {
   return (
     str
       .split('/')
-      .map(($segment) => {
+      .map($segment => {
         const [segment] = $segment.split('?')
         if (segment.startsWith('[') && segment.endsWith(']')) {
           const paramName = segment.replace(/\[|\]/g, '')
@@ -135,7 +135,7 @@ export function createRequestFn(
 
     const [, qp = ''] = rawUrl.split('?')
 
-    qp.split('&').forEach((q) => {
+    qp.split('&').forEach(q => {
       const [key, value] = q.split('=')
       if (query[key] !== value) {
         query = {
@@ -146,7 +146,7 @@ export function createRequestFn(
     })
 
     const reqQueryString = Object.keys(query)
-      .map((q) => [q, query[q]].join('='))
+      .map(q => [q, query[q]].join('='))
       .join('&')
 
     const { headers = {}, body, formatBody } = c
@@ -227,7 +227,7 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
 
   return Object.fromEntries(
     new Map(
-      keys.map((k) => [
+      keys.map(k => [
         k.toLowerCase(),
         (url, { config = {}, ...other } = {}) =>
           (useFetcher as any)[k.toLowerCase()](
@@ -262,7 +262,7 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
  */
 export function revalidate(id: any | any[]) {
   if (Array.isArray(id)) {
-    id.map((reqId) => {
+    id.map(reqId => {
       if (isDefined(reqId)) {
         const key = serialize(reqId)
 
@@ -393,7 +393,12 @@ export function queryProvider<R>(
       default: {
         data: (isDefined(thisDefaults?.value)
           ? thisDefaults.value
-          : otherConfig?.default) as R[P]['value']
+          : /*
+             * This should also work with graphql, so an id may or may not have a
+             * 'value' property (when using the `gql` function)
+             */
+            // @ts-ignore
+            otherConfig?.default) as R[P]['value']
       },
       variables: queryVariables
     })
