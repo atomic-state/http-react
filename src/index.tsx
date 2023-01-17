@@ -7,7 +7,7 @@
  */
 
 import * as React from 'react'
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, Suspense, useEffect, createContext, useContext } from 'react'
 import { EventEmitter } from 'events'
 
 // Constants
@@ -76,6 +76,28 @@ type RequestWithBody = <R = any, BodyType = any>(
   code: number
   res: CustomResponse<R>
 }>
+
+/**
+ * This is a wrapper around `Suspense`. It will render `fallback` during the first render and then leave the rendering to `Suspense`. If you are not using SSR, you should continue using the `Suspense` component.
+ */
+export function SSRSuspense({
+  fallback,
+  children
+}: {
+  fallback: React.ReactNode
+  children: React.ReactNode
+}) {
+  const [ssr, setSSR] = useState(true)
+
+  useEffect(() => {
+    setSSR(false)
+  }, [])
+
+  // This will render the fallback in the server
+  return (
+    ssr ? fallback : <Suspense fallback={fallback}>{children}</Suspense>
+  ) as JSX.Element
+}
 
 /**
  *
@@ -1980,7 +2002,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
   if (willResolve) {
     if (resolvedHookCalls[resolvedKey]) {
       if (isDefined(cache.get(resolvedKey))) {
-        ;(onResolve as any)(cache.get(resolvedKey) as any, response)
+        if (!suspense) {
+          ;(onResolve as any)(cache.get(resolvedKey) as any, response)
+        }
         queue(() => {
           delete resolvedHookCalls[resolvedKey]
         })
@@ -2397,9 +2421,21 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     suspenseInitialized[resolvedKey] = true
   }
 
-  if (!suspenseInitialized[resolvedKey]) {
-    throw initializeRevalidation()
-  }
+  React.useMemo(() => {
+    if (suspense) {
+      if (windowExists) {
+        if (!suspenseInitialized[resolvedKey]) {
+          throw initializeRevalidation()
+        }
+      } else {
+        throw {
+          message:
+            "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
+        }
+      }
+    }
+  }, [loading, windowExists, suspense, resolvedKey, data])
+
   useEffect(() => {
     if (suspense) {
       if (

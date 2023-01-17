@@ -65,13 +65,26 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHttpClient = exports.isFormData = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useUNLINK = exports.useLINK = exports.usePURGE = exports.usePATCH = exports.usePUT = exports.usePOST = exports.useOPTIONS = exports.useHEAD = exports.useDELETE = exports.useGET = exports.useText = exports.useBlob = exports.useFetchId = exports.useMutate = exports.useError = exports.useCode = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useGql = exports.queryProvider = exports.gql = exports.useFetcherText = exports.useFetcherBlob = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherCode = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = exports.defaultCache = exports.setURLParams = void 0;
+exports.createHttpClient = exports.isFormData = exports.fetcher = exports.useFetcher = exports.useImperative = exports.useUNLINK = exports.useLINK = exports.usePURGE = exports.usePATCH = exports.usePUT = exports.usePOST = exports.useOPTIONS = exports.useHEAD = exports.useDELETE = exports.useGET = exports.useText = exports.useBlob = exports.useFetchId = exports.useMutate = exports.useError = exports.useCode = exports.useData = exports.useConfig = exports.useLoading = exports.useFetch = exports.useGql = exports.queryProvider = exports.gql = exports.useFetcherText = exports.useFetcherBlob = exports.useResolve = exports.useFetcherId = exports.useFetcherMutate = exports.useFetcherError = exports.useFetcherLoading = exports.useFetcherCode = exports.useFetcherData = exports.useFetcherConfig = exports.mutateData = exports.revalidate = exports.FetcherConfig = exports.defaultCache = exports.setURLParams = exports.SSRSuspense = void 0;
 var React = require("react");
 var react_1 = require("react");
 var events_1 = require("events");
 // Constants
 var DEFAULT_GRAPHQL_PATH = '/graphql';
 var DEFAULT_RESOLVER = function (e) { return e.json(); };
+/**
+ * This is a wrapper around `Suspense`. It will render `fallback` during the first render and then leave the rendering to `Suspense`. If you are not using SSR, you should continue using the `Suspense` component.
+ */
+function SSRSuspense(_a) {
+    var fallback = _a.fallback, children = _a.children;
+    var _b = (0, react_1.useState)(true), ssr = _b[0], setSSR = _b[1];
+    (0, react_1.useEffect)(function () {
+        setSSR(false);
+    }, []);
+    // This will render the fallback in the server
+    return (ssr ? fallback : React.createElement(react_1.Suspense, { fallback: fallback }, children));
+}
+exports.SSRSuspense = SSRSuspense;
 /**
  *
  * @param str The target string
@@ -1216,8 +1229,10 @@ var useFetcher = function (init, options) {
     if (willResolve) {
         if (resolvedHookCalls[resolvedKey]) {
             if (isDefined(cache.get(resolvedKey))) {
-                ;
-                onResolve(cache.get(resolvedKey), response);
+                if (!suspense) {
+                    ;
+                    onResolve(cache.get(resolvedKey), response);
+                }
                 queue(function () {
                     delete resolvedHookCalls[resolvedKey];
                 });
@@ -1595,9 +1610,20 @@ var useFetcher = function (init, options) {
     if (!suspense) {
         suspenseInitialized[resolvedKey] = true;
     }
-    if (!suspenseInitialized[resolvedKey]) {
-        throw initializeRevalidation();
-    }
+    React.useMemo(function () {
+        if (suspense) {
+            if (windowExists) {
+                if (!suspenseInitialized[resolvedKey]) {
+                    throw initializeRevalidation();
+                }
+            }
+            else {
+                throw {
+                    message: "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
+                };
+            }
+        }
+    }, [loading, windowExists, suspense, resolvedKey, data]);
     (0, react_1.useEffect)(function () {
         if (suspense) {
             if (JSON.stringify(previousConfig[resolvedKey]) !==
