@@ -84,8 +84,8 @@ export function SSRSuspense({
   fallback,
   children
 }: {
-  fallback: React.ReactNode
-  children: React.ReactNode
+  fallback?: React.ReactNode
+  children?: React.ReactNode
 }) {
   const [ssr, setSSR] = useState(true)
 
