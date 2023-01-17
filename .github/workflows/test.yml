@@ -12,5 +12,5 @@ jobs:
         with:
           node-version: 14
       - run: npm i
-      - run: npm compile
+      - run: npm run compile
       - run: npm test
