@@ -5,7 +5,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-/// <reference types="react" />
+import * as React from 'react';
 declare type CustomResponse<T> = Omit<Response, 'json'> & {
     json(): Promise<T>;
 };
@@ -66,6 +66,13 @@ reqConfig?: {
     code: number;
     res: CustomResponse<R>;
 }>;
+/**
+ * This is a wrapper around `Suspense`. It will render `fallback` during the first render and then leave the rendering to `Suspense`. If you are not using SSR, you should continue using the `Suspense` component.
+ */
+export declare function SSRSuspense({ fallback, children }: {
+    fallback: React.ReactNode;
+    children: React.ReactNode;
+}): JSX.Element;
 /**
  *
  * @param str The target string
