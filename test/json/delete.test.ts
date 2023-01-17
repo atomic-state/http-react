@@ -14,11 +14,9 @@ test('DELETE data in JSON', async () => {
       useFetcher({
         url: '',
         default: [],
-        config: {
-          method: 'DELETE',
-          body: {
-            careers: ['Backend Developer', 'Cloud Enginner', 'DB Administrator']
-          }
+        method: 'DELETE',
+        body: {
+          careers: ['Backend Developer', 'Cloud Enginner', 'DB Administrator']
         }
       })
     )

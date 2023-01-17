@@ -1,13 +1,10 @@
-import React from 'react'
+import * as React from 'react'
 import { useGql } from '../hooks/others'
 import { useFetcher } from '../hooks/use-fetcher'
 
-import {
-  cacheForMutation,
-  DEFAULT_RESOLVER,
-  previousConfig,
-  requestEmitter
-} from '../internal'
+import { cacheForMutation, previousConfig, requestEmitter } from '../internal'
+
+import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
 
 import {
   CacheStoreType,
@@ -50,7 +47,6 @@ export const isFormData = (target: any) => {
 }
 
 export function queue(callback: any, time: number = 0) {
-  // let tm = null
   const tm = setTimeout(() => {
     callback()
     clearTimeout(tm)
@@ -58,8 +54,6 @@ export function queue(callback: any, time: number = 0) {
 
   return tm
 }
-
-// Fetcher utils
 
 /**
  *
@@ -83,7 +77,7 @@ export function setURLParams(str: string = '', $params: any = {}) {
   return (
     str
       .split('/')
-      .map($segment => {
+      .map(($segment) => {
         const [segment] = $segment.split('?')
         if (segment.startsWith('[') && segment.endsWith(']')) {
           const paramName = segment.replace(/\[|\]/g, '')
@@ -95,7 +89,6 @@ export function setURLParams(str: string = '', $params: any = {}) {
           }
 
           return $params[segment.replace(/\[|\]/g, '')]
-          // return $params[segment.replace(/\[|\]/g, '')] + hasQ ? '?' + hasQ : ''
         } else if (segment.startsWith(':')) {
           const paramName = segment.split('').slice(1).join('')
           if (!(paramName in $params)) {
@@ -142,7 +135,7 @@ export function createRequestFn(
 
     const [, qp = ''] = rawUrl.split('?')
 
-    qp.split('&').forEach(q => {
+    qp.split('&').forEach((q) => {
       const [key, value] = q.split('=')
       if (query[key] !== value) {
         query = {
@@ -153,7 +146,7 @@ export function createRequestFn(
     })
 
     const reqQueryString = Object.keys(query)
-      .map(q => [q, query[q]].join('='))
+      .map((q) => [q, query[q]].join('='))
       .join('&')
 
     const { headers = {}, body, formatBody } = c
@@ -234,7 +227,7 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
 
   return Object.fromEntries(
     new Map(
-      keys.map(k => [
+      keys.map((k) => [
         k.toLowerCase(),
         (url, { config = {}, ...other } = {}) =>
           (useFetcher as any)[k.toLowerCase()](
@@ -269,7 +262,7 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
  */
 export function revalidate(id: any | any[]) {
   if (Array.isArray(id)) {
-    id.map(reqId => {
+    id.map((reqId) => {
       if (isDefined(reqId)) {
         const key = serialize(reqId)
 
@@ -380,22 +373,21 @@ export function queryProvider<R>(
         ? thisDefaults?.graphqlPath
         : undefined,
       ...otherConfig,
-      config: {
-        // These two can have a 'url' property and they are in that
-        // order because 'otherConfig' can overwrite the configured url
-        ...others,
+
+      // These two can have a 'url' property and they are in that
+      // order because 'otherConfig' can overwrite the configured url
+      ...others,
+      ...thisDefaults?.headers,
+      baseUrl: isDefined(thisDefaults?.baseUrl)
+        ? thisDefaults?.baseUrl
+        : isDefined(providerConfig?.config?.baseUrl)
+        ? providerConfig?.config?.baseUrl
+        : undefined,
+      ...otherConfig,
+      headers: {
+        ...others?.headers,
         ...thisDefaults?.headers,
-        baseUrl: isDefined(thisDefaults?.baseUrl)
-          ? thisDefaults?.baseUrl
-          : isDefined(providerConfig?.config?.baseUrl)
-          ? providerConfig?.config?.baseUrl
-          : undefined,
-        ...otherConfig?.config,
-        headers: {
-          ...others?.headers,
-          ...thisDefaults?.headers,
-          ...otherConfig?.config?.headers
-        }
+        ...otherConfig?.headers
       },
       ...{ __fromProvider: true },
       default: {
@@ -476,4 +468,8 @@ export function mutateData(
       }
     } catch (err) {}
   }
+}
+
+export function canHaveBody(method: keyof typeof METHODS) {
+  return /(POST|PUT|DELETE|PATCH)/.test(method)
 }

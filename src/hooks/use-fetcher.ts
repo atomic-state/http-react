@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import * as React from 'react'
+import { useState, useEffect } from 'react'
 
 import {
   abortControllers,
   cacheForMutation,
   defaultCache,
-  DEFAULT_RESOLVER,
   fetcherDefaults,
   hasErrors,
   previousConfig,
@@ -19,14 +19,18 @@ import {
   willSuspend
 } from '../internal'
 
+import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
+
 import {
   CustomResponse,
   FetcherConfigType,
   FetcherConfigTypeNoUrl,
+  HTTP_METHODS,
   ImperativeFetcher
 } from '../types'
 
 import {
+  canHaveBody,
   createImperativeFetcher,
   createRequestFn,
   hasBaseUrl,
@@ -43,10 +47,10 @@ import {
 /**
  * Fetcher hook
  */
-export const useFetcher = <FetchDataType = any, BodyType = any>(
+export function useFetcher<FetchDataType = any, BodyType = any>(
   init: FetcherConfigType<FetchDataType, BodyType> | string,
   options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>
-) => {
+) {
   const ctx = useHRFContext()
 
   const optionsConfig =
@@ -66,15 +70,15 @@ export const useFetcher = <FetchDataType = any, BodyType = any>(
     revalidateOnMount = ctx.revalidateOnMount,
     url = '',
     id,
-    config = {
-      query: {},
-      params: {},
-      baseUrl: undefined,
-      method: 'GET',
-      headers: {} as Headers,
-      body: undefined as unknown as Body,
-      formatBody: false
-    },
+
+    query = {},
+    params = {},
+    baseUrl = undefined,
+    method = METHODS.GET as HTTP_METHODS,
+    headers = {} as Headers,
+    body = undefined as unknown as Body,
+    formatBody = (e) => JSON.stringify(e),
+
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
     auto = isDefined(ctx.auto) ? ctx.auto : true,
@@ -88,6 +92,16 @@ export const useFetcher = <FetchDataType = any, BodyType = any>(
     revalidateOnFocus = ctx.revalidateOnFocus,
     suspense: $suspense
   } = optionsConfig
+
+  const config = {
+    query,
+    params,
+    baseUrl,
+    method,
+    headers,
+    body,
+    formatBody
+  }
 
   const { cache: $cache = defaultCache } = ctx
 
@@ -404,7 +418,7 @@ export const useFetcher = <FetchDataType = any, BodyType = any>(
                 ...config.headers,
                 ...c.headers
               } as Headers,
-              body: config.method?.match(/(POST|PUT|DELETE|PATCH)/)
+              body: canHaveBody(config.method)
                 ? isFunction(config.formatBody)
                   ? (config.formatBody as any)(
                       (isFormData(config.body)
@@ -479,7 +493,7 @@ export const useFetcher = <FetchDataType = any, BodyType = any>(
               })
             } else {
               if (_data.errors && isGqlRequest) {
-                setData(previous => {
+                setData((previous) => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
@@ -714,9 +728,8 @@ export const useFetcher = <FetchDataType = any, BodyType = any>(
         }
         if (isDefined($data)) {
           queue(() => {
-            if (serialize(data) !== serialize(cache.get(resolvedKey))) {
-              setData($data)
-            }
+            setData($data)
+            cache.set(resolvedKey, $data)
             if (serialize($data) !== serialize(cacheForMutation[resolvedKey])) {
               cacheForMutation[idString] = data
               if (isMutating) {
@@ -814,7 +827,7 @@ export const useFetcher = <FetchDataType = any, BodyType = any>(
             }
             fetchData({
               query: Object.keys(reqQ)
-                .map(q => [q, reqQ[q]].join('='))
+                .map((q) => [q, reqQ[q]].join('='))
                 .join('&'),
               params: reqP
             })
@@ -827,7 +840,17 @@ export const useFetcher = <FetchDataType = any, BodyType = any>(
     return () => {
       requestEmitter.removeListener(idString, forceRefresh)
     }
-  }, [resolvedKey, requestCallId, stringDeps, auto, ctx.auto, idString, id])
+  }, [
+    resolvedKey,
+    suspense,
+    loading,
+    requestCallId,
+    stringDeps,
+    auto,
+    ctx.auto,
+    idString,
+    id
+  ])
 
   useEffect(() => {
     function backOnline() {
@@ -929,7 +952,7 @@ export const useFetcher = <FetchDataType = any, BodyType = any>(
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
-          setCompletedAttempts(previousAttempts => {
+          setCompletedAttempts((previousAttempts) => {
             let newAttemptsValue = previousAttempts + 1
 
             requestEmitter.emit(resolvedKey, {
@@ -987,7 +1010,7 @@ export const useFetcher = <FetchDataType = any, BodyType = any>(
           }
           fetchData({
             query: Object.keys(reqQ)
-              .map(q => [q, reqQ[q]].join('='))
+              .map((q) => [q, reqQ[q]].join('='))
               .join('&'),
             params: reqP
           })
@@ -1228,7 +1251,7 @@ export const useFetcher = <FetchDataType = any, BodyType = any>(
     ) => FetchDataType
     fetcher: ImperativeFetcher
     abort: () => void
-    config: FetcherConfigType<FetchDataType, BodyType>['config'] & {
+    config: FetcherConfigType<FetchDataType, BodyType> & {
       baseUrl: string
       url: string
       rawUrl: string
