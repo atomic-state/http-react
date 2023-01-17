@@ -1792,7 +1792,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
                   : JSON.stringify({ ...config.body, ...c.body })
                 : undefined
             })
-            suspenseInitialized[resolvedKey] = true
 
             requestEmitter.emit(resolvedKey, {
               requestCallId,
@@ -1943,6 +1942,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
               requestCallId,
               loading: false
             })
+            suspenseInitialized[resolvedKey] = true
           }
         }
       }
@@ -2146,33 +2146,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   const reValidate = React.useCallback(
     async function reValidate() {
-      // Only revalidate if request was already completed
-      if (!loading) {
-        if (!runningRequests[resolvedKey]) {
-          previousConfig[resolvedKey] = undefined
-          setLoading(true)
-          const reqQ = {
-            ...ctx.query,
-            ...config.query
-          }
-          const reqP = {
-            ...ctx.params,
-            ...config.params
-          }
-          if (url !== '') {
-            fetchData({
-              query: Object.keys(reqQ)
-                .map(q => [q, reqQ[q]].join('='))
-                .join('&'),
-              params: reqP
-            })
-          }
-          requestEmitter.emit(resolvedKey, {
-            requestCallId,
-            loading: true
-          })
-        }
-      }
+      revalidate(id)
     },
     [
       requestCallId,
