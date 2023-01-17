@@ -1033,7 +1033,6 @@ var useFetcher = function (init, options) {
                             })];
                     case 2:
                         json = _b.sent();
-                        suspenseInitialized[resolvedKey] = true;
                         requestEmitter.emit(resolvedKey, {
                             requestCallId: requestCallId,
                             response: json
@@ -1185,6 +1184,7 @@ var useFetcher = function (init, options) {
                             requestCallId: requestCallId,
                             loading: false
                         });
+                        suspenseInitialized[resolvedKey] = true;
                         return [7 /*endfinally*/];
                     case 6: return [2 /*return*/];
                 }
@@ -1358,29 +1358,8 @@ var useFetcher = function (init, options) {
     ]);
     var reValidate = React.useCallback(function reValidate() {
         return __awaiter(this, void 0, void 0, function () {
-            var reqQ_1, reqP;
             return __generator(this, function (_a) {
-                // Only revalidate if request was already completed
-                if (!loading) {
-                    if (!runningRequests[resolvedKey]) {
-                        previousConfig[resolvedKey] = undefined;
-                        setLoading(true);
-                        reqQ_1 = __assign(__assign({}, ctx.query), config.query);
-                        reqP = __assign(__assign({}, ctx.params), config.params);
-                        if (url !== '') {
-                            fetchData({
-                                query: Object.keys(reqQ_1)
-                                    .map(function (q) { return [q, reqQ_1[q]].join('='); })
-                                    .join('&'),
-                                params: reqP
-                            });
-                        }
-                        requestEmitter.emit(resolvedKey, {
-                            requestCallId: requestCallId,
-                            loading: true
-                        });
-                    }
-                }
+                revalidate(id);
                 return [2 /*return*/];
             });
         });
@@ -1397,7 +1376,7 @@ var useFetcher = function (init, options) {
     (0, react_1.useEffect)(function () {
         function forceRefresh(v) {
             return __awaiter(this, void 0, void 0, function () {
-                var d, reqQ_2, reqP;
+                var d, reqQ_1, reqP;
                 return __generator(this, function (_a) {
                     if (isDefined(v === null || v === void 0 ? void 0 : v.data)) {
                         try {
@@ -1424,11 +1403,11 @@ var useFetcher = function (init, options) {
                                     loading: true,
                                     error: null
                                 });
-                                reqQ_2 = __assign(__assign({}, ctx.query), config.query);
+                                reqQ_1 = __assign(__assign({}, ctx.query), config.query);
                                 reqP = __assign(__assign({}, ctx.params), config.params);
                                 fetchData({
-                                    query: Object.keys(reqQ_2)
-                                        .map(function (q) { return [q, reqQ_2[q]].join('='); })
+                                    query: Object.keys(reqQ_1)
+                                        .map(function (q) { return [q, reqQ_1[q]].join('='); })
                                         .join('&'),
                                     params: reqP
                                 });
@@ -1572,18 +1551,18 @@ var useFetcher = function (init, options) {
     var initMemo = React.useMemo(function () { return JSON.stringify(optionsConfig); }, []);
     var initializeRevalidation = React.useCallback(function initializeRevalidation() {
         return __awaiter(this, void 0, void 0, function () {
-            var reqQ_3, reqP;
+            var reqQ_2, reqP;
             return __generator(this, function (_a) {
                 if (auto) {
                     if (url !== '') {
                         if (runningRequests[resolvedKey]) {
                             setLoading(true);
                         }
-                        reqQ_3 = __assign(__assign({}, ctx.query), config.query);
+                        reqQ_2 = __assign(__assign({}, ctx.query), config.query);
                         reqP = __assign(__assign({}, ctx.params), config.params);
                         fetchData({
-                            query: Object.keys(reqQ_3)
-                                .map(function (q) { return [q, reqQ_3[q]].join('='); })
+                            query: Object.keys(reqQ_2)
+                                .map(function (q) { return [q, reqQ_2[q]].join('='); })
                                 .join('&'),
                             params: reqP
                         });
