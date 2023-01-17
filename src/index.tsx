@@ -295,6 +295,7 @@ type FetcherContextType = {
       config?: any
     }
   }
+  suspense?: any[]
   resolver?: (r: Response) => any
   children?: any
   auto?: boolean
@@ -498,6 +499,13 @@ type FetcherConfigTypeNoUrl<FetchDataType = any, BodyType = any> = Omit<
 
 const resolvedRequests: any = {}
 
+const urls: {
+  [k: string]: {
+    realUrl: string
+    rawUrl: string
+  }
+} = {}
+
 const resolvedHookCalls: any = {}
 
 const abortControllers: any = {}
@@ -519,8 +527,10 @@ export const defaultCache: CacheStoreType = {
 
 const valuesMemory: any = {}
 
+const willSuspend: any = {}
+
 export function FetcherConfig(props: FetcherContextType) {
-  const { children, defaults = {}, baseUrl } = props
+  const { children, defaults = {}, baseUrl, suspense = [] } = props
 
   const previousConfig = useHRFContext()
 
@@ -559,6 +569,13 @@ export function FetcherConfig(props: FetcherContextType) {
     if (!isDefined(cache.get(resolvedKey))) {
       cache.set(resolvedKey, defaults[defaultKey]?.value)
     }
+  }
+
+  for (let suspenseKey of suspense) {
+    const key = JSON.stringify({
+      idString: JSON.stringify(suspenseKey)
+    })
+    willSuspend[key] = true
   }
 
   let mergedConfig = {
@@ -664,10 +681,10 @@ export function mutateData(
 /**
  * Get the current fetcher config
  */
-export function useFetcherConfig(id?: string) {
+export function useFetcherConfig(id?: string): any {
   const ftxcf = useHRFContext()
 
-  const { config } = useFetcherId(id)
+  const { config } = useFetcher({ id })
 
   let allowedKeys = [
     'headers',
@@ -696,6 +713,7 @@ export function useFetcherConfig(id?: string) {
       delete (ftxcf as any)[k]
     }
   }
+
   return isDefined(id) ? config : ftxcf
 }
 
@@ -703,13 +721,17 @@ export function useFetcherConfig(id?: string) {
  * Get the data state of a request using its id
  */
 export function useFetcherData<ResponseType = any, VT = any>(
-  id: ResponseType extends { variables: any }
-    ? string | number | object
-    : {
+  id: ResponseType extends {
+    value: ResponseType
+    variables: VT
+    errors?: any[]
+  }
+    ? {
         value: ResponseType
         variables: VT
         errors?: any[]
-      },
+      }
+    : string | number | object,
   onResolve?: (
     data: typeof id extends { variables: any }
       ? {
@@ -738,9 +760,9 @@ export function useFetcherData<ResponseType = any, VT = any>(
     id: id
   })
 
-  useResolve(id, onResolve as any)
+  useResolve(id as any, onResolve as any)
 
-  return data
+  return data as ResponseType
 }
 
 export function useFetcherCode(id: any) {
@@ -1473,7 +1495,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     attempts = ctx.attempts,
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus,
-    suspense
+    suspense: $suspense
   } = optionsConfig
 
   const { cache: $cache = defaultCache } = ctx
@@ -1507,11 +1529,6 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
     ...config.query
   })
 
-  const [configUrl, setConfigUrl] = useState({
-    realUrl: '',
-    rawUrl: ''
-  })
-
   const [reqParams, setReqParams] = useState({
     ...ctx.params,
     ...config.params
@@ -1543,6 +1560,14 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           }
         }
   )
+
+  const [configUrl, setConfigUrl] = useState(urls[resolvedKey])
+
+  useEffect(() => {
+    setConfigUrl(urls[resolvedKey])
+  }, [JSON.stringify(urls[resolvedKey])])
+
+  const suspense = $suspense || willSuspend[resolvedKey]
 
   const realUrl = urlWithParams + (urlWithParams.includes('?') ? `` : '?')
 
@@ -1737,9 +1762,17 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       const [resKey] = realUrl.split('?')
 
       if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
+        previousProps[resolvedKey] = optionsConfig
         queue(() => {
           setReqMethod(config.method)
           if (url !== '') {
+            const newUrls = {
+              realUrl,
+              rawUrl
+            }
+
+            urls[resolvedKey] = newUrls
+
             setConfigUrl({
               rawUrl,
               realUrl
@@ -1752,9 +1785,9 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
           }
         })
         if (!runningRequests[resolvedKey]) {
+          previousConfig[resolvedKey] = JSON.stringify(optionsConfig)
           runningRequests[resolvedKey] = true
           setLoading(true)
-          previousConfig[resolvedKey] = JSON.stringify(optionsConfig)
           let newAbortController = new AbortController()
           setRequestAbortController(newAbortController)
           setError(null)
@@ -2412,10 +2445,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     if (suspense) {
-      if (
-        JSON.stringify(previousConfig[resolvedKey]) !==
-        JSON.stringify(optionsConfig)
-      ) {
+      if (previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)) {
         if (suspenseInitialized[resolvedKey]) {
           initializeRevalidation()
         }
@@ -2424,8 +2454,7 @@ const useFetcher = <FetchDataType = any, BodyType = any>(
       if (
         revalidateOnMount
           ? true
-          : JSON.stringify(previousConfig[resolvedKey]) !==
-            JSON.stringify(optionsConfig)
+          : previousConfig[resolvedKey] !== JSON.stringify(optionsConfig)
       ) {
         initializeRevalidation()
       }
@@ -2640,169 +2669,11 @@ useFetcher.link = createRequestFn('LINK', '', {})
 useFetcher.unlink = createRequestFn('UNLINK', '', {})
 
 export { useFetcher }
-/**
- * @deprecated Everything with `extend` can be achieved with `useFetch` alone
- *
- *
- * Extend the useFetcher hook
- */
-useFetcher.extend = function extendFetcher(props: FetcherContextType = {}) {
-  const {
-    baseUrl = undefined as any,
-    headers = {} as Headers,
-    query = {},
-    // json by default
-    resolver
-  } = props
-
-  function useCustomFetcher<T, BodyType = any>(
-    init: FetcherConfigType<T, BodyType> | string,
-    options?: FetcherConfigTypeNoUrl<T, BodyType>
-  ) {
-    const ctx = useHRFContext()
-
-    const {
-      url = '',
-      config = {},
-      ...otherProps
-    } = typeof init === 'string'
-      ? {
-          // set url if init is a stringss
-          url: init,
-          ...options
-        }
-      : // `url` will be required in init if it is an object
-        init
-
-    return useFetcher<T, BodyType>({
-      ...otherProps,
-      url: `${url}`,
-      // If resolver is present is hook call, use that instead
-      resolver:
-        resolver || otherProps.resolver || ctx.resolver || DEFAULT_RESOLVER,
-      config: {
-        baseUrl: !isDefined(config.baseUrl)
-          ? !isDefined(ctx.baseUrl)
-            ? baseUrl
-            : ctx.baseUrl
-          : config.baseUrl,
-        method: config.method,
-        headers: {
-          ...headers,
-          ...ctx.headers,
-          ...config.headers
-        },
-        body: config.body as any
-      }
-    })
-  }
-  useCustomFetcher.config = {
-    baseUrl,
-    headers,
-    query
-  }
-
-  // Creating methods for fetcher.extend
-  useCustomFetcher.get = createRequestFn('GET', baseUrl, headers, query)
-  useCustomFetcher.delete = createRequestFn('DELETE', baseUrl, headers, query)
-  useCustomFetcher.head = createRequestFn('HEAD', baseUrl, headers, query)
-  useCustomFetcher.options = createRequestFn('OPTIONS', baseUrl, headers, query)
-  useCustomFetcher.post = createRequestFn('POST', baseUrl, headers, query)
-  useCustomFetcher.put = createRequestFn('PUT', baseUrl, headers, query)
-  useCustomFetcher.patch = createRequestFn('PATCH', baseUrl, headers, query)
-  useCustomFetcher.purge = createRequestFn('PURGE', baseUrl, headers, query)
-  useCustomFetcher.link = createRequestFn('LINK', baseUrl, headers, query)
-  useCustomFetcher.unlink = createRequestFn('UNLINK', baseUrl, headers, query)
-
-  useCustomFetcher.Config = FetcherConfig
-
-  return useCustomFetcher
-}
 
 export const fetcher = useFetcher
-
-// Http client
-
-interface IRequestParam {
-  headers?: any
-  body?: any
-  /**
-   * Customize how body is formated for the request. By default it will be sent in JSON format
-   * but you can set it to false if for example, you are sending a `FormData`
-   * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
-   * (the last one is the default behaviour so in that case you can ignore it)
-   */
-  formatBody?: boolean | ((b: any) => any)
-}
 
 export const isFormData = (target: any) => {
   if (typeof FormData !== 'undefined') {
     return target instanceof FormData
   } else return false
-}
-
-type requestType = <T>(path: string, data: IRequestParam) => Promise<T>
-
-interface IHttpClient {
-  baseUrl: string
-  get: requestType
-  post: requestType
-  put: requestType
-  delete: requestType
-}
-
-const defaultConfig = { headers: {}, body: undefined }
-
-/**
- * Basic HttpClient
- */
-class HttpClient implements IHttpClient {
-  baseUrl = ''
-  async get<T>(
-    path: string,
-    { headers, body }: IRequestParam = defaultConfig,
-    method: string = 'GET'
-  ): Promise<T> {
-    const requestUrl = `${this.baseUrl}${path}`
-    const responseBody = await fetch(requestUrl, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...headers
-      },
-      ...(body ? { body: JSON.stringify(body) } : {})
-    })
-    const responseData: T = await responseBody.json()
-    return responseData
-  }
-  async post<T>(
-    path: string,
-    props: IRequestParam = defaultConfig
-  ): Promise<T> {
-    return await this.get(path, props, 'POST')
-  }
-  async put<T>(path: string, props: IRequestParam = defaultConfig): Promise<T> {
-    return await this.get(path, props, 'PUT')
-  }
-
-  async delete<T>(
-    path: string,
-    props: IRequestParam = defaultConfig
-  ): Promise<T> {
-    return await this.get(path, props, 'DELETE')
-  }
-
-  constructor(url: string) {
-    this.baseUrl = url
-  }
-}
-
-/**
- * @deprecated - Use the fetcher instead
- *
- * Basic HttpClient
- */
-export function createHttpClient(url: string) {
-  return new HttpClient(url)
 }

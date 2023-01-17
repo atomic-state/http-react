@@ -107,6 +107,7 @@ declare type FetcherContextType = {
             config?: any;
         };
     };
+    suspense?: any[];
     resolver?: (r: Response) => any;
     children?: any;
     auto?: boolean;
@@ -294,44 +295,19 @@ export declare function mutateData(...pairs: [any, any | ((cache: any) => any), 
 /**
  * Get the current fetcher config
  */
-export declare function useFetcherConfig(id?: string): FetcherContextType | ({
-    /**
-     * Override base url
-     */
-    baseUrl?: string | undefined;
-    /**
-     * Request method
-     */
-    method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
-    headers?: object | Headers | undefined;
-    query?: any;
-    /**
-     * URL params
-     */
-    params?: any;
-    body?: any;
-    /**
-     * Customize how body is formated for the request. By default it will be sent in JSON format
-     * but you can set it to false if for example, you are sending a `FormData`
-     * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
-     * (the last one is the default behaviour so in that case you can ignore it)
-     */
-    formatBody?: boolean | ((b: any) => any) | undefined;
-} & {
-    baseUrl: string;
-    url: string;
-    rawUrl: string;
-});
+export declare function useFetcherConfig(id?: string): any;
 /**
  * Get the data state of a request using its id
  */
 export declare function useFetcherData<ResponseType = any, VT = any>(id: ResponseType extends {
-    variables: any;
-} ? string | number | object : {
     value: ResponseType;
     variables: VT;
     errors?: any[];
-}, onResolve?: (data: typeof id extends {
+} ? {
+    value: ResponseType;
+    variables: VT;
+    errors?: any[];
+} : string | number | object, onResolve?: (data: typeof id extends {
     variables: any;
 } ? {
     data: (Required<typeof id> & {
@@ -342,13 +318,7 @@ export declare function useFetcherData<ResponseType = any, VT = any>(id: Respons
         value: ResponseType;
         variables: VT;
     })['variables'];
-} : ResponseType) => void): ResponseType extends {
-    variables: any;
-} ? string | number | object : {
-    value: ResponseType;
-    variables: VT;
-    errors?: any[] | undefined;
-};
+} : ResponseType) => void): ResponseType;
 export declare function useFetcherCode(id: any): number;
 /**
  * Get the loading state of a request using its id
@@ -1281,72 +1251,6 @@ declare const useFetcher: {
     purge: RequestWithBody;
     link: RequestWithBody;
     unlink: RequestWithBody;
-    /**
-     * @deprecated Everything with `extend` can be achieved with `useFetch` alone
-     *
-     *
-     * Extend the useFetcher hook
-     */
-    extend(props?: FetcherContextType): {
-        <T, BodyType_1 = any>(init: string | FetcherConfigType<T, BodyType_1>, options?: FetcherConfigTypeNoUrl<T, BodyType_1> | undefined): {
-            data: T;
-            loading: boolean;
-            error: Error | null;
-            online: boolean;
-            code: number;
-            reFetch: () => Promise<void>;
-            mutate: (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
-            fetcher: ImperativeFetcher;
-            abort: () => void;
-            config: {
-                /**
-                 * Override base url
-                 */
-                baseUrl?: string | undefined;
-                /**
-                 * Request method
-                 */
-                method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
-                headers?: object | Headers | undefined;
-                query?: any;
-                /**
-                 * URL params
-                 */
-                params?: any;
-                body?: BodyType_1 | undefined;
-                /**
-                 * Customize how body is formated for the request. By default it will be sent in JSON format
-                 * but you can set it to false if for example, you are sending a `FormData`
-                 * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
-                 * (the last one is the default behaviour so in that case you can ignore it)
-                 */
-                formatBody?: boolean | ((b: BodyType_1) => any) | undefined;
-            } & {
-                baseUrl: string;
-                url: string;
-                rawUrl: string;
-            };
-            response: CustomResponse<T>;
-            id: any;
-            key: string;
-        };
-        config: {
-            baseUrl: any;
-            headers: any;
-            query: any;
-        };
-        get: RequestWithBody;
-        delete: RequestWithBody;
-        head: RequestWithBody;
-        options: RequestWithBody;
-        post: RequestWithBody;
-        put: RequestWithBody;
-        patch: RequestWithBody;
-        purge: RequestWithBody;
-        link: RequestWithBody;
-        unlink: RequestWithBody;
-        Config: typeof FetcherConfig;
-    };
 };
 export { useFetcher };
 export declare const fetcher: {
@@ -1402,107 +1306,5 @@ export declare const fetcher: {
     purge: RequestWithBody;
     link: RequestWithBody;
     unlink: RequestWithBody;
-    /**
-     * @deprecated Everything with `extend` can be achieved with `useFetch` alone
-     *
-     *
-     * Extend the useFetcher hook
-     */
-    extend(props?: FetcherContextType): {
-        <T, BodyType_1 = any>(init: string | FetcherConfigType<T, BodyType_1>, options?: FetcherConfigTypeNoUrl<T, BodyType_1> | undefined): {
-            data: T;
-            loading: boolean;
-            error: Error | null;
-            online: boolean;
-            code: number;
-            reFetch: () => Promise<void>;
-            mutate: (update: T | ((prev: T) => T), callback?: ((data: T, fetcher: ImperativeFetcher) => void) | undefined) => T;
-            fetcher: ImperativeFetcher;
-            abort: () => void;
-            config: {
-                /**
-                 * Override base url
-                 */
-                baseUrl?: string | undefined;
-                /**
-                 * Request method
-                 */
-                method?: "GET" | "DELETE" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "PURGE" | "LINK" | "UNLINK" | undefined;
-                headers?: object | Headers | undefined;
-                query?: any;
-                /**
-                 * URL params
-                 */
-                params?: any;
-                body?: BodyType_1 | undefined;
-                /**
-                 * Customize how body is formated for the request. By default it will be sent in JSON format
-                 * but you can set it to false if for example, you are sending a `FormData`
-                 * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
-                 * (the last one is the default behaviour so in that case you can ignore it)
-                 */
-                formatBody?: boolean | ((b: BodyType_1) => any) | undefined;
-            } & {
-                baseUrl: string;
-                url: string;
-                rawUrl: string;
-            };
-            response: CustomResponse<T>;
-            id: any;
-            key: string;
-        };
-        config: {
-            baseUrl: any;
-            headers: any;
-            query: any;
-        };
-        get: RequestWithBody;
-        delete: RequestWithBody;
-        head: RequestWithBody;
-        options: RequestWithBody;
-        post: RequestWithBody;
-        put: RequestWithBody;
-        patch: RequestWithBody;
-        purge: RequestWithBody;
-        link: RequestWithBody;
-        unlink: RequestWithBody;
-        Config: typeof FetcherConfig;
-    };
 };
-interface IRequestParam {
-    headers?: any;
-    body?: any;
-    /**
-     * Customize how body is formated for the request. By default it will be sent in JSON format
-     * but you can set it to false if for example, you are sending a `FormData`
-     * body, or to `b => JSON.stringify(b)` for example, if you want to send JSON data
-     * (the last one is the default behaviour so in that case you can ignore it)
-     */
-    formatBody?: boolean | ((b: any) => any);
-}
 export declare const isFormData: (target: any) => boolean;
-declare type requestType = <T>(path: string, data: IRequestParam) => Promise<T>;
-interface IHttpClient {
-    baseUrl: string;
-    get: requestType;
-    post: requestType;
-    put: requestType;
-    delete: requestType;
-}
-/**
- * Basic HttpClient
- */
-declare class HttpClient implements IHttpClient {
-    baseUrl: string;
-    get<T>(path: string, { headers, body }?: IRequestParam, method?: string): Promise<T>;
-    post<T>(path: string, props?: IRequestParam): Promise<T>;
-    put<T>(path: string, props?: IRequestParam): Promise<T>;
-    delete<T>(path: string, props?: IRequestParam): Promise<T>;
-    constructor(url: string);
-}
-/**
- * @deprecated - Use the fetcher instead
- *
- * Basic HttpClient
- */
-export declare function createHttpClient(url: string): HttpClient;
