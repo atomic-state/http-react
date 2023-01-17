@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react'
+import * as React from 'react'
+import { useEffect } from 'react'
 
 import {
   FetcherConfigType,
@@ -8,7 +9,6 @@ import {
 
 import {
   defaultCache,
-  DEFAULT_GRAPHQL_PATH,
   fetcherDefaults,
   requestEmitter,
   runningRequests,
@@ -24,6 +24,11 @@ import {
   serialize
 } from '../utils'
 
+import {
+  ALLOWED_CONTEXT_KEYS,
+  DEFAULT_GRAPHQL_PATH
+} from '../internal/constants'
+
 /**
  * Get the current fetcher config
  */
@@ -32,30 +37,9 @@ export function useFetcherConfig(id?: string): any {
 
   const { config } = useFetcher({ id })
 
-  let allowedKeys = [
-    'headers',
-    'baseUrl',
-    'body',
-    'defaults',
-    'resolver',
-    'auto',
-    'memory',
-    'refresh',
-    'attempts',
-    'attemptInterval',
-    'revalidateOnFocus',
-    'query',
-    'params',
-    'onOnline',
-    'onOffline',
-    'online',
-    'retryOnReconnect',
-    'cache'
-  ]
-
   // Remove the 'method' strings
   for (let k in ftxcf) {
-    if (allowedKeys.indexOf(k) === -1) {
+    if (ALLOWED_CONTEXT_KEYS.indexOf(k) === -1) {
       delete (ftxcf as any)[k]
     }
   }
@@ -244,10 +228,7 @@ export function useGET<FetchDataType = any, BodyType = any>(
 ) {
   return useFetcher(init, {
     ...options,
-    config: {
-      ...options?.config,
-      method: 'GET'
-    }
+    method: 'GET'
   })
 }
 
@@ -260,10 +241,7 @@ export function useDELETE<FetchDataType = any, BodyType = any>(
 ) {
   return useFetcher(init, {
     ...options,
-    config: {
-      ...options?.config,
-      method: 'DELETE'
-    }
+    method: 'DELETE'
   })
 }
 
@@ -276,10 +254,7 @@ export function useHEAD<FetchDataType = any, BodyType = any>(
 ) {
   return useFetcher(init, {
     ...options,
-    config: {
-      ...options?.config,
-      method: 'HEAD'
-    }
+    method: 'HEAD'
   })
 }
 
@@ -292,10 +267,8 @@ export function useOPTIONS<FetchDataType = any, BodyType = any>(
 ) {
   return useFetcher(init, {
     ...options,
-    config: {
-      ...options?.config,
-      method: 'OPTIONS'
-    }
+
+    method: 'OPTIONS'
   })
 }
 
@@ -308,10 +281,7 @@ export function usePOST<FetchDataType = any, BodyType = any>(
 ) {
   return useFetcher(init, {
     ...options,
-    config: {
-      ...options?.config,
-      method: 'POST'
-    }
+    method: 'POST'
   })
 }
 
@@ -324,10 +294,7 @@ export function usePUT<FetchDataType = any, BodyType = any>(
 ) {
   return useFetcher(init, {
     ...options,
-    config: {
-      ...options?.config,
-      method: 'PUT'
-    }
+    method: 'PUT'
   })
 }
 
@@ -340,10 +307,7 @@ export function usePATCH<FetchDataType = any, BodyType = any>(
 ) {
   return useFetcher(init, {
     ...options,
-    config: {
-      ...options?.config,
-      method: 'PATCH'
-    }
+    method: 'PATCH'
   })
 }
 
@@ -356,10 +320,7 @@ export function usePURGE<FetchDataType = any, BodyType = any>(
 ) {
   return useFetcher(init, {
     ...options,
-    config: {
-      ...options?.config,
-      method: 'PURGE'
-    }
+    method: 'PURGE'
   })
 }
 
@@ -372,10 +333,7 @@ export function useLINK<FetchDataType = any, BodyType = any>(
 ) {
   return useFetcher(init, {
     ...options,
-    config: {
-      ...options?.config,
-      method: 'LINK'
-    }
+    method: 'LINK'
   })
 }
 
@@ -388,10 +346,7 @@ export function useUNLINK<FetchDataType = any, BodyType = any>(
 ) {
   return useFetcher(init, {
     ...options,
-    config: {
-      ...options?.config,
-      method: 'UNLINK'
-    }
+    method: 'UNLINK'
   })
 }
 
@@ -482,7 +437,7 @@ export function useGql<T = any, VT = { [k: string]: any }>(
     ...otherArgs
   } = cfg
 
-  const { config = {} } = otherArgs
+  const config = otherArgs
 
   const JSONBody = serialize({
     query,
@@ -492,7 +447,7 @@ export function useGql<T = any, VT = { [k: string]: any }>(
   const usingProvider = isDefined((cfg as any)['__fromProvider'])
 
   const g = useFetcher({
-    url: graphqlPath,
+    ...config,
     id: arg1,
     ...{ variables: (cfg as any).variables || ({} as VT) },
     ...otherArgs,
@@ -504,12 +459,10 @@ export function useGql<T = any, VT = { [k: string]: any }>(
           variables: (cfg as any).variables || ({} as VT)
         } as any),
     ...{ __gql: true },
-    config: {
-      ...config,
-      formatBody: () => JSONBody,
-      body: JSONBody,
-      method: 'POST'
-    }
+    formatBody: () => JSONBody,
+    body: JSONBody,
+    method: 'POST',
+    url: graphqlPath
   })
   return g as Omit<typeof g, 'data'> & {
     data: {

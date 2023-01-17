@@ -1,11 +1,21 @@
-import { createContext, useContext } from "react"
-import EventEmitter from "events"
+import { createContext, useContext } from 'react'
+import EventEmitter from 'events'
 
-import { CacheStoreType, FetcherContextType } from "../types"
-
-// Constants
-export const DEFAULT_GRAPHQL_PATH = "/graphql"
-export const DEFAULT_RESOLVER = (e: any) => e.json()
+import { CacheStoreType, FetcherContextType } from '../types'
+import {
+  ATTEMPTS,
+  ATTEMPT_INTERVAL,
+  DEFAULTS,
+  MAX_LISTENERS,
+  ONLINE,
+  ON_OFFLINE,
+  ON_ONLINE,
+  PARAMS,
+  QUERY,
+  RETRY_ON_RECONNECT,
+  REVALIDATE_ON_FOCUS,
+  REVALIDATE_ON_MOUNT
+} from './constants'
 
 /**
  * This marks which requests are running
@@ -68,13 +78,13 @@ export const defaultCache: CacheStoreType = {
   },
   delete(k) {
     delete resolvedRequests[k]
-  },
+  }
 }
 
 const createRequestEmitter = () => {
   const emitter = new EventEmitter()
 
-  emitter.setMaxListeners(10e10)
+  emitter.setMaxListeners(MAX_LISTENERS)
 
   return emitter
 }
@@ -82,18 +92,17 @@ const createRequestEmitter = () => {
 export const requestEmitter = createRequestEmitter()
 
 const defaultContextVaue = {
-  defaults: {},
-  attempts: 0,
-  // By default its 2 seconds
-  attemptInterval: 2,
-  revalidateOnFocus: false,
-  query: {},
-  params: {},
-  onOffline() {},
-  onOnline() {},
-  online: true,
-  retryOnReconnect: true,
-  revalidateOnMount: true,
+  defaults: DEFAULTS,
+  attempts: ATTEMPTS,
+  attemptInterval: ATTEMPT_INTERVAL,
+  revalidateOnFocus: REVALIDATE_ON_FOCUS,
+  query: QUERY,
+  params: PARAMS,
+  onOffline: ON_OFFLINE,
+  onOnline: ON_ONLINE,
+  online: ONLINE,
+  retryOnReconnect: RETRY_ON_RECONNECT,
+  revalidateOnMount: REVALIDATE_ON_MOUNT
 }
 
 export const FetcherContext =

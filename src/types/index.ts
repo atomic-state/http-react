@@ -1,3 +1,15 @@
+export type HTTP_METHODS =
+  | 'GET'
+  | 'DELETE'
+  | 'HEAD'
+  | 'OPTIONS'
+  | 'POST'
+  | 'PUT'
+  | 'PATCH'
+  | 'PURGE'
+  | 'LINK'
+  | 'UNLINK'
+
 export type FetcherContextType = {
   headers?: any
   baseUrl?: string
@@ -42,7 +54,7 @@ export type CacheStoreType = {
   delete?(k?: any): any
 }
 
-export type CustomResponse<T> = Omit<Response, "json"> & {
+export type CustomResponse<T> = Omit<Response, 'json'> & {
   json(): Promise<T>
 }
 
@@ -244,49 +256,35 @@ export type FetcherConfigType<FetchDataType = any, BodyType = any> = {
    * If using inside a `<Suspense>`
    */
   suspense?: boolean
+
   /**
-   * Request configuration
+   * Override base url
    */
-  config?: {
-    /**
-     * Override base url
-     */
-    baseUrl?: string
-    /**
-     * Request method
-     */
-    method?:
-      | "GET"
-      | "DELETE"
-      | "HEAD"
-      | "OPTIONS"
-      | "POST"
-      | "PUT"
-      | "PATCH"
-      | "PURGE"
-      | "LINK"
-      | "UNLINK"
-    headers?: Headers | object
-    query?: any
-    /**
-     * URL params
-     */
-    params?: any
-    body?: BodyType
-    /**
-     * Customize how body is formated for the request. By default it will be sent in JSON format
-     * but you can set it to false if for example, you are sending a `FormData`
-     * body, or to `b => serialize(b)` for example, if you want to send JSON data
-     * (the last one is the default behaviour so in that case you can ignore it)
-     */
-    formatBody?: boolean | ((b: BodyType) => any)
-  }
+  baseUrl?: string
+  /**
+   * Request method
+   */
+  method?: HTTP_METHODS
+  headers?: Headers | object
+  query?: any
+  /**
+   * URL params
+   */
+  params?: any
+  body?: BodyType
+  /**
+   * Customize how body is formated for the request. By default it will be sent in JSON format
+   * but you can set it to false if for example, you are sending a `FormData`
+   * body, or to `b => serialize(b)` for example, if you want to send JSON data
+   * (the last one is the default behaviour so in that case you can ignore it)
+   */
+  formatBody?: boolean | ((b: BodyType) => any)
 }
 
 // If first argument is a string
 export type FetcherConfigTypeNoUrl<FetchDataType = any, BodyType = any> = Omit<
   FetcherConfigType<FetchDataType, BodyType>,
-  "url"
+  'url'
 >
 
 /**

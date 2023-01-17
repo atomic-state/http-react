@@ -1,4 +1,5 @@
-import React, { useEffect, useState, Suspense } from 'react'
+import * as React from 'react'
+import { useEffect, useState, Suspense } from 'react'
 
 import {
   defaultCache,

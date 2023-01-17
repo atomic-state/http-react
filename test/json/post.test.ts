@@ -13,11 +13,9 @@ test('POST data in JSON', async () => {
     const { result } = renderHook(() =>
       useFetcher({
         url: '',
-        config: {
-          method: 'POST',
-          body: {
-            careers: ['Python Developer', 'Frontend Developer']
-          }
+        method: 'POST',
+        body: {
+          careers: ['Python Developer', 'Frontend Developer']
         }
       })
     )

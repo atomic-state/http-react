@@ -16,12 +16,10 @@ test('Config is modified by AtomicState provider', async () => {
       useFetcher({
         url: '',
         default: [],
-        config: {
-          baseUrl: 'test-url',
-          method: 'DELETE',
-          body: {
-            careers: ['Backend Developer', 'Cloud Enginner', 'DB Administrator']
-          }
+        baseUrl: 'test-url',
+        method: 'DELETE',
+        body: {
+          careers: ['Backend Developer', 'Cloud Enginner', 'DB Administrator']
         }
       })
     )
