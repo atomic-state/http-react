@@ -275,7 +275,7 @@ export function revalidate(id: any | any[]) {
 
         previousConfig[resolveKey] = undefined
 
-        requestsProvider.emit(key)
+        requestsProvider.emit(key, {})
       }
     })
   } else {
@@ -286,7 +286,7 @@ export function revalidate(id: any | any[]) {
 
       previousConfig[resolveKey] = undefined
 
-      requestsProvider.emit(key)
+      requestsProvider.emit(key, {})
     }
   }
 }
@@ -457,7 +457,7 @@ export function mutateData(
         })
         if (_revalidate) {
           previousConfig[key] = undefined
-          requestsProvider.emit(serialize(k))
+          requestsProvider.emit(serialize(k), {})
         }
         queue(() => {
           valuesMemory[key] = newVal
@@ -471,7 +471,7 @@ export function mutateData(
         })
         if (_revalidate) {
           previousConfig[key] = undefined
-          requestsProvider.emit(serialize(k))
+          requestsProvider.emit(serialize(k), {})
         }
         queue(() => {
           valuesMemory[key] = v

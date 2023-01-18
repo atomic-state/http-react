@@ -72,14 +72,13 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     onPropsChange,
     revalidateOnMount = isDefined(options) ? ctx.revalidateOnMount : false,
     url = '',
-    id,
     query = {},
     params = {},
     baseUrl = undefined,
     method = METHODS.GET as HTTP_METHODS,
     headers = {} as Headers,
     body = undefined as unknown as Body,
-    formatBody = (e) => JSON.stringify(e),
+    formatBody = e => JSON.stringify(e),
 
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
@@ -129,8 +128,6 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       ? optionsConfig.retryOnReconnect
       : ctx.retryOnReconnect
 
-  const idString = serialize(id)
-
   const [reqQuery, setReqQuery] = useState({
     ...ctx.query,
     ...config.query
@@ -150,23 +147,18 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
         : ctx.baseUrl
       : config.baseUrl) + url
 
+  const defaultId = { uri: rawUrl, config: { method } }
+
+  const { id = defaultId } = optionsConfig
+
+  const idString = serialize(id)
+
   const urlWithParams = React.useMemo(
     () => setURLParams(rawUrl, reqParams),
     [serialize(reqParams), config.baseUrl, ctx.baseUrl, url]
   )
 
-  const resolvedKey = serialize(
-    isDefined(id)
-      ? {
-          idString
-        }
-      : {
-          uri: rawUrl,
-          config: {
-            method: config?.method
-          }
-        }
-  )
+  const resolvedKey = serialize({ idString })
 
   const [configUrl, setConfigUrl] = useState(urls[resolvedKey])
 
@@ -511,7 +503,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
               })
             } else {
               if (_data.errors && isGqlRequest) {
-                setData((previous) => {
+                setData(previous => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
@@ -799,6 +791,9 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       revalidate(id)
     },
     [
+      idString,
+      rawUrl,
+      resolvedKey,
       requestCallId,
       stringDeps,
       cancelOnChange,
@@ -845,7 +840,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
             }
             fetchData({
               query: Object.keys(reqQ)
-                .map((q) => [q, reqQ[q]].join('='))
+                .map(q => [q, reqQ[q]].join('='))
                 .join('&'),
               params: reqP
             })
@@ -970,7 +965,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
-          setCompletedAttempts((previousAttempts) => {
+          setCompletedAttempts(previousAttempts => {
             let newAttemptsValue = previousAttempts + 1
 
             requestsProvider.emit(resolvedKey, {
@@ -1026,7 +1021,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           }
           fetchData({
             query: Object.keys(reqQ)
-              .map((q) => [q, reqQ[q]].join('='))
+              .map(q => [q, reqQ[q]].join('='))
               .join('&'),
             params: reqP
           })
