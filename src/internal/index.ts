@@ -20,6 +20,10 @@ import {
  */
 export const runningRequests: any = {}
 
+export function isPending(id: any): boolean {
+  return runningRequests[id]
+}
+
 export const statusCodes: any = {}
 
 export const lastResponses: any = {}

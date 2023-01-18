@@ -7,6 +7,7 @@ import {
   defaultCache,
   fetcherDefaults,
   hasErrors,
+  isPending,
   lastResponses,
   previousConfig,
   previousProps,
@@ -78,7 +79,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     method = METHODS.GET as HTTP_METHODS,
     headers = {} as Headers,
     body = undefined as unknown as Body,
-    formatBody = e => JSON.stringify(e),
+    formatBody = (e) => JSON.stringify(e),
 
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
@@ -313,7 +314,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   const [loading, setLoading] = useState(
     revalidateOnMount
       ? suspense
-        ? runningRequests[resolvedKey]
+        ? isPending(resolvedKey)
         : true
       : previousConfig[resolvedKey] !== serialize(optionsConfig)
   )
@@ -403,7 +404,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
             })
           }
         })
-        if (!runningRequests[resolvedKey]) {
+        if (!isPending(resolvedKey)) {
           previousConfig[resolvedKey] = serialize(optionsConfig)
           runningRequests[resolvedKey] = true
           setLoading(true)
@@ -510,7 +511,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
               })
             } else {
               if (_data.errors && isGqlRequest) {
-                setData(previous => {
+                setData((previous) => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
@@ -621,7 +622,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     // Run onAbort callback
     const abortCallback = () => {
       if (loading) {
-        if (runningRequests[resolvedKey]) {
+        if (isPending(resolvedKey)) {
           if (handleOnAbort) {
             ;(onAbort as any)()
           }
@@ -825,7 +826,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
         setLoading(true)
         setError(null)
         hasErrors[resolvedKey] = null
-        if (!runningRequests[resolvedKey]) {
+        if (!isPending(resolvedKey)) {
           // We are preventing revalidation where we only need updates about
           // 'loading', 'error' and 'data' because the url can be ommited.
           if (url !== '') {
@@ -844,7 +845,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
             }
             fetchData({
               query: Object.keys(reqQ)
-                .map(q => [q, reqQ[q]].join('='))
+                .map((q) => [q, reqQ[q]].join('='))
                 .join('&'),
               params: reqP
             })
@@ -952,7 +953,6 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   useEffect(() => {
     if (revalidateOnMount) {
       if (suspense) {
-        previousConfig[resolvedKey] = undefined
         if (suspenseInitialized[resolvedKey]) {
           queue(() => {
             previousConfig[resolvedKey] = undefined
@@ -970,7 +970,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
-          setCompletedAttempts(previousAttempts => {
+          setCompletedAttempts((previousAttempts) => {
             let newAttemptsValue = previousAttempts + 1
 
             requestsProvider.emit(resolvedKey, {
@@ -1013,7 +1013,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     async function initializeRevalidation() {
       if (auto) {
         if (url !== '') {
-          if (runningRequests[resolvedKey]) {
+          if (isPending(resolvedKey)) {
             setLoading(true)
           }
           const reqQ = {
@@ -1026,7 +1026,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           }
           fetchData({
             query: Object.keys(reqQ)
-              .map(q => [q, reqQ[q]].join('='))
+              .map((q) => [q, reqQ[q]].join('='))
               .join('&'),
             params: reqP
           })
@@ -1069,18 +1069,16 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   }, [loading, windowExists, suspense, resolvedKey, data])
 
   useEffect(() => {
-    if (suspense) {
-      if (previousConfig[resolvedKey] !== serialize(optionsConfig)) {
+    const revalidateAfterUnmount = revalidateOnMount
+      ? true
+      : previousConfig[resolvedKey] !== serialize(optionsConfig)
+
+    if (revalidateAfterUnmount) {
+      if (suspense) {
         if (suspenseInitialized[resolvedKey]) {
           initializeRevalidation()
         }
-      }
-    } else {
-      if (
-        revalidateOnMount
-          ? true
-          : previousConfig[resolvedKey] !== serialize(optionsConfig)
-      ) {
+      } else {
         initializeRevalidation()
       }
     }
@@ -1225,7 +1223,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
 
   return {
     data: resolvedData,
-    loading: runningRequests[resolvedKey],
+    loading: isPending(resolvedKey),
     error: hasErrors[resolvedKey],
     online,
     code: statusCodes[resolvedKey],
