@@ -2,7 +2,12 @@ import * as React from 'react'
 import { useGql } from '../hooks/others'
 import { useFetcher } from '../hooks/use-fetcher'
 
-import { cacheForMutation, previousConfig, requestsProvider } from '../internal'
+import {
+  cacheForMutation,
+  previousConfig,
+  requestsProvider,
+  valuesMemory
+} from '../internal'
 
 import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
 
@@ -77,7 +82,7 @@ export function setURLParams(str: string = '', $params: any = {}) {
   return (
     str
       .split('/')
-      .map($segment => {
+      .map(($segment) => {
         const [segment] = $segment.split('?')
         if (segment.startsWith('[') && segment.endsWith(']')) {
           const paramName = segment.replace(/\[|\]/g, '')
@@ -135,7 +140,7 @@ export function createRequestFn(
 
     const [, qp = ''] = rawUrl.split('?')
 
-    qp.split('&').forEach(q => {
+    qp.split('&').forEach((q) => {
       const [key, value] = q.split('=')
       if (query[key] !== value) {
         query = {
@@ -146,7 +151,7 @@ export function createRequestFn(
     })
 
     const reqQueryString = Object.keys(query)
-      .map(q => [q, query[q]].join('='))
+      .map((q) => [q, query[q]].join('='))
       .join('&')
 
     const { headers = {}, body, formatBody } = c
@@ -227,7 +232,7 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
 
   return Object.fromEntries(
     new Map(
-      keys.map(k => [
+      keys.map((k) => [
         k.toLowerCase(),
         (url, { config = {}, ...other } = {}) =>
           (useFetcher as any)[k.toLowerCase()](
@@ -262,7 +267,7 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
  */
 export function revalidate(id: any | any[]) {
   if (Array.isArray(id)) {
-    id.map(reqId => {
+    id.map((reqId) => {
       if (isDefined(reqId)) {
         const key = serialize(reqId)
 
@@ -270,7 +275,7 @@ export function revalidate(id: any | any[]) {
 
         previousConfig[resolveKey] = undefined
 
-        requestsProvider.emit(key)
+        requestsProvider.emit(key, {})
       }
     })
   } else {
@@ -281,7 +286,7 @@ export function revalidate(id: any | any[]) {
 
       previousConfig[resolveKey] = undefined
 
-      requestsProvider.emit(key)
+      requestsProvider.emit(key, {})
     }
   }
 }
@@ -452,9 +457,10 @@ export function mutateData(
         })
         if (_revalidate) {
           previousConfig[key] = undefined
-          requestsProvider.emit(serialize(k))
+          requestsProvider.emit(serialize(k), {})
         }
         queue(() => {
+          valuesMemory[key] = newVal
           cacheForMutation[key] = newVal
         })
       } else {
@@ -465,9 +471,10 @@ export function mutateData(
         })
         if (_revalidate) {
           previousConfig[key] = undefined
-          requestsProvider.emit(serialize(k))
+          requestsProvider.emit(serialize(k), {})
         }
         queue(() => {
+          valuesMemory[key] = v
           cacheForMutation[key] = v
         })
       }

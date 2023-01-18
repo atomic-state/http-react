@@ -10,6 +10,7 @@ import {
 import {
   defaultCache,
   fetcherDefaults,
+  isPending,
   requestsProvider,
   runningRequests,
   useHRFContext
@@ -113,9 +114,7 @@ export function useFetcherLoading(id: any): boolean {
     id: id
   })
 
-  return !isDefined(runningRequests[idString])
-    ? true
-    : runningRequests[idString]
+  return !isDefined(runningRequests[idString]) ? true : isPending(idString)
 }
 
 /**
