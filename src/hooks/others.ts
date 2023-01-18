@@ -10,7 +10,7 @@ import {
 import {
   defaultCache,
   fetcherDefaults,
-  requestEmitter,
+  requestsProvider,
   runningRequests,
   useHRFContext
 } from '../internal'
@@ -212,9 +212,9 @@ export function useResolve<ResponseType = any, VT = any>(
         }
       }
     }
-    requestEmitter.addListener(defaultsKey, resolve)
+    requestsProvider.addListener(defaultsKey, resolve)
     return () => {
-      requestEmitter.removeListener(defaultsKey, resolve)
+      requestsProvider.removeListener(defaultsKey, resolve)
     }
   }, [defaultsKey, onResolve])
 }

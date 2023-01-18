@@ -2,7 +2,7 @@ import * as React from 'react'
 import { useGql } from '../hooks/others'
 import { useFetcher } from '../hooks/use-fetcher'
 
-import { cacheForMutation, previousConfig, requestEmitter } from '../internal'
+import { cacheForMutation, previousConfig, requestsProvider } from '../internal'
 
 import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
 
@@ -270,7 +270,7 @@ export function revalidate(id: any | any[]) {
 
         previousConfig[resolveKey] = undefined
 
-        requestEmitter.emit(key)
+        requestsProvider.emit(key)
       }
     })
   } else {
@@ -281,7 +281,7 @@ export function revalidate(id: any | any[]) {
 
       previousConfig[resolveKey] = undefined
 
-      requestEmitter.emit(key)
+      requestsProvider.emit(key)
     }
   }
 }
@@ -445,27 +445,27 @@ export function mutateData(
       const requestCallId = ''
       if (isFunction(v)) {
         let newVal = v(cacheForMutation[key])
-        requestEmitter.emit(key, {
+        requestsProvider.emit(key, {
           data: newVal,
           isMutating: true,
           requestCallId
         })
         if (_revalidate) {
           previousConfig[key] = undefined
-          requestEmitter.emit(serialize(k))
+          requestsProvider.emit(serialize(k))
         }
         queue(() => {
           cacheForMutation[key] = newVal
         })
       } else {
-        requestEmitter.emit(key, {
+        requestsProvider.emit(key, {
           requestCallId,
           isMutating: true,
           data: v
         })
         if (_revalidate) {
           previousConfig[key] = undefined
-          requestEmitter.emit(serialize(k))
+          requestsProvider.emit(serialize(k))
         }
         queue(() => {
           cacheForMutation[key] = v

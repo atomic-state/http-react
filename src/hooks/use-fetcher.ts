@@ -7,11 +7,13 @@ import {
   defaultCache,
   fetcherDefaults,
   hasErrors,
+  lastResponses,
   previousConfig,
   previousProps,
-  requestEmitter,
+  requestsProvider,
   resolvedHookCalls,
   runningRequests,
+  statusCodes,
   suspenseInitialized,
   urls,
   useHRFContext,
@@ -67,17 +69,16 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     onOffline = ctx.onOffline,
     onMutate,
     onPropsChange,
-    revalidateOnMount = ctx.revalidateOnMount,
+    revalidateOnMount = isDefined(options) ? ctx.revalidateOnMount : false,
     url = '',
     id,
-
     query = {},
     params = {},
     baseUrl = undefined,
     method = METHODS.GET as HTTP_METHODS,
     headers = {} as Headers,
     body = undefined as unknown as Body,
-    formatBody = (e) => JSON.stringify(e),
+    formatBody = e => JSON.stringify(e),
 
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
@@ -174,7 +175,9 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
 
   const suspense = $suspense || willSuspend[resolvedKey]
 
-  const realUrl = urlWithParams + (urlWithParams.includes('?') ? `` : '?')
+  const realUrl =
+    urlWithParams +
+    (urlWithParams.includes('?') ? (optionsConfig?.query ? `&` : '') : '?')
 
   if (!isDefined(previousProps[resolvedKey])) {
     if (url !== '') {
@@ -222,7 +225,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           }
         } else {
           if (!isDefined(cache.get(resolvedKey))) {
-            requestEmitter.emit(resolvedKey, {
+            requestsProvider.emit(resolvedKey, {
               requestCallId,
               data: optionsConfig.default
             })
@@ -309,7 +312,9 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   const [error, setError] = useState<any>(hasErrors[resolvedKey])
   const [loading, setLoading] = useState(
     revalidateOnMount
-      ? true
+      ? suspense
+        ? runningRequests[resolvedKey]
+        : true
       : previousConfig[resolvedKey] !== serialize(optionsConfig)
   )
   const [completedAttempts, setCompletedAttempts] = useState(0)
@@ -321,7 +326,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   useEffect(() => {
     if (url !== '') {
       setReqMethod(config.method)
-      requestEmitter.emit(resolvedKey, {
+      requestsProvider.emit(resolvedKey, {
         requestCallId,
         method: config.method
       })
@@ -331,7 +336,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   useEffect(() => {
     if (url !== '') {
       if (error && !hasErrors[resolvedKey]) {
-        requestEmitter.emit(resolvedKey, {
+        requestsProvider.emit(resolvedKey, {
           requestCallId,
           error: error
         })
@@ -345,8 +350,17 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     async function fetchData(
       c: { headers?: any; body?: BodyType; query?: any; params?: any } = {}
     ) {
-      requestEmitter.emit(resolvedKey, {
-        config: c
+      requestsProvider.emit(resolvedKey, {
+        config: {
+          query: {
+            ...ctx.query,
+            ...config.query
+          },
+          params: {
+            ...ctx.params,
+            ...config.params
+          }
+        }
       })
 
       const rawUrl =
@@ -382,7 +396,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
               rawUrl,
               realUrl
             })
-            requestEmitter.emit(resolvedKey, {
+            requestsProvider.emit(resolvedKey, {
               requestCallId,
               realUrl: resKey,
               rawUrl
@@ -397,7 +411,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           setRequestAbortController(newAbortController)
           setError(null)
           hasErrors[resolvedKey] = null
-          requestEmitter.emit(resolvedKey, {
+          requestsProvider.emit(resolvedKey, {
             requestCallId,
             loading,
             requestAbortController: newAbortController,
@@ -431,13 +445,16 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                 : undefined
             })
 
-            requestEmitter.emit(resolvedKey, {
+            lastResponses[resolvedKey] = json
+
+            const code = json.status
+            statusCodes[resolvedKey] = code
+
+            requestsProvider.emit(resolvedKey, {
               requestCallId,
               response: json
             })
-            const code = json.status
-            setStatusCode(code)
-            requestEmitter.emit(resolvedKey, {
+            requestsProvider.emit(resolvedKey, {
               requestCallId,
               code
             })
@@ -463,7 +480,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                 valuesMemory[resolvedKey] = __data
               }
 
-              requestEmitter.emit(resolvedKey, {
+              requestsProvider.emit(resolvedKey, {
                 requestCallId,
                 data: __data,
                 isResolved: true,
@@ -493,14 +510,14 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
               })
             } else {
               if (_data.errors && isGqlRequest) {
-                setData((previous) => {
+                setData(previous => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
                     errors: _data.errors
                   } as any
                   cacheForMutation[idString] = newData
-                  requestEmitter.emit(resolvedKey, {
+                  requestsProvider.emit(resolvedKey, {
                     requestCallId,
                     data: newData,
                     error: true
@@ -515,7 +532,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                 if (def) {
                   setData(def)
                   cacheForMutation[idString] = def
-                  requestEmitter.emit(resolvedKey, {
+                  requestsProvider.emit(resolvedKey, {
                     requestCallId,
                     data: def
                   })
@@ -523,7 +540,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                 if (handleError) {
                   ;(onError as any)(_data, json)
                 }
-                requestEmitter.emit(resolvedKey, {
+                requestsProvider.emit(resolvedKey, {
                   requestCallId,
                   error: true
                 })
@@ -537,21 +554,21 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
             // Only set error if no abort
             if (!`${errorString}`.match(/abort/i)) {
               let _error = new Error(err as any)
-              requestEmitter.emit(resolvedKey, {
+              requestsProvider.emit(resolvedKey, {
                 requestCallId,
                 error: _error
               })
               if (!isDefined(cache.get(resolvedKey))) {
                 setData(def)
                 cacheForMutation[idString] = def
-                requestEmitter.emit(resolvedKey, {
+                requestsProvider.emit(resolvedKey, {
                   requestCallId,
                   data: def
                 })
               } else {
                 setData(requestCache)
                 cacheForMutation[idString] = requestCache
-                requestEmitter.emit(resolvedKey, {
+                requestsProvider.emit(resolvedKey, {
                   requestCallId,
                   data: requestCache
                 })
@@ -567,7 +584,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                   setData(def)
                   cacheForMutation[idString] = def
                 }
-                requestEmitter.emit(resolvedKey, {
+                requestsProvider.emit(resolvedKey, {
                   requestCallId,
                   data: def
                 })
@@ -576,7 +593,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           } finally {
             setLoading(false)
             runningRequests[resolvedKey] = false
-            requestEmitter.emit(resolvedKey, {
+            requestsProvider.emit(resolvedKey, {
               requestCallId,
               loading: false
             })
@@ -759,10 +776,10 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       }
     }
 
-    requestEmitter.addListener(resolvedKey, waitFormUpdates)
+    requestsProvider.addListener(resolvedKey, waitFormUpdates)
 
     return () => {
-      requestEmitter.removeListener(resolvedKey, waitFormUpdates)
+      requestsProvider.removeListener(resolvedKey, waitFormUpdates)
     }
   }, [
     resolvedKey,
@@ -812,7 +829,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           // We are preventing revalidation where we only need updates about
           // 'loading', 'error' and 'data' because the url can be ommited.
           if (url !== '') {
-            requestEmitter.emit(resolvedKey, {
+            requestsProvider.emit(resolvedKey, {
               requestCallId,
               loading: true,
               error: null
@@ -827,7 +844,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
             }
             fetchData({
               query: Object.keys(reqQ)
-                .map((q) => [q, reqQ[q]].join('='))
+                .map(q => [q, reqQ[q]].join('='))
                 .join('&'),
               params: reqP
             })
@@ -836,9 +853,9 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       }
     }
     let idString = serialize(id)
-    requestEmitter.addListener(idString, forceRefresh)
+    requestsProvider.addListener(idString, forceRefresh)
     return () => {
-      requestEmitter.removeListener(idString, forceRefresh)
+      requestsProvider.removeListener(idString, forceRefresh)
     }
   }, [
     resolvedKey,
@@ -858,7 +875,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       function cancelReconectionAttempt() {
         willCancel = true
       }
-      requestEmitter.emit(resolvedKey, {
+      requestsProvider.emit(resolvedKey, {
         requestCallId,
         online: true
       })
@@ -896,7 +913,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     function wentOffline() {
       runningRequests[resolvedKey] = false
       setOnline(false)
-      requestEmitter.emit(resolvedKey, {
+      requestsProvider.emit(resolvedKey, {
         requestCallId,
         online: false
       })
@@ -935,6 +952,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   useEffect(() => {
     if (revalidateOnMount) {
       if (suspense) {
+        previousConfig[resolvedKey] = undefined
         if (suspenseInitialized[resolvedKey]) {
           queue(() => {
             previousConfig[resolvedKey] = undefined
@@ -952,10 +970,10 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
-          setCompletedAttempts((previousAttempts) => {
+          setCompletedAttempts(previousAttempts => {
             let newAttemptsValue = previousAttempts + 1
 
-            requestEmitter.emit(resolvedKey, {
+            requestsProvider.emit(resolvedKey, {
               requestCallId,
               completedAttempts: newAttemptsValue
             })
@@ -963,7 +981,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
             return newAttemptsValue
           })
         } else if (completedAttempts === attempts) {
-          requestEmitter.emit(resolvedKey, {
+          requestsProvider.emit(resolvedKey, {
             requestCallId,
             online: false
           })
@@ -991,8 +1009,6 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, loading, error, rawJSON, completedAttempts, config])
 
-  const initMemo = React.useMemo(() => serialize(optionsConfig), [])
-
   const initializeRevalidation = React.useCallback(
     async function initializeRevalidation() {
       if (auto) {
@@ -1010,7 +1026,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           }
           fetchData({
             query: Object.keys(reqQ)
-              .map((q) => [q, reqQ[q]].join('='))
+              .map(q => [q, reqQ[q]].join('='))
               .join('&'),
             params: reqP
           })
@@ -1109,7 +1125,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     headers: requestHeaders,
     body: config.body,
     baseUrl: ctx.baseUrl || config.baseUrl,
-    url: configUrl?.realUrl,
+    url: configUrl?.realUrl?.replace('?', ''),
     rawUrl: configUrl?.rawUrl,
     query: reqQuery
   }
@@ -1130,7 +1146,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
         cache.set(resolvedKey, newValue)
         valuesMemory[resolvedKey] = newValue
         cacheForMutation[idString] = newValue
-        requestEmitter.emit(resolvedKey, {
+        requestsProvider.emit(resolvedKey, {
           requestCallId,
           isMutating: true,
           data: newValue
@@ -1147,7 +1163,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
         cache.set(resolvedKey, newVal)
         valuesMemory[resolvedKey] = newVal
         cacheForMutation[idString] = newVal
-        requestEmitter.emit(resolvedKey, {
+        requestsProvider.emit(resolvedKey, {
           requestCallId,
           isMutating: true,
           data: newVal
@@ -1209,10 +1225,10 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
 
   return {
     data: resolvedData,
-    loading,
-    error,
+    loading: runningRequests[resolvedKey],
+    error: hasErrors[resolvedKey],
     online,
-    code: statusCode,
+    code: statusCodes[resolvedKey],
     reFetch: reValidate,
     mutate: forceMutate,
     fetcher: imperativeFetcher,
@@ -1223,7 +1239,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
         hasErrors[resolvedKey] = null
         setLoading(false)
         setData(requestCache)
-        requestEmitter.emit(resolvedKey, {
+        requestsProvider.emit(resolvedKey, {
           requestCallId,
           error: false,
           loading: false,
@@ -1232,7 +1248,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       }
     },
     config: __config,
-    response,
+    response: lastResponses[resolvedKey],
     id,
     /**
      * The request key
