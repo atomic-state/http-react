@@ -8,7 +8,9 @@
 
 export type { CacheStoreType, FetcherInit } from './types'
 
-export { useFetcher } from './hooks/use-fetcher'
+import { useFetch } from './hooks'
+
+export default useFetch
 
 export {
   useFetch,
