@@ -1,12 +1,10 @@
 import { createContext, useContext } from 'react'
-import EventEmitter from 'events'
 
 import { CacheStoreType, FetcherContextType } from '../types'
 import {
   ATTEMPTS,
   ATTEMPT_INTERVAL,
   DEFAULTS,
-  MAX_LISTENERS,
   ONLINE,
   ON_OFFLINE,
   ON_ONLINE,
@@ -21,6 +19,10 @@ import {
  * This marks which requests are running
  */
 export const runningRequests: any = {}
+
+export const statusCodes: any = {}
+
+export const lastResponses: any = {}
 
 /**
  * Previous request configurations (useful for deduplication)
@@ -81,15 +83,33 @@ export const defaultCache: CacheStoreType = {
   }
 }
 
-const createRequestEmitter = () => {
-  const emitter = new EventEmitter()
+const requestsSubscribers: {
+  [k: string]: any[]
+} = {}
 
-  emitter.setMaxListeners(MAX_LISTENERS)
-
-  return emitter
+export const requestsProvider = {
+  addListener(requestId?: any, listener?: any) {
+    if (!requestsSubscribers[requestId]) {
+      requestsSubscribers[requestId] = []
+    }
+    requestsSubscribers[requestId].push(listener)
+  },
+  removeListener(requestId?: any, listener?: any) {
+    if (!requestsSubscribers[requestId]) {
+      requestsSubscribers[requestId] = []
+    }
+    requestsSubscribers[requestId] = requestsSubscribers[requestId].filter(
+      (l) => l !== listener
+    )
+  },
+  emit(requestId?: any, payload?: any) {
+    if (requestsSubscribers[requestId]) {
+      requestsSubscribers[requestId].forEach((listener) => {
+        listener(payload)
+      })
+    }
+  }
 }
-
-export const requestEmitter = createRequestEmitter()
 
 const defaultContextVaue = {
   defaults: DEFAULTS,

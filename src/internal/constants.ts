@@ -11,7 +11,6 @@ const RETRY_ON_RECONNECT = true
 const REVALIDATE_ON_MOUNT = true
 const DEFAULT_GRAPHQL_PATH = '/graphql'
 const DEFAULT_RESOLVER = (e: any) => e.json()
-const MAX_LISTENERS = 10e10
 
 const ALLOWED_CONTEXT_KEYS = [
   'headers',
@@ -61,7 +60,6 @@ export {
   REVALIDATE_ON_MOUNT,
   DEFAULT_GRAPHQL_PATH,
   DEFAULT_RESOLVER,
-  MAX_LISTENERS,
   ALLOWED_CONTEXT_KEYS,
   METHODS
 }
