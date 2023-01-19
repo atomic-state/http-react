@@ -20,21 +20,23 @@ import {
   urls,
   useHRFContext,
   valuesMemory,
-  willSuspend
+  willSuspend,
+  canDebounce,
+  resolvedOnErrorCalls
 } from '../internal'
 
 import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
 
 import {
   CustomResponse,
-  FetcherConfigType,
-  FetcherConfigTypeNoUrl,
+  FetchConfigType,
+  FetchConfigTypeNoUrl,
   HTTP_METHODS,
-  ImperativeFetcher
+  ImperativeFetch
 } from '../types'
 
 import {
-  createImperativeFetcher,
+  createImperativeFetch,
   createRequestFn,
   hasBaseUrl,
   isDefined,
@@ -47,11 +49,11 @@ import {
 } from '../utils'
 
 /**
- * Fetcher hook
+ * Fetch hook
  */
-export function useFetcher<FetchDataType = any, BodyType = any>(
-  init: FetcherConfigType<FetchDataType, BodyType> | string,
-  options?: FetcherConfigTypeNoUrl<FetchDataType, BodyType>
+export function useFetch<FetchDataType = any, BodyType = any>(
+  init: FetchConfigType<FetchDataType, BodyType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
 ) {
   const ctx = useHRFContext()
 
@@ -77,7 +79,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     method = METHODS.GET as HTTP_METHODS,
     headers = {} as Headers,
     body = undefined as unknown as Body,
-    formatBody = e => JSON.stringify(e),
+    formatBody = (e) => JSON.stringify(e),
 
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
@@ -196,12 +198,11 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   }, [serialize({ ...ctx.params, ...config.params }), resolvedKey])
 
   const stringDeps = serialize(
-    // We ignore children and resolver
     Object.assign(
+      {},
       ctx,
-      { children: undefined },
       config?.headers,
-      config?.method,
+      { method: config?.method },
       config?.body,
       config?.query,
       config?.params,
@@ -213,7 +214,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
 
   const [resKey, qp] = realUrl.split('?')
 
-  // This helps pass default values to other useFetcher calls using the same id
+  // This helps pass default values to other useFetch calls using the same id
   useEffect(() => {
     if (isDefined(optionsConfig.default)) {
       if (!isDefined(fetcherDefaults[resolvedKey])) {
@@ -418,8 +419,9 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           abortControllers[resolvedKey] = newAbortController
           try {
             const json = await fetch(realUrl + c.query, {
-              ...optionsConfig,
+              ...ctx,
               signal: newAbortController.signal,
+              ...optionsConfig,
               body: isFunction(formatBody)
                 ? // @ts-ignore // If formatBody is a function
                   formatBody(optionsConfig?.body as any)
@@ -459,7 +461,10 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                 setError(true)
                 hasErrors[resolvedKey] = true
                 if (handleError) {
-                  ;(onError as any)(true)
+                  if (!resolvedOnErrorCalls[resolvedKey]) {
+                    resolvedOnErrorCalls[resolvedKey] = true
+                    ;(onError as any)(true)
+                  }
                 }
               }
               if (memory) {
@@ -478,6 +483,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                   : undefined,
                 completedAttempts: 0
               })
+
               setData(__data)
               cacheForMutation[idString] = __data
 
@@ -487,7 +493,10 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
               }
               setLoading(false)
               if (willResolve) {
-                ;(onResolve as any)(__data, json)
+                if (!resolvedHookCalls[resolvedKey]) {
+                  ;(onResolve as any)(__data, lastResponses[resolvedKey])
+                  resolvedHookCalls[resolvedKey] = true
+                }
               }
               runningRequests[resolvedKey] = false
               // If a request completes succesfuly, we reset the error attempts to 0
@@ -497,7 +506,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
               })
             } else {
               if (_data.errors && isGqlRequest) {
-                setData(previous => {
+                setData((previous) => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
@@ -513,7 +522,10 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                   return newData
                 })
                 if (handleError) {
-                  ;(onError as any)(true, json)
+                  if (!resolvedOnErrorCalls[resolvedKey]) {
+                    resolvedOnErrorCalls[resolvedKey] = true
+                    ;(onError as any)(true, json)
+                  }
                 }
               } else {
                 if (def) {
@@ -525,7 +537,10 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                   })
                 }
                 if (handleError) {
-                  ;(onError as any)(_data, json)
+                  if (!resolvedOnErrorCalls[resolvedKey]) {
+                    resolvedOnErrorCalls[resolvedKey] = true
+                    ;(onError as any)(_data, json)
+                  }
                 }
                 requestsProvider.emit(resolvedKey, {
                   requestCallId,
@@ -563,7 +578,10 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
               setError(_error)
               hasErrors[resolvedKey] = true
               if (handleError) {
-                ;(onError as any)(err as any)
+                if (!resolvedOnErrorCalls[resolvedKey]) {
+                  resolvedOnErrorCalls[resolvedKey] = true
+                  ;(onError as any)(err as any)
+                }
               }
             } else {
               if (!isDefined(cacheProvider.get(resolvedKey))) {
@@ -579,12 +597,14 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
             }
           } finally {
             setLoading(false)
+            canDebounce[resolvedKey] = true
             runningRequests[resolvedKey] = false
             requestsProvider.emit(resolvedKey, {
               requestCallId,
               loading: false
             })
             suspenseInitialized[resolvedKey] = true
+            resolvedOnErrorCalls[resolvedKey] = true
           }
         }
       }
@@ -621,7 +641,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     }
   }, [requestAbortController, resolvedKey, onAbort, loading])
 
-  const imperativeFetcher = React.useMemo(() => {
+  const imperativeFetch = React.useMemo(() => {
     const __headers = {
       ...ctx.headers,
       ...config.headers
@@ -633,7 +653,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     }
 
     const __baseUrl = isDefined(config.baseUrl) ? config.baseUrl : ctx.baseUrl
-    return createImperativeFetcher({
+    return createImperativeFetch({
       ...ctx,
       headers: __headers,
       baseUrl: __baseUrl,
@@ -644,38 +664,60 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   if (willResolve) {
     if (resolvedHookCalls[resolvedKey]) {
       if (isDefined(cacheProvider.get(resolvedKey))) {
-        if (!suspense) {
-          ;(onResolve as any)(cacheProvider.get(resolvedKey) as any, response)
-        }
         queue(() => {
-          delete resolvedHookCalls[resolvedKey]
+          resolvedHookCalls[resolvedKey] = undefined
         })
       }
+    }
+    if (resolvedOnErrorCalls[resolvedKey]) {
+      queue(() => {
+        resolvedOnErrorCalls[resolvedKey] = undefined
+      })
     }
   }
 
   useEffect(() => {
     async function waitFormUpdates(v: any) {
-      if (v.requestCallId !== requestCallId) {
-        const {
-          isMutating,
-          data: $data,
-          error: $error,
-          isResolved,
-          online,
-          loading,
-          response,
-          requestAbortController,
-          code,
-          config,
-          rawUrl,
-          realUrl,
-          method,
-          completedAttempts
-        } = v
+      const {
+        isMutating,
+        data: $data,
+        error: $error,
+        isResolved,
+        online,
+        loading,
+        response,
+        requestAbortController,
+        code,
+        config,
+        rawUrl,
+        realUrl,
+        method,
+        completedAttempts
+      } = v || {}
 
+      if (isMutating) {
+        if (serialize($data) !== serialize(cacheForMutation[resolvedKey])) {
+          cacheForMutation[idString] = data
+          if (isMutating) {
+            if (handleMutate) {
+              if (url === '') {
+                ;(onMutate as any)($data, imperativeFetch)
+              } else {
+                if (!runningMutate[resolvedKey]) {
+                  runningMutate[resolvedKey] = true
+                  ;(onMutate as any)($data, imperativeFetch)
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (v.requestCallId !== requestCallId) {
         if (isDefined(isResolved)) {
-          resolvedHookCalls[resolvedKey] = true
+          if (willResolve) {
+            // onResolve($data, lastResponses[resolvedKey])
+          }
         }
         if (isDefined(method)) {
           queue(() => {
@@ -734,17 +776,6 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           queue(() => {
             setData($data)
             cacheProvider.set(resolvedKey, $data)
-            if (serialize($data) !== serialize(cacheForMutation[resolvedKey])) {
-              cacheForMutation[idString] = data
-              if (isMutating) {
-                if (handleMutate) {
-                  if (!runningMutate[resolvedKey]) {
-                    runningMutate[resolvedKey] = true
-                    ;(onMutate as any)($data, imperativeFetcher)
-                  }
-                }
-              }
-            }
           })
         }
         if (isDefined($error)) {
@@ -753,7 +784,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
             if ($error !== null) {
               hasErrors[resolvedKey] = true
               if (handleError) {
-                ;(onError as any)($error)
+                // ;(onError as any)($error)
               }
             }
           })
@@ -771,17 +802,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     return () => {
       requestsProvider.removeListener(resolvedKey, waitFormUpdates)
     }
-  }, [
-    resolvedKey,
-    data,
-    imperativeFetcher,
-    reqMethod,
-    id,
-    error,
-    requestCallId,
-    stringDeps,
-    onResolve
-  ])
+  }, [JSON.stringify(optionsConfig)])
 
   const reValidate = React.useCallback(
     async function reValidate() {
@@ -837,7 +858,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
             }
             fetchData({
               query: Object.keys(reqQ)
-                .map(q => [q, reqQ[q]].join('='))
+                .map((q) => [q, reqQ[q]].join('='))
                 .join('&'),
               params: reqP
             })
@@ -962,7 +983,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
-          setCompletedAttempts(previousAttempts => {
+          setCompletedAttempts((previousAttempts) => {
             let newAttemptsValue = previousAttempts + 1
 
             requestsProvider.emit(resolvedKey, {
@@ -1001,9 +1022,11 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, loading, error, rawJSON, completedAttempts, config])
 
+  const { debounce } = optionsConfig
+
   const initializeRevalidation = React.useCallback(
     async function initializeRevalidation() {
-      if (auto) {
+      if (auto || canDebounce[resolvedKey]) {
         if (url !== '') {
           if (isPending(resolvedKey)) {
             setLoading(true)
@@ -1018,7 +1041,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           }
           fetchData({
             query: Object.keys(reqQ)
-              .map(q => [q, reqQ[q]].join('='))
+              .map((q) => [q, reqQ[q]].join('='))
               .join('&'),
             params: reqP
           })
@@ -1065,14 +1088,28 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       ? true
       : previousConfig[resolvedKey] !== serialize(optionsConfig)
 
-    if (revalidateAfterUnmount) {
-      if (suspense) {
-        if (suspenseInitialized[resolvedKey]) {
-          initializeRevalidation()
-        }
+    let tm: any = null
+
+    function revalidate() {
+      if (debounce && canDebounce[resolvedKey]) {
+        tm = queue(initializeRevalidation, debounce)
       } else {
         initializeRevalidation()
       }
+    }
+
+    if (revalidateAfterUnmount) {
+      if (suspense) {
+        if (suspenseInitialized[resolvedKey]) {
+          revalidate()
+        }
+      } else {
+        revalidate()
+      }
+    }
+
+    return () => {
+      clearTimeout(tm)
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1110,35 +1147,38 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
 
   const __config = {
     ...config,
+    ...optionsConfig,
+    ...previousProps[resolvedKey],
     method: reqMethod,
-    params: reqParams,
-    headers: requestHeaders,
+    params: {
+      ...reqParams,
+      ...previousProps[resolvedKey]?.params
+    },
+    headers: {
+      ...requestHeaders,
+      ...previousProps[resolvedKey]?.headers
+    },
     body: config.body,
     baseUrl: ctx.baseUrl || config.baseUrl,
     url: configUrl?.realUrl?.replace('?', ''),
     rawUrl: configUrl?.rawUrl,
-    query: reqQuery
+    query: {
+      ...reqQuery,
+      ...previousProps[resolvedKey]?.query
+    }
   }
 
   function forceMutate(
     newValue: FetchDataType | ((prev: FetchDataType) => FetchDataType),
-    callback: (
-      data: FetchDataType,
-      fetcher: ImperativeFetcher
-    ) => void = () => {}
+    callback: (data: FetchDataType, fetcher: ImperativeFetch) => void = () => {}
   ) {
     if (!isFunction(newValue)) {
       if (serialize(cacheProvider.get(resolvedKey)) !== serialize(newValue)) {
-        if (handleMutate) {
-          if (!runningMutate[resolvedKey]) {
-            runningMutate[resolvedKey] = true
-            ;(onMutate as any)(newValue, imperativeFetcher)
-          }
-        }
-        callback(newValue as any, imperativeFetcher)
+        callback(newValue as any, imperativeFetch)
         cacheProvider.set(resolvedKey, newValue)
         valuesMemory[resolvedKey] = newValue
         cacheForMutation[idString] = newValue
+        runningMutate[resolvedKey] = false
         requestsProvider.emit(resolvedKey, {
           requestCallId,
           isMutating: true,
@@ -1149,16 +1189,11 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     } else {
       let newVal = (newValue as any)(data)
       if (serialize(cacheProvider.get(resolvedKey)) !== serialize(newVal)) {
-        if (handleMutate) {
-          if (!runningMutate[resolvedKey]) {
-            runningMutate[resolvedKey] = true
-            ;(onMutate as any)(newVal, imperativeFetcher)
-          }
-        }
-        callback(newVal, imperativeFetcher)
+        callback(newVal, imperativeFetch)
         cacheProvider.set(resolvedKey, newVal)
         valuesMemory[resolvedKey] = newVal
         cacheForMutation[idString] = newVal
+        runningMutate[resolvedKey] = false
         requestsProvider.emit(resolvedKey, {
           requestCallId,
           isMutating: true,
@@ -1182,12 +1217,21 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           }
         } catch (err) {}
       },
-      fetcher: imperativeFetcher,
+      fetcher: imperativeFetch,
       props: optionsConfig,
       previousProps: previousProps[resolvedKey]
     }
 
+    queue(() => {
+      if (!auto && url !== '' && debounce) {
+        canDebounce[resolvedKey] = true
+      }
+    })
+
     if (serialize(previousProps[resolvedKey]) !== serialize(optionsConfig)) {
+      if (debounce) {
+        canDebounce[resolvedKey] = true
+      }
       if (handlePropsChange) {
         ;(onPropsChange as any)(rev as any)
       }
@@ -1227,7 +1271,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     code: statusCodes[resolvedKey],
     reFetch: reValidate,
     mutate: forceMutate,
-    fetcher: imperativeFetcher,
+    fetcher: imperativeFetch,
     abort: () => {
       abortControllers[resolvedKey]?.abort()
       if (loading) {
@@ -1259,11 +1303,11 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     reFetch: () => Promise<void>
     mutate: (
       update: FetchDataType | ((prev: FetchDataType) => FetchDataType),
-      callback?: (data: FetchDataType, fetcher: ImperativeFetcher) => void
+      callback?: (data: FetchDataType, fetcher: ImperativeFetch) => void
     ) => FetchDataType
-    fetcher: ImperativeFetcher
+    fetcher: ImperativeFetch
     abort: () => void
-    config: FetcherConfigType<FetchDataType, BodyType> & {
+    config: FetchConfigType<FetchDataType, BodyType> & {
       baseUrl: string
       url: string
       rawUrl: string
@@ -1274,13 +1318,13 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   }
 }
 
-useFetcher.get = createRequestFn('GET', '', {})
-useFetcher.delete = createRequestFn('DELETE', '', {})
-useFetcher.head = createRequestFn('HEAD', '', {})
-useFetcher.options = createRequestFn('OPTIONS', '', {})
-useFetcher.post = createRequestFn('POST', '', {})
-useFetcher.put = createRequestFn('PUT', '', {})
-useFetcher.patch = createRequestFn('PATCH', '', {})
-useFetcher.purge = createRequestFn('PURGE', '', {})
-useFetcher.link = createRequestFn('LINK', '', {})
-useFetcher.unlink = createRequestFn('UNLINK', '', {})
+useFetch.get = createRequestFn('GET', '', {})
+useFetch.delete = createRequestFn('DELETE', '', {})
+useFetch.head = createRequestFn('HEAD', '', {})
+useFetch.options = createRequestFn('OPTIONS', '', {})
+useFetch.post = createRequestFn('POST', '', {})
+useFetch.put = createRequestFn('PUT', '', {})
+useFetch.patch = createRequestFn('PATCH', '', {})
+useFetch.purge = createRequestFn('PURGE', '', {})
+useFetch.link = createRequestFn('LINK', '', {})
+useFetch.unlink = createRequestFn('UNLINK', '', {})

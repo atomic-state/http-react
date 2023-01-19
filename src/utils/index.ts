@@ -1,15 +1,13 @@
 import * as React from 'react'
 import { useGql } from '../hooks/others'
-import { useFetcher } from '../hooks/use-fetcher'
+import { useFetch } from '../hooks/use-fetch'
 
 import {
   cacheForMutation,
   defaultCache,
-  lastResponses,
   previousConfig,
   requestsProvider,
   runningMutate,
-  runningRequests,
   valuesMemory
 } from '../internal'
 
@@ -17,10 +15,10 @@ import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
 
 import {
   CacheStoreType,
-  FetcherContextType,
-  ImperativeFetcher,
+  FetchContextType,
+  ImperativeFetch,
   RequestWithBody,
-  FetcherInit
+  FetchInit
 } from '../types'
 
 export const windowExists = typeof window !== 'undefined'
@@ -43,10 +41,6 @@ export function jsonCompare(a: any, b: any) {
 
 export function serialize(input: any) {
   return JSON.stringify(input)
-}
-
-export function merge(...objects: any) {
-  return Object.assign({}, ...objects)
 }
 
 export const isFormData = (target: any) => {
@@ -121,8 +115,7 @@ export function setURLParams(str: string = '', $params: any = {}) {
 export function createRequestFn(
   method: string,
   baseUrl: string,
-  $headers: any,
-  q?: any
+  $headers: any
 ): RequestWithBody {
   return async function (url, init = {}) {
     const {
@@ -134,9 +127,7 @@ export function createRequestFn(
       formatBody,
       resolver = DEFAULT_RESOLVER,
       onResolve = () => {},
-      onError = () => {},
-      cacheProvider = defaultCache,
-      ...config
+      onError = () => {}
     } = init
 
     const rawUrl = setURLParams(url, params)
@@ -147,7 +138,6 @@ export function createRequestFn(
 
     const reqConfig = {
       method,
-
       headers: {
         'Content-Type': 'application/json',
         ...$headers,
@@ -171,7 +161,7 @@ export function createRequestFn(
 
     try {
       const req = await fetch(requestUrl, {
-        ...config,
+        ...init,
         ...reqConfig
       })
       r = req
@@ -184,7 +174,12 @@ export function createRequestFn(
           data: def,
           error: true,
           code: req?.status,
-          config: { url: `${baseUrl || ''}${rawUrl}`, ...reqConfig, query }
+          config: {
+            ...init,
+            url: `${baseUrl || ''}${rawUrl}`,
+            ...reqConfig,
+            query
+          }
         }
       } else {
         onResolve(data, req)
@@ -193,7 +188,12 @@ export function createRequestFn(
           data: data,
           error: false,
           code: req?.status,
-          config: { url: `${baseUrl || ''}${rawUrl}`, ...reqConfig, query }
+          config: {
+            ...init,
+            url: `${baseUrl || ''}${rawUrl}`,
+            ...reqConfig,
+            query
+          }
         }
       }
     } catch (err) {
@@ -203,13 +203,17 @@ export function createRequestFn(
         data: def,
         error: true,
         code: r?.status,
-        config: { url: requestUrl, ...reqConfig }
+        config: {
+          ...init,
+          url: requestUrl,
+          ...reqConfig
+        }
       }
     }
   } as RequestWithBody
 }
 
-export const createImperativeFetcher = (ctx: FetcherContextType) => {
+export const createImperativeFetch = (ctx: FetchContextType) => {
   const keys = [
     'GET',
     'DELETE',
@@ -230,13 +234,16 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
       keys.map(k => [
         k.toLowerCase(),
         (url, config = {}) =>
-          (useFetcher as any)[k.toLowerCase()](
+          (useFetch as any)[k.toLowerCase()](
             hasBaseUrl(url) ? url : baseUrl + url,
-            config
+            {
+              ...ctx,
+              ...config
+            }
           )
       ])
     )
-  ) as ImperativeFetcher
+  ) as ImperativeFetch
 }
 
 /**
@@ -320,7 +327,7 @@ export function queryProvider<R>(
   return function useQuery<P extends keyof R>(
     queryName: P,
     otherConfig?: Omit<
-      FetcherInit<
+      FetchInit<
         QuerysType[P] extends ReturnType<typeof gql>
           ? QuerysType[P]['value']
           : any

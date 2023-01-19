@@ -6,11 +6,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-export type { CacheStoreType, FetcherInit } from './types'
+export type { CacheStoreType, FetchInit } from './types'
 
-import { useFetch } from './hooks'
-
-export default useFetch
+export { useFetch as default } from './hooks'
 
 export {
   useFetch,
@@ -38,12 +36,13 @@ export {
   useResolve
 } from './hooks'
 
-export { FetcherConfig, SSRSuspense } from './components'
+export { FetchConfig, SSRSuspense } from './components'
 
 export {
   gql,
   setURLParams,
   queryProvider,
   mutateData,
-  revalidate
+  revalidate,
+  hasBaseUrl
 } from './utils'

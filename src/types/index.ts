@@ -10,7 +10,7 @@ export type HTTP_METHODS =
   | 'LINK'
   | 'UNLINK'
 
-export type FetcherContextType = {
+export type FetchContextType = {
   headers?: any
   baseUrl?: string
   /**
@@ -46,7 +46,7 @@ export type FetcherContextType = {
   retryOnReconnect?: boolean
   cacheProvider?: CacheStoreType
   revalidateOnMount?: boolean
-}
+} & Omit<RequestInit, 'body'>
 
 export type CacheStoreType = {
   get(k?: any): any
@@ -101,15 +101,15 @@ export type RequestWithBody = <R = any, BodyType = any>(
 ) => Promise<{
   error: any
   data: R
-  config: any
+  config: RequestInit
   code: number
   res: CustomResponse<R>
 }>
 
 /**
- * An imperative version of the `useFetcher`
+ * An imperative version of the `useFetch` hook
  */
-export type ImperativeFetcher = {
+export type ImperativeFetch = {
   get: RequestWithBody
   delete: RequestWithBody
   head: RequestWithBody
@@ -122,7 +122,7 @@ export type ImperativeFetcher = {
   unlink: RequestWithBody
 }
 
-export type FetcherConfigType<FetchDataType = any, BodyType = any> = Omit<
+export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
   RequestInit,
   'body'
 > & {
@@ -160,7 +160,7 @@ export type FetcherConfigType<FetchDataType = any, BodyType = any> = Omit<
   /**
    * Function to run when request is resolved succesfuly
    */
-  onResolve?: (data: FetchDataType, req?: Response) => void
+  onResolve?: (data: FetchDataType, res?: Response) => void
   /**
    * Override the cache for this specific request
    */
@@ -171,9 +171,9 @@ export type FetcherConfigType<FetchDataType = any, BodyType = any> = Omit<
   onMutate?: (
     data: FetchDataType,
     /**
-     * An imperative version of `useFetcher`
+     * An imperative version of `useFetche`
      */
-    fetcher: ImperativeFetcher
+    fetcher: ImperativeFetch
   ) => void
   /**
    * Function to run when props change
@@ -184,9 +184,9 @@ export type FetcherConfigType<FetchDataType = any, BodyType = any> = Omit<
       (reason?: any): void
       (): void
     }
-    fetcher: ImperativeFetcher
-    props: FetcherConfigTypeNoUrl<FetchDataType, BodyType>
-    previousProps: FetcherConfigTypeNoUrl<FetchDataType, BodyType>
+    fetcher: ImperativeFetch
+    props: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+    previousProps: FetchConfigTypeNoUrl<FetchDataType, BodyType>
   }) => void
   /**
    * Function to run when the request fails
@@ -273,20 +273,19 @@ export type FetcherConfigType<FetchDataType = any, BodyType = any> = Omit<
    * (the last one is the default behaviour so in that case you can ignore it)
    */
   formatBody?: boolean | ((b: BodyType) => any)
+  /**
+   * The time to wait before revalidation after props change
+   */
+  debounce?: number
 }
 
 // If first argument is a string
-export type FetcherConfigTypeNoUrl<FetchDataType = any, BodyType = any> = Omit<
-  FetcherConfigType<FetchDataType, BodyType>,
+export type FetchConfigTypeNoUrl<FetchDataType = any, BodyType = any> = Omit<
+  FetchConfigType<FetchDataType, BodyType>,
   'url'
 >
 
 /**
- * Create a configuration object to use in a 'useFetcher' call
+ * Create a configuration object to use in a 'useFetche' call
  */
-export type FetcherInit<FDT = any, BT = any> = FetcherConfigTypeNoUrl<
-  FDT,
-  BT
-> & {
-  url?: string
-}
+export type FetchInit<FDT = any, BT = any> = FetchConfigType<FDT, BT>
