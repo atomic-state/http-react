@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 
-import { CacheStoreType, FetcherContextType } from '../types'
+import { CacheStoreType, FetchContextType } from '../types'
 import {
   ATTEMPTS,
   ATTEMPT_INTERVAL,
@@ -46,7 +46,11 @@ export const resolvedRequests: any = {}
 
 export const resolvedHookCalls: any = {}
 
+export const resolvedOnErrorCalls: any = {}
+
 export const abortControllers: any = {}
+
+export const canDebounce: any = {}
 
 /**
  * Request with errors
@@ -131,9 +135,8 @@ const defaultContextVaue = {
   revalidateOnMount: REVALIDATE_ON_MOUNT
 }
 
-export const FetcherContext =
-  createContext<FetcherContextType>(defaultContextVaue)
+export const FetchContext = createContext<FetchContextType>(defaultContextVaue)
 
 export function useHRFContext() {
-  return useContext(FetcherContext)
+  return useContext(FetchContext)
 }

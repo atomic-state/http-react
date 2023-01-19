@@ -3,14 +3,14 @@ import { useEffect, useState, Suspense } from 'react'
 
 import {
   defaultCache,
-  FetcherContext,
+  FetchContext,
   fetcherDefaults,
   useHRFContext,
   valuesMemory,
   willSuspend
 } from '../internal'
 
-import { FetcherContextType } from '../types'
+import { FetchContextType } from '../types'
 
 import { isDefined, serialize } from '../utils'
 
@@ -36,8 +36,8 @@ export function SSRSuspense({
   ) as JSX.Element
 }
 
-export function FetcherConfig(props: FetcherContextType) {
-  const { children, defaults = {}, baseUrl, suspense = [] } = props
+export function FetchConfig(props: FetchContextType) {
+  const { children, defaults = {}, suspense = [] } = props
 
   const previousConfig = useHRFContext()
 
@@ -76,12 +76,13 @@ export function FetcherConfig(props: FetcherContextType) {
     headers: {
       ...previousConfig.headers,
       ...props.headers
-    }
+    },
+    children: undefined
   }
 
   return (
-    <FetcherContext.Provider value={mergedConfig}>
+    <FetchContext.Provider value={mergedConfig}>
       {children}
-    </FetcherContext.Provider>
+    </FetchContext.Provider>
   )
 }

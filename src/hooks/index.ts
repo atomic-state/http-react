@@ -1,15 +1,15 @@
-export { useFetcher as useFetch } from "./use-fetcher"
+export { useFetch } from './use-fetch'
 
 export {
-  useFetcherLoading as useLoading,
-  useFetcherConfig as useConfig,
-  useFetcherData as useData,
-  useFetcherCode as useCode,
-  useFetcherError as useError,
-  useFetcherMutate as useMutate,
-  useFetcherId as useFetchId,
-  useFetcherBlob as useBlob,
-  useFetcherText as useText,
+  useFetchLoading as useLoading,
+  useFetchConfig as useConfig,
+  useFetchData as useData,
+  useFetchCode as useCode,
+  useFetchError as useError,
+  useFetchMutate as useMutate,
+  useFetchId as useFetchId,
+  useFetchBlob as useBlob,
+  useFetchText as useText,
   useGET,
   useDELETE,
   useHEAD,
@@ -22,5 +22,5 @@ export {
   useUNLINK,
   useResolve,
   useGql,
-  useImperative,
-} from "./others"
+  useImperative
+} from './others'
