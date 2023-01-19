@@ -22,7 +22,9 @@ import {
   valuesMemory,
   willSuspend,
   canDebounce,
-  resolvedOnErrorCalls
+  resolvedOnErrorCalls,
+  requestInitialTimes,
+  requestResponseTimes
 } from '../internal'
 
 import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
@@ -38,6 +40,7 @@ import {
 import {
   createImperativeFetch,
   createRequestFn,
+  getTimePassed,
   hasBaseUrl,
   isDefined,
   isFunction,
@@ -420,7 +423,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           try {
             const json = await fetch(realUrl + c.query, {
               ...ctx,
-              signal: newAbortController.signal,
+              signal: (() => {
+                requestInitialTimes[resolvedKey] = Date.now()
+                return newAbortController.signal
+              })(),
               ...optionsConfig,
               body: isFunction(formatBody)
                 ? // @ts-ignore // If formatBody is a function
@@ -433,6 +439,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 ...c.headers
               } as Headers
             })
+            requestResponseTimes[resolvedKey] = getTimePassed(resolvedKey)
 
             lastResponses[resolvedKey] = json
 
@@ -597,7 +604,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             }
           } finally {
             setLoading(false)
-            canDebounce[resolvedKey] = true
+            queue(() => {
+              canDebounce[resolvedKey] = true
+            }, debounce)
             runningRequests[resolvedKey] = false
             requestsProvider.emit(resolvedKey, {
               requestCallId,
@@ -1065,7 +1074,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   )
 
   if (!suspense) {
-    suspenseInitialized[resolvedKey] = true
+    if (url !== '') {
+      suspenseInitialized[resolvedKey] = true
+    }
   }
 
   React.useMemo(() => {
@@ -1293,7 +1304,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     /**
      * The request key
      */
-    key: resolvedKey
+    key: resolvedKey,
+    responseTime: requestResponseTimes[resolvedKey]
   } as unknown as {
     data: FetchDataType
     loading: boolean
@@ -1315,6 +1327,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     response: CustomResponse<FetchDataType>
     id: any
     key: string
+    responseTime: number
   }
 }
 

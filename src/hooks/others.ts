@@ -15,6 +15,7 @@ import {
   hasErrors,
   isPending,
   lastResponses,
+  requestResponseTimes,
   requestsProvider,
   runningRequests,
   useHRFContext
@@ -415,6 +416,12 @@ export function useFetchText<FetchDataType = string, BodyType = any>(
       return text
     }
   })
+}
+
+export function useFetchResponseTime(id: any) {
+  return useFetch({
+    id
+  }).responseTime
 }
 
 /**

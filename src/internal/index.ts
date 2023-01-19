@@ -52,6 +52,10 @@ export const abortControllers: any = {}
 
 export const canDebounce: any = {}
 
+export const requestInitialTimes: any = {}
+
+export const requestResponseTimes: any = {}
+
 /**
  * Request with errors
  */

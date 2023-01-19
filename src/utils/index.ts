@@ -6,6 +6,7 @@ import {
   cacheForMutation,
   defaultCache,
   previousConfig,
+  requestInitialTimes,
   requestsProvider,
   runningMutate,
   valuesMemory
@@ -80,7 +81,7 @@ export function setURLParams(str: string = '', $params: any = {}) {
   return (
     str
       .split('/')
-      .map($segment => {
+      .map(($segment) => {
         const [segment] = $segment.split('?')
         if (segment.startsWith('[') && segment.endsWith(']')) {
           const paramName = segment.replace(/\[|\]/g, '')
@@ -109,6 +110,13 @@ export function setURLParams(str: string = '', $params: any = {}) {
   )
 }
 
+export function getTimePassed(key: any) {
+  return (
+    Date.now() -
+    (isDefined(requestInitialTimes[key]) ? requestInitialTimes[key] : 0)
+  )
+}
+
 /**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
  */
@@ -133,7 +141,7 @@ export function createRequestFn(
     const rawUrl = setURLParams(url, params)
 
     const reqQueryString = Object.keys(query)
-      .map(q => [q, query[q]].join('='))
+      .map((q) => [q, query[q]].join('='))
       .join('&')
 
     const reqConfig = {
@@ -231,7 +239,7 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
 
   return Object.fromEntries(
     new Map(
-      keys.map(k => [
+      keys.map((k) => [
         k.toLowerCase(),
         (url, config = {}) =>
           (useFetch as any)[k.toLowerCase()](
@@ -251,7 +259,7 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
  */
 export function revalidate(id: any | any[]) {
   if (Array.isArray(id)) {
-    id.map(reqId => {
+    id.map((reqId) => {
       if (isDefined(reqId)) {
         const key = serialize(reqId)
 
