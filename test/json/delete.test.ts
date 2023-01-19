@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useFetcher } from '../../'
+import { useFetch } from '../../'
 import mocks from '../mocks'
 
 test('DELETE data in JSON', async () => {
@@ -11,7 +11,7 @@ test('DELETE data in JSON', async () => {
 
   await act(async () => {
     const { result } = renderHook(() =>
-      useFetcher({
+      useFetch({
         url: '',
         default: [],
         method: 'DELETE',

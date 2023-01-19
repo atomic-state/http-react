@@ -13,6 +13,7 @@ import {
   previousProps,
   requestsProvider,
   resolvedHookCalls,
+  runningMutate,
   runningRequests,
   statusCodes,
   suspenseInitialized,
@@ -33,12 +34,10 @@ import {
 } from '../types'
 
 import {
-  canHaveBody,
   createImperativeFetcher,
   createRequestFn,
   hasBaseUrl,
   isDefined,
-  isFormData,
   isFunction,
   queue,
   revalidate,
@@ -104,9 +103,9 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     formatBody
   }
 
-  const { cache: $cache = defaultCache } = ctx
+  const { cacheProvider: $cacheProvider = defaultCache } = ctx
 
-  const { cache = $cache } = optionsConfig
+  const { cacheProvider = $cacheProvider } = optionsConfig
 
   const requestCallId = React.useMemo(
     () => `${Math.random()}`.split('.')[1],
@@ -147,7 +146,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
         : ctx.baseUrl
       : config.baseUrl) + url
 
-  const defaultId = { uri: rawUrl, config: { method } }
+  const defaultId = [method, url].join(' ')
 
   const { id = defaultId } = optionsConfig
 
@@ -167,6 +166,12 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
   }, [serialize(urls[resolvedKey])])
 
   const suspense = $suspense || willSuspend[resolvedKey]
+
+  if (suspense && !willSuspend[resolvedKey]) {
+    if (!suspenseInitialized[resolvedKey]) {
+      willSuspend[resolvedKey] = true
+    }
+  }
 
   const realUrl =
     urlWithParams +
@@ -213,11 +218,11 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     if (isDefined(optionsConfig.default)) {
       if (!isDefined(fetcherDefaults[resolvedKey])) {
         if (url !== '') {
-          if (!isDefined(cache.get(resolvedKey))) {
+          if (!isDefined(cacheProvider.get(resolvedKey))) {
             fetcherDefaults[resolvedKey] = optionsConfig.default
           }
         } else {
-          if (!isDefined(cache.get(resolvedKey))) {
+          if (!isDefined(cacheProvider.get(resolvedKey))) {
             requestsProvider.emit(resolvedKey, {
               requestCallId,
               data: optionsConfig.default
@@ -227,7 +232,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       }
     } else {
       if (isDefined(fetcherDefaults[resolvedKey])) {
-        if (!isDefined(cache.get(resolvedKey))) {
+        if (!isDefined(cacheProvider.get(resolvedKey))) {
           setData(fetcherDefaults[resolvedKey])
         }
       }
@@ -278,12 +283,12 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     })
   ])
 
-  const requestCache = cache.get(resolvedKey)
+  const requestCache = cacheProvider.get(resolvedKey)
 
   const initialDataValue = isDefined(valuesMemory[resolvedKey])
     ? valuesMemory[resolvedKey]
-    : isDefined(cache.get(resolvedKey))
-    ? cache.get(resolvedKey)
+    : isDefined(cacheProvider.get(resolvedKey))
+    ? cacheProvider.get(resolvedKey)
     : def
 
   const [data, setData] = useState<FetchDataType | undefined>(
@@ -413,29 +418,18 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           abortControllers[resolvedKey] = newAbortController
           try {
             const json = await fetch(realUrl + c.query, {
+              ...optionsConfig,
               signal: newAbortController.signal,
-              method: config.method,
+              body: isFunction(formatBody)
+                ? // @ts-ignore // If formatBody is a function
+                  formatBody(optionsConfig?.body as any)
+                : optionsConfig?.body,
               headers: {
-                'Content-Type':
-                  // If body is form-data, set Content-Type header to 'multipart/form-data'
-                  isFormData(config.body)
-                    ? 'multipart/form-data'
-                    : 'application/json',
+                'Content-Type': 'application/json',
                 ...ctx.headers,
                 ...config.headers,
                 ...c.headers
-              } as Headers,
-              body: canHaveBody(config.method)
-                ? isFunction(config.formatBody)
-                  ? (config.formatBody as any)(
-                      (isFormData(config.body)
-                        ? (config.body as BodyType)
-                        : { ...config.body, ...c.body }) as BodyType
-                    )
-                  : config.formatBody === false || isFormData(config.body)
-                  ? config.body
-                  : serialize({ ...config.body, ...c.body })
-                : undefined
+              } as Headers
             })
 
             lastResponses[resolvedKey] = json
@@ -469,7 +463,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                 }
               }
               if (memory) {
-                cache.set(resolvedKey, __data)
+                cacheProvider.set(resolvedKey, __data)
                 valuesMemory[resolvedKey] = __data
               }
 
@@ -515,7 +509,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                     data: newData,
                     error: true
                   })
-                  cache.set(resolvedKey, newData)
+                  cacheProvider.set(resolvedKey, newData)
                   return newData
                 })
                 if (handleError) {
@@ -551,7 +545,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                 requestCallId,
                 error: _error
               })
-              if (!isDefined(cache.get(resolvedKey))) {
+              if (!isDefined(cacheProvider.get(resolvedKey))) {
                 setData(def)
                 cacheForMutation[idString] = def
                 requestsProvider.emit(resolvedKey, {
@@ -572,7 +566,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
                 ;(onError as any)(err as any)
               }
             } else {
-              if (!isDefined(cache.get(resolvedKey))) {
+              if (!isDefined(cacheProvider.get(resolvedKey))) {
                 if (isDefined(def)) {
                   setData(def)
                   cacheForMutation[idString] = def
@@ -649,9 +643,9 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
 
   if (willResolve) {
     if (resolvedHookCalls[resolvedKey]) {
-      if (isDefined(cache.get(resolvedKey))) {
+      if (isDefined(cacheProvider.get(resolvedKey))) {
         if (!suspense) {
-          ;(onResolve as any)(cache.get(resolvedKey) as any, response)
+          ;(onResolve as any)(cacheProvider.get(resolvedKey) as any, response)
         }
         queue(() => {
           delete resolvedHookCalls[resolvedKey]
@@ -739,12 +733,15 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
         if (isDefined($data)) {
           queue(() => {
             setData($data)
-            cache.set(resolvedKey, $data)
+            cacheProvider.set(resolvedKey, $data)
             if (serialize($data) !== serialize(cacheForMutation[resolvedKey])) {
               cacheForMutation[idString] = data
               if (isMutating) {
                 if (handleMutate) {
-                  ;(onMutate as any)($data, imperativeFetcher)
+                  if (!runningMutate[resolvedKey]) {
+                    runningMutate[resolvedKey] = true
+                    ;(onMutate as any)($data, imperativeFetcher)
+                  }
                 }
               }
             }
@@ -813,7 +810,7 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
           if (isDefined(data)) {
             setData(d)
             cacheForMutation[idString] = d
-            cache.set(resolvedKey, d)
+            cacheProvider.set(resolvedKey, d)
             valuesMemory[resolvedKey] = d
           }
         } catch (err) {}
@@ -1131,12 +1128,15 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
     ) => void = () => {}
   ) {
     if (!isFunction(newValue)) {
-      if (serialize(cache.get(resolvedKey)) !== serialize(newValue)) {
+      if (serialize(cacheProvider.get(resolvedKey)) !== serialize(newValue)) {
         if (handleMutate) {
-          ;(onMutate as any)(newValue, imperativeFetcher)
+          if (!runningMutate[resolvedKey]) {
+            runningMutate[resolvedKey] = true
+            ;(onMutate as any)(newValue, imperativeFetcher)
+          }
         }
         callback(newValue as any, imperativeFetcher)
-        cache.set(resolvedKey, newValue)
+        cacheProvider.set(resolvedKey, newValue)
         valuesMemory[resolvedKey] = newValue
         cacheForMutation[idString] = newValue
         requestsProvider.emit(resolvedKey, {
@@ -1148,12 +1148,15 @@ export function useFetcher<FetchDataType = any, BodyType = any>(
       }
     } else {
       let newVal = (newValue as any)(data)
-      if (serialize(cache.get(resolvedKey)) !== serialize(newVal)) {
+      if (serialize(cacheProvider.get(resolvedKey)) !== serialize(newVal)) {
         if (handleMutate) {
-          ;(onMutate as any)(newVal, imperativeFetcher)
+          if (!runningMutate[resolvedKey]) {
+            runningMutate[resolvedKey] = true
+            ;(onMutate as any)(newVal, imperativeFetcher)
+          }
         }
         callback(newVal, imperativeFetcher)
-        cache.set(resolvedKey, newVal)
+        cacheProvider.set(resolvedKey, newVal)
         valuesMemory[resolvedKey] = newVal
         cacheForMutation[idString] = newVal
         requestsProvider.emit(resolvedKey, {

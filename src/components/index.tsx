@@ -41,28 +41,13 @@ export function FetcherConfig(props: FetcherContextType) {
 
   const previousConfig = useHRFContext()
 
-  const { cache = defaultCache } = previousConfig
-
-  let base = !isDefined(baseUrl)
-    ? !isDefined(previousConfig.baseUrl)
-      ? ''
-      : previousConfig.baseUrl
-    : baseUrl
+  const { cacheProvider = defaultCache } = previousConfig
 
   for (let defaultKey in defaults) {
-    const { id } = defaults[defaultKey]
-    const resolvedKey = serialize(
-      isDefined(id)
-        ? {
-            idString: serialize(id)
-          }
-        : {
-            uri: `${base}${defaultKey}`,
-            config: {
-              method: defaults[defaultKey]?.config?.method
-            }
-          }
-    )
+    const { id = defaultKey } = defaults[defaultKey]
+    const resolvedKey = serialize({
+      idString: serialize(id)
+    })
 
     if (isDefined(id)) {
       if (!isDefined(valuesMemory[resolvedKey])) {
@@ -73,8 +58,8 @@ export function FetcherConfig(props: FetcherContextType) {
       }
     }
 
-    if (!isDefined(cache.get(resolvedKey))) {
-      cache.set(resolvedKey, defaults[defaultKey]?.value)
+    if (!isDefined(cacheProvider.get(resolvedKey))) {
+      cacheProvider.set(resolvedKey, defaults[defaultKey]?.value)
     }
   }
 
