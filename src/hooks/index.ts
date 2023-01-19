@@ -10,6 +10,7 @@ export {
   useFetchId as useFetchId,
   useFetchBlob as useBlob,
   useFetchText as useText,
+  useFetchResponseTime as useResponseTime,
   useGET,
   useDELETE,
   useHEAD,

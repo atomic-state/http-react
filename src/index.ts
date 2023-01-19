@@ -33,7 +33,8 @@ export {
   useUNLINK,
   useGql,
   useImperative,
-  useResolve
+  useResolve,
+  useResponseTime
 } from './hooks'
 
 export { FetchConfig, SSRSuspense } from './components'
