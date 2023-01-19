@@ -86,7 +86,7 @@ export function setURLParams(str: string = '', $params: any = {}) {
   return (
     str
       .split('/')
-      .map(($segment) => {
+      .map($segment => {
         const [segment] = $segment.split('?')
         if (segment.startsWith('[') && segment.endsWith(']')) {
           const paramName = segment.replace(/\[|\]/g, '')
@@ -142,7 +142,7 @@ export function createRequestFn(
     const rawUrl = setURLParams(url, params)
 
     const reqQueryString = Object.keys(query)
-      .map((q) => [q, query[q]].join('='))
+      .map(q => [q, query[q]].join('='))
       .join('&')
 
     const reqConfig = {
@@ -227,7 +227,7 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
 
   return Object.fromEntries(
     new Map(
-      keys.map((k) => [
+      keys.map(k => [
         k.toLowerCase(),
         (url, config = {}) =>
           (useFetcher as any)[k.toLowerCase()](
@@ -244,7 +244,7 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
  */
 export function revalidate(id: any | any[]) {
   if (Array.isArray(id)) {
-    id.map((reqId) => {
+    id.map(reqId => {
       if (isDefined(reqId)) {
         const key = serialize(reqId)
 
@@ -311,7 +311,7 @@ export function queryProvider<R>(
       /**
        * The caching mechanism
        */
-      cache?: CacheStoreType
+      cacheProvider?: CacheStoreType
     }
   }
 ) {
@@ -347,10 +347,10 @@ export function queryProvider<R>(
 
     const { config = {} } = providerConfig || {}
 
-    const { cache, ...others } = config
+    const { cacheProvider, ...others } = config
 
     const g = useGql(queries[queryName] as any, {
-      cache: config?.cache,
+      cacheProvider: config?.cacheProvider,
       graphqlPath: isDefined(thisDefaults?.graphqlPath)
         ? thisDefaults?.graphqlPath
         : undefined,
