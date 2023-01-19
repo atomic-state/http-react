@@ -78,13 +78,13 @@ export function useFetcherData<ResponseType = any, VT = any>(
       : ResponseType
   ) => void
 ) {
-  const { cache = defaultCache } = useHRFContext()
+  const { cacheProvider = defaultCache } = useHRFContext()
 
   const defaultsKey = serialize({
     idString: serialize(id)
   })
 
-  const def = cache.get(defaultsKey)
+  const def = cacheProvider.get(defaultsKey)
 
   const { data } = useFetcher<typeof id>({
     default: def,

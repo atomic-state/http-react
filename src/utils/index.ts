@@ -4,8 +4,12 @@ import { useFetcher } from '../hooks/use-fetcher'
 
 import {
   cacheForMutation,
+  defaultCache,
+  lastResponses,
   previousConfig,
   requestsProvider,
+  runningMutate,
+  runningRequests,
   valuesMemory
 } from '../internal'
 
@@ -82,7 +86,7 @@ export function setURLParams(str: string = '', $params: any = {}) {
   return (
     str
       .split('/')
-      .map(($segment) => {
+      .map($segment => {
         const [segment] = $segment.split('?')
         if (segment.startsWith('[') && segment.endsWith(']')) {
           const paramName = segment.replace(/\[|\]/g, '')
@@ -123,64 +127,55 @@ export function createRequestFn(
   return async function (url, init = {}) {
     const {
       default: def,
+      params = {},
+      headers,
+      query = {},
+      body,
+      formatBody,
       resolver = DEFAULT_RESOLVER,
-      config: c = {},
       onResolve = () => {},
-      onError = () => {}
+      onError = () => {},
+      cacheProvider = defaultCache,
+      ...config
     } = init
-
-    const { params = {} } = c || {}
-
-    let query = {
-      ...q,
-      ...c.query
-    }
 
     const rawUrl = setURLParams(url, params)
 
-    const [, qp = ''] = rawUrl.split('?')
-
-    qp.split('&').forEach((q) => {
-      const [key, value] = q.split('=')
-      if (query[key] !== value) {
-        query = {
-          ...query,
-          [key]: value
-        }
-      }
-    })
-
     const reqQueryString = Object.keys(query)
-      .map((q) => [q, query[q]].join('='))
+      .map(q => [q, query[q]].join('='))
       .join('&')
-
-    const { headers = {}, body, formatBody } = c
 
     const reqConfig = {
       method,
+
       headers: {
         'Content-Type': 'application/json',
         ...$headers,
         ...headers
       },
-      body: method?.match(/(POST|PUT|DELETE|PATCH)/)
+      body: canHaveBody(method as any)
         ? isFunction(formatBody)
           ? (formatBody as any)(body)
-          : (formatBody as any) === false || isFormData(body)
-          ? body
-          : serialize(body)
+          : body
         : undefined
     }
 
     let r = undefined as any
+
+    const requestUrl = [
+      baseUrl || '',
+      rawUrl,
+      url.includes('?') ? '&' : '?',
+      reqQueryString
+    ].join('')
+
     try {
-      const req = await fetch(
-        `${baseUrl || ''}${rawUrl}${
-          url.includes('?') ? `&${reqQueryString}` : `?${reqQueryString}`
-        }`,
-        reqConfig
-      )
+      const req = await fetch(requestUrl, {
+        ...config,
+        ...reqConfig
+      })
       r = req
+
       const data = await resolver(req)
       if (req?.status >= 400) {
         onError(true as any)
@@ -208,7 +203,7 @@ export function createRequestFn(
         data: def,
         error: true,
         code: r?.status,
-        config: { url: `${baseUrl || ''}${rawUrl}`, ...reqConfig, query }
+        config: { url: requestUrl, ...reqConfig }
       }
     }
   } as RequestWithBody
@@ -232,30 +227,12 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
 
   return Object.fromEntries(
     new Map(
-      keys.map((k) => [
+      keys.map(k => [
         k.toLowerCase(),
-        (url, { config = {}, ...other } = {}) =>
+        (url, config = {}) =>
           (useFetcher as any)[k.toLowerCase()](
             hasBaseUrl(url) ? url : baseUrl + url,
-            {
-              config: {
-                headers: {
-                  ...ctx.headers,
-                  ...config.headers
-                },
-                body: config.body,
-                query: {
-                  ...ctx.query,
-                  ...config.query
-                },
-                params: {
-                  ...ctx.params,
-                  ...config.params
-                },
-                formatBody: config.formatBody
-              },
-              ...other
-            }
+            config
           )
       ])
     )
@@ -267,7 +244,7 @@ export const createImperativeFetcher = (ctx: FetcherContextType) => {
  */
 export function revalidate(id: any | any[]) {
   if (Array.isArray(id)) {
-    id.map((reqId) => {
+    id.map(reqId => {
       if (isDefined(reqId)) {
         const key = serialize(reqId)
 
@@ -334,7 +311,7 @@ export function queryProvider<R>(
       /**
        * The caching mechanism
        */
-      cache?: CacheStoreType
+      cacheProvider?: CacheStoreType
     }
   }
 ) {
@@ -370,10 +347,10 @@ export function queryProvider<R>(
 
     const { config = {} } = providerConfig || {}
 
-    const { cache, ...others } = config
+    const { cacheProvider, ...others } = config
 
     const g = useGql(queries[queryName] as any, {
-      cache: config?.cache,
+      cacheProvider: config?.cacheProvider,
       graphqlPath: isDefined(thisDefaults?.graphqlPath)
         ? thisDefaults?.graphqlPath
         : undefined,
@@ -450,6 +427,7 @@ export function mutateData(
       const requestCallId = ''
       if (isFunction(v)) {
         let newVal = v(cacheForMutation[key])
+        runningMutate[key] = undefined
         requestsProvider.emit(key, {
           data: newVal,
           isMutating: true,
@@ -464,6 +442,7 @@ export function mutateData(
           cacheForMutation[key] = newVal
         })
       } else {
+        runningMutate[key] = undefined
         requestsProvider.emit(key, {
           requestCallId,
           isMutating: true,

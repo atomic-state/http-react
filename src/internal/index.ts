@@ -65,6 +65,8 @@ export const fetcherDefaults: any = {}
 
 export const cacheForMutation: any = {}
 
+export const runningMutate: any = {}
+
 export const urls: {
   [k: string]: {
     realUrl: string

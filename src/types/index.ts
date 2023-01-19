@@ -26,7 +26,7 @@ export type FetcherContextType = {
        * Default value for this request
        */
       value?: any
-      config?: any
+      method?: HTTP_METHODS
     }
   }
   suspense?: any[]
@@ -44,7 +44,7 @@ export type FetcherContextType = {
   onOffline?: () => void
   online?: boolean
   retryOnReconnect?: boolean
-  cache?: CacheStoreType
+  cacheProvider?: CacheStoreType
   revalidateOnMount?: boolean
 }
 
@@ -66,36 +66,24 @@ export type RequestWithBody = <R = any, BodyType = any>(
   /**
    * The request configuration
    */
-  reqConfig?: {
+  reqConfig?: Omit<RequestInit, 'body'> & {
+    body?: BodyType
     /**
      * Default value
      */
     default?: R
     /**
-     * Other configuration
+     * Request query
      */
-    config?: {
-      /**
-       * Request query
-       */
-      query?: any
-      /**
-       * The function that formats the body
-       */
-      formatBody?(b: BodyType): any
-      /**
-       * Request headers
-       */
-      headers?: any
-      /**
-       * Request params (like Express)
-       */
-      params?: any
-      /**
-       * The request body
-       */
-      body?: BodyType
-    }
+    query?: any
+    /**
+     * The function that formats the body
+     */
+    formatBody?(b: BodyType): any
+    /**
+     * Request params (like Express)
+     */
+    params?: any
     /**
      * The function that returns the resolved data
      */
@@ -108,6 +96,7 @@ export type RequestWithBody = <R = any, BodyType = any>(
      * A function that will run when the request completes succesfuly
      */
     onResolve?(data: R, res: CustomResponse<R>): void
+    cacheProvider?: CacheStoreType
   }
 ) => Promise<{
   error: any
@@ -133,7 +122,11 @@ export type ImperativeFetcher = {
   unlink: RequestWithBody
 }
 
-export type FetcherConfigType<FetchDataType = any, BodyType = any> = {
+export type FetcherConfigType<FetchDataType = any, BodyType = any> = Omit<
+  RequestInit,
+  'body'
+> & {
+  body?: BodyType
   /**
    * Any serializable id. This is optional.
    */
@@ -171,7 +164,7 @@ export type FetcherConfigType<FetchDataType = any, BodyType = any> = {
   /**
    * Override the cache for this specific request
    */
-  cache?: CacheStoreType
+  cacheProvider?: CacheStoreType
   /**
    * Function to run when data is mutated
    */
@@ -265,13 +258,14 @@ export type FetcherConfigType<FetchDataType = any, BodyType = any> = {
    * Request method
    */
   method?: HTTP_METHODS
-  headers?: Headers | object
+  /**
+   * URL search params
+   */
   query?: any
   /**
    * URL params
    */
   params?: any
-  body?: BodyType
   /**
    * Customize how body is formated for the request. By default it will be sent in JSON format
    * but you can set it to false if for example, you are sending a `FormData`

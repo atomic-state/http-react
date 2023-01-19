@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useFetcher } from '../../'
+import { useFetch } from '../../'
 import mocks from '../mocks'
 
 test('GET data in JSON', async () => {
@@ -10,7 +10,7 @@ test('GET data in JSON', async () => {
   )
 
   await act(async () => {
-    const { result } = renderHook(useFetcher, {
+    const { result } = renderHook(useFetch, {
       initialProps: {
         url: ''
       }
