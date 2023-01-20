@@ -82,7 +82,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     method = METHODS.GET as HTTP_METHODS,
     headers = {} as Headers,
     body = undefined as unknown as Body,
-    formatBody = (e) => JSON.stringify(e),
+    formatBody = e => JSON.stringify(e),
 
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
@@ -132,15 +132,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       ? optionsConfig.retryOnReconnect
       : ctx.retryOnReconnect
 
-  const [reqQuery, setReqQuery] = useState({
+  const reqQuery = {
     ...ctx.query,
     ...config.query
-  })
+  }
 
-  const [reqParams, setReqParams] = useState({
+  const reqParams = {
     ...ctx.params,
     ...config.params
-  })
+  }
 
   const rawUrl =
     (hasBaseUrl(url)
@@ -164,12 +164,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const resolvedKey = serialize({ idString })
 
-  const [configUrl, setConfigUrl] = useState(urls[resolvedKey])
-
-  useEffect(() => {
-    setConfigUrl(urls[resolvedKey])
-  }, [serialize(urls[resolvedKey])])
-
   const suspense = $suspense || willSuspend[resolvedKey]
 
   if (suspense && !willSuspend[resolvedKey]) {
@@ -188,17 +182,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  useEffect(() => {
-    if (url !== '') {
-      setReqParams(() => {
-        const newParams = {
-          ...ctx.params,
-          ...config.params
-        }
-        return newParams
-      })
-    }
-  }, [serialize({ ...ctx.params, ...config.params }), resolvedKey])
+  const configUrl = urls[resolvedKey] || {
+    realUrl,
+    rawUrl
+  }
 
   const stringDeps = serialize(
     Object.assign(
@@ -254,39 +241,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }, [])
 
-  useEffect(() => {
-    let queryParamsFromString: any = {}
-    try {
-      // getting query params from passed url
-      const queryParts = qp.split('&')
-      queryParts.forEach((q, i) => {
-        const [key, value] = q.split('=')
-        if (queryParamsFromString[key] !== value) {
-          queryParamsFromString[key] = `${value}`
-        }
-      })
-    } finally {
-      if (url !== '') {
-        setReqQuery(() => {
-          const newQuery = {
-            ...ctx.query,
-            ...queryParamsFromString,
-            ...config.query
-          }
-          return newQuery
-        })
-      }
-    }
-  }, [
-    resolvedKey,
-    requestCallId,
-    serialize({
-      qp,
-      ...ctx.query,
-      ...config.query
-    })
-  ])
-
   const requestCache = cacheProvider.get(resolvedKey)
 
   const initialDataValue = isDefined(valuesMemory[resolvedKey])
@@ -304,13 +258,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const [online, setOnline] = useState(true)
 
-  const [requestHeaders, setRequestHeades] = useState<
-    object | Headers | undefined
-  >({ ...ctx.headers, ...config.headers })
+  const requestHeaders = {
+    ...ctx.headers,
+    ...config.headers
+  }
 
-  const [response, setResponse] = useState<CustomResponse<FetchDataType>>()
-
-  const [statusCode, setStatusCode] = useState<number>()
   const [error, setError] = useState<any>(hasErrors[resolvedKey])
   const [loading, setLoading] = useState(
     revalidateOnMount
@@ -320,20 +272,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       : previousConfig[resolvedKey] !== serialize(optionsConfig)
   )
   const [completedAttempts, setCompletedAttempts] = useState(0)
+
   const [requestAbortController, setRequestAbortController] =
     useState<AbortController>(new AbortController())
-
-  const [reqMethod, setReqMethod] = useState(config.method)
-
-  useEffect(() => {
-    if (url !== '') {
-      setReqMethod(config.method)
-      requestsProvider.emit(resolvedKey, {
-        requestCallId,
-        method: config.method
-      })
-    }
-  }, [stringDeps, response, requestAbortController, requestCallId])
 
   useEffect(() => {
     if (url !== '') {
@@ -385,7 +326,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       if (previousConfig[resolvedKey] !== serialize(optionsConfig)) {
         previousProps[resolvedKey] = optionsConfig
         queue(() => {
-          setReqMethod(config.method)
           if (url !== '') {
             const newUrls = {
               realUrl,
@@ -394,10 +334,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
             urls[resolvedKey] = newUrls
 
-            setConfigUrl({
-              rawUrl,
-              realUrl
-            })
             requestsProvider.emit(resolvedKey, {
               requestCallId,
               realUrl: resKey,
@@ -513,7 +449,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               })
             } else {
               if (_data.errors && isGqlRequest) {
-                setData((previous) => {
+                setData(previous => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
@@ -728,52 +664,14 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             // onResolve($data, lastResponses[resolvedKey])
           }
         }
-        if (isDefined(method)) {
-          queue(() => {
-            setReqMethod(method)
-          })
-        }
-        if (isDefined(config?.query)) {
-          queue(() => {
-            setReqQuery(config.query)
-          })
-        }
-        if (isDefined(rawUrl) && isDefined(realUrl)) {
-          queue(() => {
-            setConfigUrl({
-              rawUrl,
-              realUrl
-            })
-          })
-        }
-        if (isDefined(config?.params)) {
-          queue(() => {
-            setReqParams(config?.params)
-          })
-        }
-        if (isDefined(config?.headers)) {
-          queue(() => {
-            setRequestHeades(config?.headers)
-          })
-        }
         if (isDefined(completedAttempts)) {
           queue(() => {
             setCompletedAttempts(completedAttempts)
           })
         }
-        if (isDefined(code)) {
-          queue(() => {
-            setStatusCode(code)
-          })
-        }
         if (isDefined(requestAbortController)) {
           queue(() => {
             setRequestAbortController(requestAbortController)
-          })
-        }
-        if (isDefined(response)) {
-          queue(() => {
-            setResponse(response)
           })
         }
         if (isDefined(loading)) {
@@ -857,19 +755,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               loading: true,
               error: null
             })
-            const reqQ = {
-              ...ctx.query,
-              ...config.query
-            }
-            const reqP = {
-              ...ctx.params,
-              ...config.params
-            }
+
             fetchData({
-              query: Object.keys(reqQ)
-                .map((q) => [q, reqQ[q]].join('='))
+              query: Object.keys(reqQuery)
+                .map(q => [q, reqQuery[q]].join('='))
                 .join('&'),
-              params: reqP
+              params: reqParams
             })
           }
         }
@@ -965,14 +856,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }, [onOffline, reValidate, resolvedKey, retryOnReconnect])
 
   useEffect(() => {
-    const newHeaders = {
-      ...ctx.headers,
-      ...config.headers
-    }
-    setRequestHeades(newHeaders)
-  }, [serialize({ ...ctx.headers, ...config.headers }), resolvedKey])
-
-  useEffect(() => {
     if (revalidateOnMount) {
       if (suspense) {
         if (suspenseInitialized[resolvedKey]) {
@@ -992,7 +875,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
-          setCompletedAttempts((previousAttempts) => {
+          setCompletedAttempts(previousAttempts => {
             let newAttemptsValue = previousAttempts + 1
 
             requestsProvider.emit(resolvedKey, {
@@ -1040,19 +923,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           if (isPending(resolvedKey)) {
             setLoading(true)
           }
-          const reqQ = {
-            ...ctx.query,
-            ...config.query
-          }
-          const reqP = {
-            ...ctx.params,
-            ...config.params
-          }
           fetchData({
-            query: Object.keys(reqQ)
-              .map((q) => [q, reqQ[q]].join('='))
+            query: Object.keys(reqQuery)
+              .map(q => [q, reqParams[q]].join('='))
               .join('&'),
-            params: reqP
+            params: reqParams
           })
         }
         // It means a url is not passed
@@ -1160,7 +1035,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     ...config,
     ...optionsConfig,
     ...previousProps[resolvedKey],
-    method: reqMethod,
     params: {
       ...reqParams,
       ...previousProps[resolvedKey]?.params
@@ -1263,14 +1137,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         }
       }
     }
-  }, [
-    url,
-    auto,
-    cancelOnChange,
-    serialize(id),
-    serialize(optionsConfig),
-    resolvedKey
-  ])
+  }, [serialize(optionsConfig)])
 
   const resolvedData = React.useMemo(() => data, [rawJSON])
 
