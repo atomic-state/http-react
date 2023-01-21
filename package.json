@@ -1,6 +1,6 @@
 {
   "name": "http-react",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "React hooks for data fetching",
   "main": "dist/index.js",
   "scripts": {
@@ -27,7 +27,9 @@
     "graphql-client",
     "graphql",
     "gql",
-    "suspense"
+    "suspense",
+    "pagination",
+    "optimistic-ui"
   ],
   "author": "Dany Beltran",
   "license": "MIT",

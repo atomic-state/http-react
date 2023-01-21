@@ -91,7 +91,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     onResolve,
     onAbort,
     refresh = isDefined(ctx.refresh) ? ctx.refresh : 0,
-    cancelOnChange = false,
+    cancelOnChange = true,
     attempts = ctx.attempts,
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus,
@@ -164,6 +164,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const resolvedKey = serialize({ idString })
 
+  const resolvedDataKey = serialize({ idString, reqQuery })
+
+  useEffect(() => {
+    // If a cache exists for the query and params configurations, set that as the latest cache value
+    if (isDefined(cacheProvider.get(resolvedDataKey))) {
+      setData(cacheProvider.get(resolvedDataKey))
+    }
+  }, [serialize(reqQuery)])
+
   const suspense = $suspense || willSuspend[resolvedKey]
 
   if (suspense && !willSuspend[resolvedKey]) {
@@ -209,11 +218,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     if (isDefined(optionsConfig.default)) {
       if (!isDefined(fetcherDefaults[resolvedKey])) {
         if (url !== '') {
-          if (!isDefined(cacheProvider.get(resolvedKey))) {
+          if (!isDefined(cacheProvider.get(resolvedDataKey))) {
             fetcherDefaults[resolvedKey] = optionsConfig.default
           }
         } else {
-          if (!isDefined(cacheProvider.get(resolvedKey))) {
+          if (!isDefined(cacheProvider.get(resolvedDataKey))) {
             requestsProvider.emit(resolvedKey, {
               requestCallId,
               data: optionsConfig.default
@@ -223,7 +232,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
     } else {
       if (isDefined(fetcherDefaults[resolvedKey])) {
-        if (!isDefined(cacheProvider.get(resolvedKey))) {
+        if (!isDefined(cacheProvider.get(resolvedDataKey))) {
           setData(fetcherDefaults[resolvedKey])
         }
       }
@@ -241,12 +250,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }, [])
 
-  const requestCache = cacheProvider.get(resolvedKey)
+  const requestCache = cacheProvider.get(resolvedDataKey)
 
   const initialDataValue = isDefined(valuesMemory[resolvedKey])
     ? valuesMemory[resolvedKey]
-    : isDefined(cacheProvider.get(resolvedKey))
-    ? cacheProvider.get(resolvedKey)
+    : isDefined(cacheProvider.get(resolvedDataKey))
+    ? cacheProvider.get(resolvedDataKey)
     : def
 
   const [data, setData] = useState<FetchDataType | undefined>(
@@ -411,6 +420,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 }
               }
               if (memory) {
+                cacheProvider.set(resolvedDataKey, __data)
                 cacheProvider.set(resolvedKey, __data)
                 valuesMemory[resolvedKey] = __data
               }
@@ -442,7 +452,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 }
               }
               runningRequests[resolvedKey] = false
-              // If a request completes succesfuly, we reset the error attempts to 0
+              // If a request completes succesfuly, reset the error attempts to 0
               setCompletedAttempts(0)
               queue(() => {
                 cacheForMutation[resolvedKey] = __data
@@ -461,6 +471,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                     data: newData,
                     error: true
                   })
+                  cacheProvider.set(resolvedDataKey, newData)
                   cacheProvider.set(resolvedKey, newData)
                   return newData
                 })
@@ -503,7 +514,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 requestCallId,
                 error: _error
               })
-              if (!isDefined(cacheProvider.get(resolvedKey))) {
+              if (!isDefined(cacheProvider.get(resolvedDataKey))) {
                 setData(def)
                 cacheForMutation[idString] = def
                 requestsProvider.emit(resolvedKey, {
@@ -527,7 +538,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 }
               }
             } else {
-              if (!isDefined(cacheProvider.get(resolvedKey))) {
+              if (!isDefined(cacheProvider.get(resolvedDataKey))) {
                 if (isDefined(def)) {
                   setData(def)
                   cacheForMutation[idString] = def
@@ -608,7 +619,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   if (willResolve) {
     if (resolvedHookCalls[resolvedKey]) {
-      if (isDefined(cacheProvider.get(resolvedKey))) {
+      if (isDefined(cacheProvider.get(resolvedDataKey))) {
         queue(() => {
           resolvedHookCalls[resolvedKey] = undefined
         })
@@ -659,11 +670,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
 
       if (v.requestCallId !== requestCallId) {
-        if (isDefined(isResolved)) {
-          if (willResolve) {
-            // onResolve($data, lastResponses[resolvedKey])
-          }
-        }
         if (isDefined(completedAttempts)) {
           queue(() => {
             setCompletedAttempts(completedAttempts)
@@ -682,6 +688,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         if (isDefined($data)) {
           queue(() => {
             setData($data)
+            cacheProvider.set(resolvedDataKey, $data)
             cacheProvider.set(resolvedKey, $data)
           })
         }
@@ -690,9 +697,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             setError($error)
             if ($error !== null) {
               hasErrors[resolvedKey] = true
-              if (handleError) {
-                // ;(onError as any)($error)
-              }
             }
           })
         }
@@ -738,6 +742,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           if (isDefined(data)) {
             setData(d)
             cacheForMutation[idString] = d
+            cacheProvider.set(resolvedDataKey, d)
             cacheProvider.set(resolvedKey, d)
             valuesMemory[resolvedKey] = d
           }
@@ -747,7 +752,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         setError(null)
         hasErrors[resolvedKey] = null
         if (!isPending(resolvedKey)) {
-          // We are preventing revalidation where we only need updates about
+          // preventing revalidation where only need updates about
           // 'loading', 'error' and 'data' because the url can be ommited.
           if (url !== '') {
             requestsProvider.emit(resolvedKey, {
@@ -925,7 +930,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           }
           fetchData({
             query: Object.keys(reqQuery)
-              .map(q => [q, reqParams[q]].join('='))
+              .map(q => [q, reqQuery[q]].join('='))
               .join('&'),
             params: reqParams
           })
@@ -1026,7 +1031,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     stringDeps,
     loading,
     reValidate,
-    // ctx.children,
     refresh,
     serialize(config)
   ])
@@ -1058,8 +1062,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     callback: (data: FetchDataType, fetcher: ImperativeFetch) => void = () => {}
   ) {
     if (!isFunction(newValue)) {
-      if (serialize(cacheProvider.get(resolvedKey)) !== serialize(newValue)) {
+      if (
+        serialize(cacheProvider.get(resolvedDataKey)) !== serialize(newValue)
+      ) {
         callback(newValue as any, imperativeFetch)
+        cacheProvider.set(resolvedDataKey, newValue)
         cacheProvider.set(resolvedKey, newValue)
         valuesMemory[resolvedKey] = newValue
         cacheForMutation[idString] = newValue
@@ -1073,8 +1080,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
     } else {
       let newVal = (newValue as any)(data)
-      if (serialize(cacheProvider.get(resolvedKey)) !== serialize(newVal)) {
+      if (serialize(cacheProvider.get(resolvedDataKey)) !== serialize(newVal)) {
         callback(newVal, imperativeFetch)
+        cacheProvider.set(resolvedDataKey, newVal)
         cacheProvider.set(resolvedKey, newVal)
         valuesMemory[resolvedKey] = newVal
         cacheForMutation[idString] = newVal
@@ -1120,22 +1128,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       if (handlePropsChange) {
         ;(onPropsChange as any)(rev as any)
       }
-      if (cancelOnChange) {
-        ;(({ cancel, revalidate }) => {
-          cancel()
-          if (auto && url !== '') {
-            revalidate()
-          }
-        })(rev)
-      }
       if (url !== '') {
         previousProps[resolvedKey] = optionsConfig
       }
-      if (previousConfig[resolvedKey] !== serialize(optionsConfig)) {
-        if (cancelOnChange) {
-          requestAbortController?.abort()
-        }
-      }
+    }
+    if (cancelOnChange) {
+      requestAbortController?.abort()
+      queue(initializeRevalidation)
     }
   }, [serialize(optionsConfig)])
 
