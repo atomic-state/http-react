@@ -56,6 +56,12 @@ export const requestInitialTimes: any = {}
 
 export const requestResponseTimes: any = {}
 
+export const requestStarts: any = {}
+
+export const requestEnds: any = {}
+
+export const maxPaginationAges: any = {}
+
 /**
  * Request with errors
  */
@@ -92,7 +98,7 @@ export const defaultCache: CacheStoreType = {
   set(k, v) {
     resolvedRequests[k] = v
   },
-  delete(k) {
+  remove(k) {
     delete resolvedRequests[k]
   }
 }

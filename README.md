@@ -7,22 +7,22 @@
 </p>
 
 
-
 Http React is a React hooks library for data fetching. It's built on top of the native `Fetch` API.
-
 
 ### Overview
 
-With one hook call, you get all the information about a request, and you can start building UIs that are more consistent and performant:
+With one hook call, you get all the information about a request that you can use to build UIs that are consistent and performant:
 
 ```jsx
-import useFetch from 'http-react'
+import useFetch from "http-react"
 
 export default function App() {
-  const { data, loading, error, responseTime } = useFetch('/api/user-info', { refresh: 2 })
+  const { data, loading, error, responseTime } = useFetch("/api/user-info", {
+    refresh: '30 sec'
+  })
 
   if (loading) return <p>Loading</p>
-  
+
   if (error) return <p>An error ocurred</p>
 
   return (
@@ -34,7 +34,7 @@ export default function App() {
 }
 ```
 
-It supports many features that are needed in data fetching in modern applications, while giving developers full control over the request configuration:
+It supports many features that are necessary in modern applications, while giving developers full control over the request configuration:
 
 - Server-Side Rendering
 - React Native
@@ -46,7 +46,7 @@ It supports many features that are needed in data fetching in modern application
 - Local mutation
 - qraphql
 
-and [more](https://http-react.netlify.app/docs/tutorial-basics/request-config)!
+and [more](https://http-react.netlify.app/docs/api)!
 
 #### Installation:
 
@@ -60,5 +60,6 @@ Or
 yarn add http-react
 ```
 
-[Getting started](https://http-react.netlify.app/docs/intro)
+[Getting started](https://http-react.netlify.app/docs)
+
 

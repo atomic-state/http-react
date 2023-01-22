@@ -425,6 +425,24 @@ export function useFetchResponseTime(id: any) {
 }
 
 /**
+ * Get the `Date` the request started
+ */
+export function useRequestStart(id: any) {
+  return useFetch({
+    id
+  }).requestStart
+}
+
+/**
+ * Get the `Date` the request finished
+ */
+export function useRequestEnd(id: any) {
+  return useFetch({
+    id
+  }).requestEnd
+}
+
+/**
  * Make a graphQL request
  */
 export function useGql<T = any, VT = { [k: string]: any }>(
@@ -487,6 +505,10 @@ export function useGql<T = any, VT = { [k: string]: any }>(
           variables: (cfg as any).variables || ({} as VT)
         } as any),
     ...{ __gql: true },
+    params: {
+      // Caching versions of different variables values
+      variables
+    },
     formatBody: () => JSONBody,
     body: JSONBody,
     method: 'POST',
