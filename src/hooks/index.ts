@@ -11,6 +11,8 @@ export {
   useFetchBlob as useBlob,
   useFetchText as useText,
   useFetchResponseTime as useResponseTime,
+  useRequestEnd,
+  useRequestStart,
   useGET,
   useDELETE,
   useHEAD,

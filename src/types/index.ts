@@ -34,9 +34,9 @@ export type FetchContextType = {
   children?: any
   auto?: boolean
   memory?: boolean
-  refresh?: number
+  refresh?: TimeSpan
   attempts?: number
-  attemptInterval?: number
+  attemptInterval?: TimeSpan
   revalidateOnFocus?: boolean
   query?: any
   params?: any
@@ -51,7 +51,7 @@ export type FetchContextType = {
 export type CacheStoreType = {
   get(k?: any): any
   set(k?: any, v?: any): any
-  delete?(k?: any): any
+  remove?(k?: any): any
 }
 
 export type CustomResponse<T> = Omit<Response, 'json'> & {
@@ -106,6 +106,10 @@ export type RequestWithBody = <R = any, BodyType = any>(
   res: CustomResponse<R>
 }>
 
+export type TimeSpan =
+  | number
+  | `${string} ${'ms' | 'sec' | 'min' | 'h' | 'd' | 'we' | 'mo' | 'y'}`
+
 /**
  * An imperative version of the `useFetch` hook
  */
@@ -143,7 +147,7 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
    * Refresh interval (in seconds) to re-fetch the resource
    * @default 0
    */
-  refresh?: number
+  refresh?: TimeSpan
   /**
    * This will prevent automatic requests.
    * By setting this to `false`, requests will
@@ -213,7 +217,7 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
    * The interval at which to run attempts on request fail
    * @default 0
    */
-  attemptInterval?: number
+  attemptInterval?: TimeSpan
   /**
    * If a request should be made when the tab is focused. This currently works on browsers
    * @default false
@@ -276,7 +280,7 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
   /**
    * The time to wait before revalidation after props change
    */
-  debounce?: number
+  debounce?: TimeSpan
 }
 
 // If first argument is a string

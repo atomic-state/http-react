@@ -12,17 +12,36 @@ import {
   valuesMemory
 } from '../internal'
 
-import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
+import {
+  DEFAULT_RESOLVER,
+  METHODS,
+  UNITS_MILISECONDS_EQUIVALENTS
+} from '../internal/constants'
 
 import {
   CacheStoreType,
   FetchContextType,
   ImperativeFetch,
   RequestWithBody,
-  FetchInit
+  FetchInit,
+  TimeSpan
 } from '../types'
 
 export const windowExists = typeof window !== 'undefined'
+
+export function getMiliseconds(v: TimeSpan): number {
+  if (typeof v === 'number') return v
+
+  const [amount, unit] = (v as string).split(' ')
+
+  const amountNumber = parseFloat(amount)
+
+  if (!(unit in UNITS_MILISECONDS_EQUIVALENTS)) {
+    return amountNumber
+  }
+  // @ts-ignore - This should return the value in miliseconds
+  return amountNumber * UNITS_MILISECONDS_EQUIVALENTS[unit]
+}
 
 export function isDefined(target: any) {
   return typeof target !== 'undefined'
@@ -81,7 +100,7 @@ export function setURLParams(str: string = '', $params: any = {}) {
   return (
     str
       .split('/')
-      .map(($segment) => {
+      .map($segment => {
         const [segment] = $segment.split('?')
         if (segment.startsWith('[') && segment.endsWith(']')) {
           const paramName = segment.replace(/\[|\]/g, '')
@@ -141,7 +160,7 @@ export function createRequestFn(
     const rawUrl = setURLParams(url, params)
 
     const reqQueryString = Object.keys(query)
-      .map((q) => [q, query[q]].join('='))
+      .map(q => [q, query[q]].join('='))
       .join('&')
 
     const reqConfig = {
@@ -239,7 +258,7 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
 
   return Object.fromEntries(
     new Map(
-      keys.map((k) => [
+      keys.map(k => [
         k.toLowerCase(),
         (url, config = {}) =>
           (useFetch as any)[k.toLowerCase()](
@@ -259,7 +278,7 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
  */
 export function revalidate(id: any | any[]) {
   if (Array.isArray(id)) {
-    id.map((reqId) => {
+    id.map(reqId => {
       if (isDefined(reqId)) {
         const key = serialize(reqId)
 

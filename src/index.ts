@@ -34,7 +34,9 @@ export {
   useGql,
   useImperative,
   useResolve,
-  useResponseTime
+  useResponseTime,
+  useRequestEnd,
+  useRequestStart
 } from './hooks'
 
 export { FetchConfig, SSRSuspense } from './components'

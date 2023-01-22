@@ -24,7 +24,9 @@ import {
   canDebounce,
   resolvedOnErrorCalls,
   requestInitialTimes,
-  requestResponseTimes
+  requestResponseTimes,
+  requestStarts,
+  requestEnds
 } from '../internal'
 
 import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
@@ -34,12 +36,14 @@ import {
   FetchConfigType,
   FetchConfigTypeNoUrl,
   HTTP_METHODS,
-  ImperativeFetch
+  ImperativeFetch,
+  TimeSpan
 } from '../types'
 
 import {
   createImperativeFetch,
   createRequestFn,
+  getMiliseconds,
   getTimePassed,
   hasBaseUrl,
   isDefined,
@@ -83,7 +87,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     headers = {} as Headers,
     body = undefined as unknown as Body,
     formatBody = e => JSON.stringify(e),
-
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
     auto = isDefined(ctx.auto) ? ctx.auto : true,
@@ -166,12 +169,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const resolvedDataKey = serialize({ idString, reqQuery })
 
+  const canRevalidate = auto
+
   useEffect(() => {
     // If a cache exists for the query and params configurations, set that as the latest cache value
-    if (isDefined(cacheProvider.get(resolvedDataKey))) {
+    const paginationCache = cacheProvider.get(resolvedDataKey)
+    if (isDefined(paginationCache) && paginationCache !== null) {
       setData(cacheProvider.get(resolvedDataKey))
     }
-  }, [serialize(reqQuery)])
+  }, [serialize(optionsConfig)])
 
   const suspense = $suspense || willSuspend[resolvedKey]
 
@@ -245,7 +251,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       : optionsConfig.default
 
   useEffect(() => {
-    if (!auto) {
+    if (!canRevalidate) {
       runningRequests[resolvedKey] = false
     }
   }, [])
@@ -370,6 +376,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               ...ctx,
               signal: (() => {
                 requestInitialTimes[resolvedKey] = Date.now()
+                requestStarts[resolvedKey] = new Date()
                 return newAbortController.signal
               })(),
               ...optionsConfig,
@@ -384,6 +391,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 ...c.headers
               } as Headers
             })
+            requestEnds[resolvedKey] = new Date()
             requestResponseTimes[resolvedKey] = getTimePassed(resolvedKey)
 
             lastResponses[resolvedKey] = json
@@ -551,9 +559,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             }
           } finally {
             setLoading(false)
-            queue(() => {
-              canDebounce[resolvedKey] = true
-            }, debounce)
             runningRequests[resolvedKey] = false
             requestsProvider.emit(resolvedKey, {
               requestCallId,
@@ -561,12 +566,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             })
             suspenseInitialized[resolvedKey] = true
             resolvedOnErrorCalls[resolvedKey] = true
+            queue(() => {
+              canDebounce[resolvedKey] = true
+            }, debounce)
           }
         }
       }
     },
     [
-      auto,
+      canRevalidate,
       ctx.auto,
       stringDeps,
       resolvedKey,
@@ -729,7 +737,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       url,
       requestAbortController,
       loading,
-      auto,
+      canRevalidate,
       ctx.auto
     ]
   )
@@ -782,7 +790,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     loading,
     requestCallId,
     stringDeps,
-    auto,
+    canRevalidate,
     ctx.auto,
     idString,
     id
@@ -876,7 +884,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     // Attempts will be made after a request fails
-    const tm = queue(() => {
+    const tm = setTimeout(() => {
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
@@ -898,7 +906,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           setOnline(false)
         }
       }
-    }, (attemptInterval as number) * 1000)
+    }, getMiliseconds(attemptInterval as TimeSpan))
 
     return () => {
       clearTimeout(tm)
@@ -906,9 +914,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }, [error, attempts, rawJSON, attemptInterval, completedAttempts])
 
   useEffect(() => {
+    const refreshAmount = getMiliseconds(refresh as TimeSpan)
     if (completedAttempts === 0) {
-      if ((refresh as any) > 0 && auto) {
-        const tm = queue(reValidate, (refresh as any) * 1000)
+      if (refreshAmount > 0 && canRevalidate) {
+        const tm = setTimeout(reValidate, refreshAmount)
 
         return () => {
           clearTimeout(tm)
@@ -919,11 +928,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, loading, error, rawJSON, completedAttempts, config])
 
-  const { debounce } = optionsConfig
+  const debounce = optionsConfig.debounce
+    ? getMiliseconds(optionsConfig.debounce)
+    : 0
 
   const initializeRevalidation = React.useCallback(
     async function initializeRevalidation() {
-      if (auto || canDebounce[resolvedKey]) {
+      if (canRevalidate) {
         if (url !== '') {
           if (isPending(resolvedKey)) {
             setLoading(true)
@@ -975,16 +986,18 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }, [loading, windowExists, suspense, resolvedKey, data])
 
   useEffect(() => {
+    if (!suspense) {
+      initializeRevalidation()
+    }
+  }, [])
+
+  useEffect(() => {
     const revalidateAfterUnmount = revalidateOnMount
       ? true
       : previousConfig[resolvedKey] !== serialize(optionsConfig)
 
-    let tm: any = null
-
     function revalidate() {
-      if (debounce && canDebounce[resolvedKey]) {
-        tm = queue(initializeRevalidation, debounce)
-      } else {
+      if (!debounce && !canDebounce[resolvedKey]) {
         initializeRevalidation()
       }
     }
@@ -997,10 +1010,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       } else {
         revalidate()
       }
-    }
-
-    return () => {
-      clearTimeout(tm)
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1116,7 +1125,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
 
     queue(() => {
-      if (!auto && url !== '' && debounce) {
+      if (!canRevalidate && url !== '' && debounce) {
         canDebounce[resolvedKey] = true
       }
     })
@@ -1131,14 +1140,27 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       if (url !== '') {
         previousProps[resolvedKey] = optionsConfig
       }
+      if (cancelOnChange) {
+        requestAbortController?.abort()
+      }
+      if (canRevalidate && url !== '') {
+        const debounceTimeout = setTimeout(() => {
+          initializeRevalidation()
+          if (suspenseInitialized[resolvedKey]) {
+          }
+        }, debounce)
+
+        return () => {
+          clearTimeout(debounceTimeout)
+        }
+      }
     }
-    if (cancelOnChange) {
-      requestAbortController?.abort()
-      queue(initializeRevalidation)
-    }
+    return () => {}
   }, [serialize(optionsConfig)])
 
   const resolvedData = React.useMemo(() => data, [rawJSON])
+
+  const dateIfNotExists = null
 
   return {
     data: resolvedData,
@@ -1171,7 +1193,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
      * The request key
      */
     key: resolvedKey,
-    responseTime: requestResponseTimes[resolvedKey]
+    responseTime: requestResponseTimes[resolvedKey],
+    requestStart: requestStarts[resolvedKey] || dateIfNotExists,
+    requestEnd: requestEnds[resolvedKey] || dateIfNotExists
   } as unknown as {
     data: FetchDataType
     loading: boolean
@@ -1194,6 +1218,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     id: any
     key: string
     responseTime: number
+    requestStart: Date
+    requestEnd: Date
   }
 }
 
