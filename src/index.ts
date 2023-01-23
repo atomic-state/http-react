@@ -1,3 +1,4 @@
+'use client'
 /**
  * @license http-react
  * Copyright (c) Dany Beltran
