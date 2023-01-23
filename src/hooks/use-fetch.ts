@@ -48,6 +48,7 @@ import {
   hasBaseUrl,
   isDefined,
   isFunction,
+  notNull,
   queue,
   revalidate,
   serialize,
@@ -523,19 +524,23 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 error: _error
               })
               if (!isDefined(cacheProvider.get(resolvedDataKey))) {
-                setData(def)
-                cacheForMutation[idString] = def
-                requestsProvider.emit(resolvedKey, {
-                  requestCallId,
-                  data: def
-                })
+                if (notNull(def)) {
+                  setData(def)
+                  cacheForMutation[idString] = def
+                  requestsProvider.emit(resolvedKey, {
+                    requestCallId,
+                    data: def
+                  })
+                }
               } else {
-                setData(requestCache)
-                cacheForMutation[idString] = requestCache
-                requestsProvider.emit(resolvedKey, {
-                  requestCallId,
-                  data: requestCache
-                })
+                if (notNull(requestCache)) {
+                  setData(requestCache)
+                  cacheForMutation[idString] = requestCache
+                  requestsProvider.emit(resolvedKey, {
+                    requestCallId,
+                    data: requestCache
+                  })
+                }
               }
               setError(_error)
               hasErrors[resolvedKey] = true

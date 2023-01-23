@@ -43,6 +43,10 @@ export function getMiliseconds(v: TimeSpan): number {
   return amountNumber * UNITS_MILISECONDS_EQUIVALENTS[unit]
 }
 
+export function notNull(target: any) {
+  return target !== null
+}
+
 export function isDefined(target: any) {
   return typeof target !== 'undefined'
 }
