@@ -995,12 +995,16 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   React.useMemo(() => {
     if (windowExists) {
       if (!suspense) {
-        if (auto && url !== '' && !isPending(resolvedKey)) {
-          initializeRevalidation()
+        if (auto && url !== '') {
+          if (!isPending(resolvedKey)) {
+            initializeRevalidation()
+          } else {
+            requestAbortController?.abort()
+          }
         }
       }
     }
-  }, [resolvedKey])
+  }, [resolvedKey, serialize(optionsConfig)])
 
   useEffect(() => {
     const revalidateAfterUnmount = revalidateOnMount
