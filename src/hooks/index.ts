@@ -1,3 +1,4 @@
+'use client'
 export { useFetch } from './use-fetch'
 
 export {

@@ -1,3 +1,4 @@
+'use client'
 import * as React from 'react'
 import { useEffect } from 'react'
 
@@ -23,12 +24,9 @@ import {
 
 import { useFetch } from './use-fetch'
 
-import {
-  createImperativeFetch,
-  isDefined,
-  isFunction,
-  serialize
-} from '../utils'
+import { createImperativeFetch } from '../utils'
+
+import { isDefined, isFunction, serialize } from '../utils/shared'
 
 import {
   ALLOWED_CONTEXT_KEYS,
