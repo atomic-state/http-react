@@ -87,7 +87,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     method = METHODS.GET as HTTP_METHODS,
     headers = {} as Headers,
     body = undefined as unknown as Body,
-    formatBody = (e) => JSON.stringify(e),
+    formatBody = e => JSON.stringify(e),
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
     auto = isDefined(ctx.auto) ? ctx.auto : true,
@@ -279,7 +279,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     ...config.headers
   }
 
-  const [error, setError] = useState<any>(hasErrors[resolvedKey])
+  const [error, setError] = useState<any>(hasErrors[resolvedKey] || null)
   const [loading, setLoading] = useState(
     revalidateOnMount
       ? suspense
@@ -372,12 +372,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             error: null
           })
           abortControllers[resolvedKey] = newAbortController
+          let newStartDate = null
           try {
             const json = await fetch(realUrl + c.query, {
               ...ctx,
               signal: (() => {
+                newStartDate = new Date()
                 requestInitialTimes[resolvedKey] = Date.now()
-                requestStarts[resolvedKey] = new Date()
                 return newAbortController.signal
               })(),
               ...optionsConfig,
@@ -392,6 +393,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 ...c.headers
               } as Headers
             })
+            requestStarts[resolvedKey] = newStartDate
             requestEnds[resolvedKey] = new Date()
             requestResponseTimes[resolvedKey] = getTimePassed(resolvedKey)
 
@@ -468,7 +470,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               })
             } else {
               if (_data.errors && isGqlRequest) {
-                setData((previous) => {
+                setData(previous => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
@@ -776,7 +778,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
             fetchData({
               query: Object.keys(reqQuery)
-                .map((q) => [q, reqQuery[q]].join('='))
+                .map(q => [q, reqQuery[q]].join('='))
                 .join('&'),
               params: reqParams
             })
@@ -893,7 +895,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
-          setCompletedAttempts((previousAttempts) => {
+          setCompletedAttempts(previousAttempts => {
             let newAttemptsValue = previousAttempts + 1
 
             requestsProvider.emit(resolvedKey, {
@@ -946,7 +948,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           }
           fetchData({
             query: Object.keys(reqQuery)
-              .map((q) => [q, reqQuery[q]].join('='))
+              .map(q => [q, reqQuery[q]].join('='))
               .join('&'),
             params: reqParams
           })
@@ -990,11 +992,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }, [loading, windowExists, suspense, resolvedKey, data])
 
-  useEffect(() => {
-    if (!suspense) {
-      initializeRevalidation()
+  React.useMemo(() => {
+    if (windowExists) {
+      if (!suspense) {
+        if (auto && url !== '' && !isPending(resolvedKey)) {
+          initializeRevalidation()
+        }
+      }
     }
-  }, [])
+  }, [resolvedKey])
 
   useEffect(() => {
     const revalidateAfterUnmount = revalidateOnMount
@@ -1170,7 +1176,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   return {
     data: resolvedData,
     loading: isPending(resolvedKey) || loading,
-    error: hasErrors[resolvedKey],
+    error: hasErrors[resolvedKey] || error,
     online,
     code: statusCodes[resolvedKey],
     reFetch: reValidate,
