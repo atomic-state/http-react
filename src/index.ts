@@ -50,3 +50,5 @@ export {
   revalidate,
   hasBaseUrl
 } from './utils'
+
+export { defaultCache } from './internal'

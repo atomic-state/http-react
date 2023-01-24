@@ -87,7 +87,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     method = METHODS.GET as HTTP_METHODS,
     headers = {} as Headers,
     body = undefined as unknown as Body,
-    formatBody = e => JSON.stringify(e),
+    formatBody = (e) => JSON.stringify(e),
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
     auto = isDefined(ctx.auto) ? ctx.auto : true,
@@ -468,7 +468,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               })
             } else {
               if (_data.errors && isGqlRequest) {
-                setData(previous => {
+                setData((previous) => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
@@ -776,7 +776,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
             fetchData({
               query: Object.keys(reqQuery)
-                .map(q => [q, reqQuery[q]].join('='))
+                .map((q) => [q, reqQuery[q]].join('='))
                 .join('&'),
               params: reqParams
             })
@@ -893,7 +893,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       if (error) {
         if (completedAttempts < (attempts as number)) {
           reValidate()
-          setCompletedAttempts(previousAttempts => {
+          setCompletedAttempts((previousAttempts) => {
             let newAttemptsValue = previousAttempts + 1
 
             requestsProvider.emit(resolvedKey, {
@@ -946,7 +946,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           }
           fetchData({
             query: Object.keys(reqQuery)
-              .map(q => [q, reqQuery[q]].join('='))
+              .map((q) => [q, reqQuery[q]].join('='))
               .join('&'),
             params: reqParams
           })
@@ -1169,7 +1169,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   return {
     data: resolvedData,
-    loading: isPending(resolvedKey),
+    loading: isPending(resolvedKey) || loading,
     error: hasErrors[resolvedKey],
     online,
     code: statusCodes[resolvedKey],
