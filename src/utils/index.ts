@@ -1,10 +1,10 @@
+'use client'
 import * as React from 'react'
 import { useGql } from '../hooks/others'
 import { useFetch } from '../hooks/use-fetch'
 
 import {
   cacheForMutation,
-  defaultCache,
   previousConfig,
   requestInitialTimes,
   requestsProvider,
@@ -12,22 +12,16 @@ import {
   valuesMemory
 } from '../internal'
 
-import {
-  DEFAULT_RESOLVER,
-  METHODS,
-  UNITS_MILISECONDS_EQUIVALENTS
-} from '../internal/constants'
+import { UNITS_MILISECONDS_EQUIVALENTS } from '../internal/constants'
 
 import {
   CacheStoreType,
   FetchContextType,
   ImperativeFetch,
-  RequestWithBody,
   FetchInit,
   TimeSpan
 } from '../types'
-
-export const windowExists = typeof window !== 'undefined'
+import { hasBaseUrl, isDefined, isFunction, queue, serialize } from './shared'
 
 export function getMiliseconds(v: TimeSpan): number {
   if (typeof v === 'number') return v
@@ -43,205 +37,11 @@ export function getMiliseconds(v: TimeSpan): number {
   return amountNumber * UNITS_MILISECONDS_EQUIVALENTS[unit]
 }
 
-export function notNull(target: any) {
-  return target !== null
-}
-
-export function isDefined(target: any) {
-  return typeof target !== 'undefined'
-}
-
-export function isFunction(target: any) {
-  return typeof target === 'function'
-}
-
-export function hasBaseUrl(target: string) {
-  return target.startsWith('http://') || target.startsWith('https://')
-}
-
-export function jsonCompare(a: any, b: any) {
-  return JSON.stringify(a) === JSON.stringify(b)
-}
-
-export function serialize(input: any) {
-  return JSON.stringify(input)
-}
-
-export const isFormData = (target: any) => {
-  if (typeof FormData !== 'undefined') {
-    return target instanceof FormData
-  } else return false
-}
-
-export function queue(callback: any, time: number = 0) {
-  const tm = setTimeout(() => {
-    callback()
-    clearTimeout(tm)
-  }, time)
-
-  return tm
-}
-
-/**
- *
- * @param str The target string
- * @param $params The params to parse in the url
- *
- * Params should be separated by `"/"`, (e.g. `"/api/[resource]/:id"`)
- *
- * URL search params will not be affected
- */
-export function setURLParams(str: string = '', $params: any = {}) {
-  const hasQuery = str.includes('?')
-
-  const queryString =
-    '?' +
-    str
-      .split('?')
-      .filter((_, i) => i > 0)
-      .join('?')
-
-  return (
-    str
-      .split('/')
-      .map($segment => {
-        const [segment] = $segment.split('?')
-        if (segment.startsWith('[') && segment.endsWith(']')) {
-          const paramName = segment.replace(/\[|\]/g, '')
-          if (!(paramName in $params)) {
-            console.warn(
-              `Param '${paramName}' does not exist in params configuration for '${str}'`
-            )
-            return paramName
-          }
-
-          return $params[segment.replace(/\[|\]/g, '')]
-        } else if (segment.startsWith(':')) {
-          const paramName = segment.split('').slice(1).join('')
-          if (!(paramName in $params)) {
-            console.warn(
-              `Param '${paramName}' does not exist in params configuration for '${str}'`
-            )
-            return paramName
-          }
-          return $params[paramName]
-        } else {
-          return segment
-        }
-      })
-      .join('/') + (hasQuery ? queryString : '')
-  )
-}
-
 export function getTimePassed(key: any) {
   return (
     Date.now() -
     (isDefined(requestInitialTimes[key]) ? requestInitialTimes[key] : 0)
   )
-}
-
-/**
- * Creates a new request function. This is for usage with fetcher and fetcher.extend
- */
-export function createRequestFn(
-  method: string,
-  baseUrl: string,
-  $headers: any
-): RequestWithBody {
-  return async function (url, init = {}) {
-    const {
-      default: def,
-      params = {},
-      headers,
-      query = {},
-      body,
-      formatBody,
-      resolver = DEFAULT_RESOLVER,
-      onResolve = () => {},
-      onError = () => {}
-    } = init
-
-    const rawUrl = setURLParams(url, params)
-
-    const reqQueryString = Object.keys(query)
-      .map(q => [q, query[q]].join('='))
-      .join('&')
-
-    const reqConfig = {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...$headers,
-        ...headers
-      },
-      body: canHaveBody(method as any)
-        ? isFunction(formatBody)
-          ? (formatBody as any)(body)
-          : body
-        : undefined
-    }
-
-    let r = undefined as any
-
-    const requestUrl = [
-      baseUrl || '',
-      rawUrl,
-      url.includes('?') ? '&' : '?',
-      reqQueryString
-    ].join('')
-
-    try {
-      const req = await fetch(requestUrl, {
-        ...init,
-        ...reqConfig
-      })
-      r = req
-
-      const data = await resolver(req)
-      if (req?.status >= 400) {
-        onError(true as any)
-        return {
-          res: req,
-          data: def,
-          error: true,
-          code: req?.status,
-          config: {
-            ...init,
-            url: `${baseUrl || ''}${rawUrl}`,
-            ...reqConfig,
-            query
-          }
-        }
-      } else {
-        onResolve(data, req)
-        return {
-          res: req,
-          data: data,
-          error: false,
-          code: req?.status,
-          config: {
-            ...init,
-            url: `${baseUrl || ''}${rawUrl}`,
-            ...reqConfig,
-            query
-          }
-        }
-      }
-    } catch (err) {
-      onError(err as any)
-      return {
-        res: r,
-        data: def,
-        error: true,
-        code: r?.status,
-        config: {
-          ...init,
-          url: requestUrl,
-          ...reqConfig
-        }
-      }
-    }
-  } as RequestWithBody
 }
 
 export const createImperativeFetch = (ctx: FetchContextType) => {
@@ -497,8 +297,4 @@ export function mutateData(
       }
     } catch (err) {}
   }
-}
-
-export function canHaveBody(method: keyof typeof METHODS) {
-  return /(POST|PUT|DELETE|PATCH)/.test(method)
 }

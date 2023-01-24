@@ -1,4 +1,3 @@
-'use client'
 /**
  * @license http-react
  * Copyright (c) Dany Beltran
@@ -42,13 +41,17 @@ export {
 
 export { FetchConfig, SSRSuspense } from './components'
 
-export {
-  gql,
-  setURLParams,
-  queryProvider,
-  mutateData,
-  revalidate,
-  hasBaseUrl
-} from './utils'
+export { gql, queryProvider, mutateData, revalidate } from './utils'
 
 export { defaultCache } from './internal'
+
+export {
+  HttpReact,
+  setURLParams,
+  hasBaseUrl,
+  isDefined,
+  isFormData,
+  isFunction,
+  serialize,
+  notNull
+} from './utils/shared'

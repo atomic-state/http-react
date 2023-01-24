@@ -1,3 +1,4 @@
+'use client'
 import * as React from 'react'
 import { useEffect, useState, Suspense } from 'react'
 
@@ -12,7 +13,7 @@ import {
 
 import { FetchContextType } from '../types'
 
-import { isDefined, serialize } from '../utils'
+import { isDefined, serialize } from '../utils/shared'
 
 /**
  * This is a wrapper around `Suspense`. It will render `fallback` during the first render and then leave the rendering to `Suspense`. If you are not using SSR, you should continue using the `Suspense` component.

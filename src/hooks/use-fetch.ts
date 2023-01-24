@@ -1,3 +1,4 @@
+'use client'
 import * as React from 'react'
 import { useState, useEffect } from 'react'
 
@@ -42,19 +43,21 @@ import {
 
 import {
   createImperativeFetch,
-  createRequestFn,
   getMiliseconds,
   getTimePassed,
+  revalidate
+} from '../utils'
+import {
+  createRequestFn,
   hasBaseUrl,
   isDefined,
   isFunction,
   notNull,
   queue,
-  revalidate,
   serialize,
   setURLParams,
   windowExists
-} from '../utils'
+} from '../utils/shared'
 
 /**
  * Fetch hook
@@ -1248,3 +1251,5 @@ useFetch.patch = createRequestFn('PATCH', '', {})
 useFetch.purge = createRequestFn('PURGE', '', {})
 useFetch.link = createRequestFn('LINK', '', {})
 useFetch.unlink = createRequestFn('UNLINK', '', {})
+
+useFetch.extend = createImperativeFetch
