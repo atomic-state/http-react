@@ -427,6 +427,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               if (_data?.errors && isGqlRequest) {
                 setError(true)
                 hasErrors[resolvedKey] = true
+                requestsProvider.emit(resolvedKey, {
+                  requestCallId,
+                  error: true
+                })
                 if (handleError) {
                   if (!resolvedOnErrorCalls[resolvedKey]) {
                     resolvedOnErrorCalls[resolvedKey] = true
@@ -457,6 +461,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
               if (!_data?.errors && isGqlRequest) {
                 setError(null)
+                requestsProvider.emit(resolvedKey, {
+                  requestCallId,
+                  error: null
+                })
                 hasErrors[resolvedKey] = null
               }
               setLoading(false)
@@ -712,12 +720,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           })
         }
         if (isDefined($error)) {
-          queue(() => {
-            setError($error)
-            if ($error !== null) {
-              hasErrors[resolvedKey] = true
-            }
-          })
+          setError($error)
+          hasErrors[resolvedKey] = $error
         }
         if (isDefined(online)) {
           queue(() => {
