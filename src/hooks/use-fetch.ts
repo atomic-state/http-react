@@ -27,7 +27,8 @@ import {
   requestInitialTimes,
   requestResponseTimes,
   requestStarts,
-  requestEnds
+  requestEnds,
+  suspenseRevalidationStarted
 } from '../internal'
 
 import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
@@ -979,23 +980,24 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       suspenseInitialized[resolvedKey] = true
     }
   }
-
-  React.useMemo(() => {
-    if (suspense) {
-      if (windowExists) {
-        if (!suspenseInitialized[resolvedKey]) {
-          throw initializeRevalidation()
+  
+  if (suspense) {
+    if (windowExists) {
+      if (!suspenseInitialized[resolvedKey]) {
+        if (!suspenseRevalidationStarted[resolvedKey]) {
+          suspenseRevalidationStarted[resolvedKey] = initializeRevalidation()
         }
-      } else {
-        throw {
-          message:
-            "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
-        }
+        throw suspenseRevalidationStarted[resolvedKey]
+      }
+    } else {
+      throw {
+        message:
+          "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
       }
     }
-  }, [loading, windowExists, suspense, resolvedKey, data])
+  }
 
-  React.useMemo(() => {
+  useEffect(() => {
     if (windowExists) {
       if (!suspense) {
         if (auto && url !== '') {
