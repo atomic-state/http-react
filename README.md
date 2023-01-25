@@ -60,6 +60,26 @@ Or
 yarn add http-react
 ```
 
+For production apps
+
+```html
+<!-- Add React and ReactDOM -->
+<script
+  src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"
+  crossorigin
+></script>
+
+<script
+  src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"
+  crossorigin
+></script>
+
+<!-- Add Http React -->
+<script src="https://unpkg.com/http-react/dist/browser/http-react.min.js"></script>
+```
+
+
+
 [Getting started](https://http-react.netlify.app/docs)
 
 

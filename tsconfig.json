@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
+    "target": "ES5",
     "outDir": "./dist",
     "module": "CommonJS",
-    "target": "es5",
     "lib": ["es6", "dom", "es2019"],
     "sourceMap": false,
     "allowJs": true,
     "jsx": "react",
+    "strict": false,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "rootDir": "src",
