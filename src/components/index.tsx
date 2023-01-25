@@ -15,6 +15,7 @@ import { FetchContextType } from '../types'
 
 import { isDefined, serialize } from '../utils/shared'
 
+let isServer: boolean
 /**
  * This is a wrapper around `Suspense`. It will render `fallback` during the first render and then leave the rendering to `Suspense`. If you are not using SSR, you should continue using the `Suspense` component.
  */
@@ -25,10 +26,13 @@ export function SSRSuspense({
   fallback?: React.ReactNode
   children?: React.ReactNode
 }) {
-  const [ssr, setSSR] = useState(true)
+  const [ssr, setSSR] = useState(isDefined(isServer) ? isServer : true)
 
   useEffect(() => {
-    setSSR(false)
+    if (!isDefined(isServer)) {
+      setSSR(false)
+      isServer = false
+    }
   }, [])
 
   // This will render the fallback in the server

@@ -41,6 +41,7 @@ export const valuesMemory: any = {}
 /**
  * For Suspense
  */
+
 export const willSuspend: any = {}
 
 export const resolvedRequests: any = {}
@@ -60,6 +61,8 @@ export const requestResponseTimes: any = {}
 export const requestStarts: any = {}
 
 export const requestEnds: any = {}
+
+export const suspenseRevalidationStarted: any = {}
 
 export const maxPaginationAges: any = {}
 
@@ -120,12 +123,12 @@ export const requestsProvider = {
       requestsSubscribers[requestId] = []
     }
     requestsSubscribers[requestId] = requestsSubscribers[requestId].filter(
-      (l) => l !== listener
+      l => l !== listener
     )
   },
   emit(requestId?: any, payload?: any) {
     if (requestsSubscribers[requestId]) {
-      requestsSubscribers[requestId].forEach((listener) => {
+      requestsSubscribers[requestId].forEach(listener => {
         listener(payload)
       })
     }
