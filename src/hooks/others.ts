@@ -129,7 +129,9 @@ export function useFetchError(id: any, onError?: (err?: any) => void) {
   useEffect(() => {
     function listenToErrorEvent(e: any) {
       if (e?.error) {
-        ;(onError as any)(e?.error)
+        if (isFunction(onError)) {
+          ;(onError as any)(e?.error)
+        }
       }
     }
 
