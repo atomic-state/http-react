@@ -181,13 +181,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const canRevalidate = auto
 
-  useEffect(() => {
-    // If a cache exists for the query and params configurations, set that as the latest cache value
-    const paginationCache = cacheProvider.get(resolvedDataKey)
-    if (isDefined(paginationCache) && paginationCache !== null) {
-      setData(cacheProvider.get(resolvedDataKey))
-    }
-  }, [serialize(optionsConfig)])
+  const paginationCache = cacheProvider.get(resolvedDataKey)
+  const normalCache = cacheProvider.get(resolvedKey)
+  const thisCache = isDefined(paginationCache) ? paginationCache : normalCache
 
   const suspense = $suspense || willSuspend[resolvedKey]
 
@@ -1190,7 +1186,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     return () => {}
   }, [serialize(optionsConfig)])
 
-  const resolvedData = React.useMemo(() => data, [rawJSON])
+  const resolvedData = React.useMemo(() => thisCache, [serialize(thisCache)])
 
   const dateIfNotExists = null
 

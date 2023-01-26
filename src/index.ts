@@ -11,7 +11,6 @@ export type { CacheStoreType, FetchInit } from './types'
 export { useFetch as default } from './hooks'
 
 export {
-  useFetch,
   useData,
   useBlob,
   useCode,
