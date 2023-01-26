@@ -39,7 +39,7 @@ export {
   useRequestStart
 } from './hooks'
 
-export { FetchConfig, SSRSuspense } from './components'
+export { FetchConfig, SSRSuspense } from './components/server'
 
 export { gql, queryProvider, mutateData, revalidate } from './utils'
 
