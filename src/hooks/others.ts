@@ -110,8 +110,6 @@ export function useFetchData<ResponseType = any, VT = any>(
     onResolve: onResolve as any
   })
 
-  // useResolve(id as any, onResolve as any)
-
   return data as ResponseType
 }
 

@@ -569,6 +569,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 }
               }
               setError(_error)
+              requestsProvider.emit(resolvedKey, {
+                requestCallId,
+                error: _error
+              })
               hasErrors[resolvedKey] = true
               if (handleError) {
                 if (!resolvedOnErrorCalls[resolvedKey]) {
@@ -709,39 +713,39 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
 
       if (v.requestCallId !== requestCallId) {
-        React.startTransition(() => {
-          if (isDefined(completedAttempts)) {
-            // queue(() => {
+        if (isDefined(completedAttempts)) {
+          queue(() => {
             setCompletedAttempts(completedAttempts)
-            // })
-          }
-          if (isDefined(requestAbortController)) {
-            // queue(() => {
+          })
+        }
+        if (isDefined(requestAbortController)) {
+          queue(() => {
             setRequestAbortController(requestAbortController)
-            // })
-          }
-          if (isDefined(loading)) {
-            // queue(() => {
+          })
+        }
+        if (isDefined(loading)) {
+          queue(() => {
             setLoading(loading)
-            // })
-          }
-          if (isDefined($data)) {
-            // queue(() => {
+          })
+        }
+        if (isDefined($data)) {
+          queue(() => {
             setData($data)
             cacheProvider.set(resolvedDataKey, $data)
             cacheProvider.set(resolvedKey, $data)
-            // })
-          }
-          if (isDefined($error)) {
+          })
+        }
+        if (isDefined($error)) {
+          queue(() => {
             setError($error)
             hasErrors[resolvedKey] = $error
-          }
-          if (isDefined(online)) {
-            // queue(() => {
+          })
+        }
+        if (isDefined(online)) {
+          queue(() => {
             setOnline(online)
-            // })
-          }
-        })
+          })
+        }
       }
     }
 
@@ -1012,7 +1016,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           if (!isPending(resolvedKey)) {
             initializeRevalidation()
           } else {
-            requestAbortController?.abort()
+            setLoading(() => {
+              return true
+            })
           }
         }
       }
@@ -1142,7 +1148,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         try {
           if (url !== '') {
             if (previousConfig[resolvedKey] !== serialize(optionsConfig)) {
-              requestAbortController?.abort()
+              setLoading(() => {
+                requestAbortController?.abort()
+                initializeRevalidation()
+                return true
+              })
             }
           }
         } catch (err) {}
@@ -1169,7 +1179,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         previousProps[resolvedKey] = optionsConfig
       }
       if (cancelOnChange) {
-        requestAbortController?.abort()
+        setLoading(() => {
+          requestAbortController?.abort()
+          initializeRevalidation()
+          return true
+        })
       }
       if (canRevalidate && url !== '') {
         const debounceTimeout = setTimeout(() => {
