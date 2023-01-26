@@ -46,6 +46,16 @@ export type FetchContextType = {
   retryOnReconnect?: boolean
   cacheProvider?: CacheStoreType
   revalidateOnMount?: boolean
+  onFetchStart?(
+    req: Request,
+    config: FetchConfigType,
+    ctx: FetchContextType
+  ): void
+  onFetchEnd?(
+    res: Response,
+    config: FetchConfigType,
+    ctx: FetchContextType
+  ): void
 } & Omit<RequestInit, 'body'>
 
 export type CacheStoreType = {
@@ -281,6 +291,14 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
    * The time to wait before revalidation after props change
    */
   debounce?: TimeSpan
+  /**
+   * Will run when the request is sent
+   */
+  onFetchStart?: FetchContextType['onFetchStart']
+  /**
+   * Will run when the response is received
+   */
+  onFetchEnd?: FetchContextType['onFetchEnd']
 }
 
 // If first argument is a string

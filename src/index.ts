@@ -36,7 +36,8 @@ export {
   useResolve,
   useResponseTime,
   useRequestEnd,
-  useRequestStart
+  useRequestStart,
+  useFetchSuspense
 } from './hooks'
 
 export { FetchConfig, SSRSuspense } from './components/server'
