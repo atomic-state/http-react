@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useFetch } from '../../'
+import useFetch from '../../'
 import mocks from '../mocks'
 
 test('GET data in JSON', async () => {
