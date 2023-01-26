@@ -3,3 +3,5 @@ node_modules
 index.js.map
 package-lock.json
 yarn.lock
+server.js
+server.d.ts

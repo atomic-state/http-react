@@ -1,3 +1,4 @@
+import {} from '../'
 export default {
   GET: {
     careers: [
