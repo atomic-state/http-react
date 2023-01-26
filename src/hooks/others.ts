@@ -46,6 +46,24 @@ export function useFetchConfig(id?: unknown) {
   return thisConfig as FetchInit & FetchContextType
 }
 
+export function useFetchSuspense<FetchDataType = any, BodyType = any>(
+  init: FetchConfigType<FetchDataType, BodyType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+) {
+  let o =
+    typeof init === 'string'
+      ? {
+          url: init,
+          ...options
+        }
+      : options
+
+  return useFetch({
+    ...o,
+    suspense: true
+  })
+}
+
 /**
  * Get the data state of a request using its id
  */

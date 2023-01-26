@@ -26,5 +26,6 @@ export {
   useUNLINK,
   useResolve,
   useGql,
-  useImperative
+  useImperative,
+  useFetchSuspense
 } from './others'

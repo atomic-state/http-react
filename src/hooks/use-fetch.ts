@@ -83,7 +83,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     onOffline = ctx.onOffline,
     onMutate,
     onPropsChange,
-    revalidateOnMount = isDefined(options) ? ctx.revalidateOnMount : false,
+    revalidateOnMount = ctx.revalidateOnMount,
     url = '',
     query = {},
     params = {},
@@ -103,7 +103,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     attempts = ctx.attempts,
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus,
-    suspense: $suspense
+    suspense: $suspense,
+    onFetchStart = ctx.onFetchStart,
+    onFetchEnd = ctx.onFetchEnd
   } = optionsConfig
 
   const config = {
@@ -117,6 +119,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   const { cacheProvider: $cacheProvider = defaultCache } = ctx
+
+  const logStart = isFunction(onFetchStart)
+  const logEnd = isFunction(onFetchEnd)
 
   const { cacheProvider = $cacheProvider } = optionsConfig
 
@@ -378,7 +383,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           abortControllers[resolvedKey] = newAbortController
           let newStartDate = null
           try {
-            const json = await fetch(realUrl + c.query, {
+            const r = new Request(realUrl + c.query, {
               ...ctx,
               signal: (() => {
                 newStartDate = new Date()
@@ -397,6 +402,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 ...c.headers
               } as Headers
             })
+            if (logStart) {
+              ;(onFetchStart as any)(r, optionsConfig, ctx)
+            }
+            const json = await fetch(r)
             requestStarts[resolvedKey] = newStartDate
             requestEnds[resolvedKey] = new Date()
             requestResponseTimes[resolvedKey] = getTimePassed(resolvedKey)
@@ -527,6 +536,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               setError(true)
               hasErrors[resolvedKey] = true
               runningRequests[resolvedKey] = false
+            }
+            if (logEnd) {
+              ;(onFetchEnd as any)(
+                lastResponses[resolvedKey],
+                optionsConfig,
+                ctx
+              )
             }
           } catch (err) {
             const errorString = err?.toString()
@@ -660,7 +676,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   useEffect(() => {
-    async function waitFormUpdates(v: any) {
+    function waitFormUpdates(v: any) {
       const {
         isMutating,
         data: $data,
@@ -697,37 +713,39 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
 
       if (v.requestCallId !== requestCallId) {
-        if (isDefined(completedAttempts)) {
-          queue(() => {
+        React.startTransition(() => {
+          if (isDefined(completedAttempts)) {
+            // queue(() => {
             setCompletedAttempts(completedAttempts)
-          })
-        }
-        if (isDefined(requestAbortController)) {
-          queue(() => {
+            // })
+          }
+          if (isDefined(requestAbortController)) {
+            // queue(() => {
             setRequestAbortController(requestAbortController)
-          })
-        }
-        if (isDefined(loading)) {
-          queue(() => {
+            // })
+          }
+          if (isDefined(loading)) {
+            // queue(() => {
             setLoading(loading)
-          })
-        }
-        if (isDefined($data)) {
-          queue(() => {
+            // })
+          }
+          if (isDefined($data)) {
+            // queue(() => {
             setData($data)
             cacheProvider.set(resolvedDataKey, $data)
             cacheProvider.set(resolvedKey, $data)
-          })
-        }
-        if (isDefined($error)) {
-          setError($error)
-          hasErrors[resolvedKey] = $error
-        }
-        if (isDefined(online)) {
-          queue(() => {
+            // })
+          }
+          if (isDefined($error)) {
+            setError($error)
+            hasErrors[resolvedKey] = $error
+          }
+          if (isDefined(online)) {
+            // queue(() => {
             setOnline(online)
-          })
-        }
+            // })
+          }
+        })
       }
     }
 
@@ -742,57 +760,47 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     async function reValidate() {
       revalidate(id)
     },
-    [
-      idString,
-      rawUrl,
-      resolvedKey,
-      requestCallId,
-      stringDeps,
-      cancelOnChange,
-      url,
-      requestAbortController,
-      loading,
-      canRevalidate,
-      ctx.auto
-    ]
+    [serialize(id)]
   )
 
   useEffect(() => {
-    async function forceRefresh(v: any) {
-      if (isDefined(v?.data)) {
-        try {
-          const { data: d } = v
-          if (isDefined(data)) {
-            setData(d)
-            cacheForMutation[idString] = d
-            cacheProvider.set(resolvedDataKey, d)
-            cacheProvider.set(resolvedKey, d)
-            valuesMemory[resolvedKey] = d
-          }
-        } catch (err) {}
-      } else {
-        setLoading(true)
-        setError(null)
-        hasErrors[resolvedKey] = null
-        if (!isPending(resolvedKey)) {
-          // preventing revalidation where only need updates about
-          // 'loading', 'error' and 'data' because the url can be ommited.
-          if (url !== '') {
-            requestsProvider.emit(resolvedKey, {
-              requestCallId,
-              loading: true,
-              error: null
-            })
+    function forceRefresh(v: any) {
+      React.startTransition(() => {
+        if (isDefined(v?.data)) {
+          try {
+            const { data: d } = v
+            if (isDefined(data)) {
+              setData(d)
+              cacheForMutation[idString] = d
+              cacheProvider.set(resolvedDataKey, d)
+              cacheProvider.set(resolvedKey, d)
+              valuesMemory[resolvedKey] = d
+            }
+          } catch (err) {}
+        } else {
+          setLoading(true)
+          setError(null)
+          hasErrors[resolvedKey] = null
+          if (!isPending(resolvedKey)) {
+            // preventing revalidation where only need updates about
+            // 'loading', 'error' and 'data' because the url can be ommited.
+            if (url !== '') {
+              requestsProvider.emit(resolvedKey, {
+                requestCallId,
+                loading: true,
+                error: null
+              })
 
-            fetchData({
-              query: Object.keys(reqQuery)
-                .map(q => [q, reqQuery[q]].join('='))
-                .join('&'),
-              params: reqParams
-            })
+              fetchData({
+                query: Object.keys(reqQuery)
+                  .map(q => [q, reqQuery[q]].join('='))
+                  .join('&'),
+                params: reqParams
+              })
+            }
           }
         }
-      }
+      })
     }
     let idString = serialize(id)
     requestsProvider.addListener(idString, forceRefresh)
@@ -984,7 +992,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       suspenseInitialized[resolvedKey] = true
     }
   }
-  
+
   if (suspense) {
     if (windowExists) {
       if (!suspenseInitialized[resolvedKey]) {
