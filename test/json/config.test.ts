@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { useFetch } from '../../'
+import useFetch from '../../'
 import mocks from '../mocks'
 
 test('Config is modified by AtomicState provider', async () => {
