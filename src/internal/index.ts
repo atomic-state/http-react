@@ -135,7 +135,7 @@ export const requestsProvider = {
   }
 }
 
-const defaultContextVaue = {
+const defaultContextVaue: FetchContextType = {
   defaults: DEFAULTS,
   attempts: ATTEMPTS,
   attemptInterval: ATTEMPT_INTERVAL,
@@ -146,7 +146,8 @@ const defaultContextVaue = {
   onOnline: ON_ONLINE,
   online: ONLINE,
   retryOnReconnect: RETRY_ON_RECONNECT,
-  revalidateOnMount: REVALIDATE_ON_MOUNT
+  revalidateOnMount: REVALIDATE_ON_MOUNT,
+  cacheIfError: true
 }
 
 export const FetchContext = createContext<FetchContextType>(defaultContextVaue)
