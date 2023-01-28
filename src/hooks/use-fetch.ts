@@ -72,7 +72,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 ) {
   const ctx = useHRFContext()
 
-  const isRequest = init instanceof Request
+  const isRequest = init instanceof Object && init?.json
 
   const optionsConfig =
     typeof init === 'string'
@@ -88,7 +88,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           init,
           ...options
         }
-      : init
+      : (init as FetchConfigType<FetchDataType, BodyType>)
 
   const {
     onOnline = ctx.onOnline,
