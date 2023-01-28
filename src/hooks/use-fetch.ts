@@ -902,7 +902,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     return () => {
       requestsProvider.removeListener(resolvedKey, waitFormUpdates)
     }
-  }, [JSON.stringify(optionsConfig)])
+  }, [JSON.stringify(optionsConfig), requestCallId])
 
   const reValidate = React.useCallback(
     async function reValidate() {
@@ -985,7 +985,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         }
       }
     }
-  }, [onOnline, reValidate, resolvedKey, retryOnReconnect])
+  }, [onOnline, reValidate, requestCallId, resolvedKey, retryOnReconnect])
 
   useEffect(() => {
     function wentOffline() {
@@ -1021,7 +1021,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         }
       }
     }
-  }, [onOffline, reValidate, resolvedKey, retryOnReconnect])
+  }, [onOffline, reValidate, requestCallId, resolvedKey, retryOnReconnect])
 
   useEffect(() => {
     return () => {
@@ -1363,7 +1363,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const isLoading = isPending(resolvedKey) || loading
 
-  const isFailed = hasErrors[resolvedDataKey] || hasErrors[resolvedKey] || error
+  const isFailed =
+    (hasErrors[resolvedDataKey] || hasErrors[resolvedKey] || error) && !loading
 
   const responseData = (error ? cacheIfError : true) ? cachedData : def
 
