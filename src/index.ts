@@ -36,7 +36,15 @@ export {
   useResponseTime,
   useRequestEnd,
   useRequestStart,
-  useFetchSuspense
+  useFetchSuspense,
+  useExpiration,
+  useFetch,
+  useHasData,
+  useLoadingFirst,
+  useOnline,
+  useReFetch,
+  useRevalidating,
+  useSuccess
 } from './hooks'
 
 export { FetchConfig, SSRSuspense } from './components/server'
@@ -46,7 +54,7 @@ export { gql, queryProvider, mutateData, revalidate } from './utils'
 export { defaultCache } from './internal'
 
 export {
-  HttpReact,
+  Client,
   setURLParams,
   hasBaseUrl,
   isDefined,

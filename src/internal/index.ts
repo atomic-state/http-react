@@ -39,6 +39,27 @@ export const previousProps: any = {}
 export const valuesMemory: any = {}
 
 /**
+ * Online / offline
+ */
+export const onlineHandled: any = {}
+
+export const offlineHandled: any = {}
+
+/**
+ * To let know if it's revalidating there is at least one succesful request
+ */
+
+export const hasData: any = {}
+
+/**
+ * Max pagination age
+ */
+
+export const pageStarted: any = {}
+
+export const maxAges: any = {}
+
+/**
  * For Suspense
  */
 
