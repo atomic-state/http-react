@@ -46,6 +46,7 @@ export type FetchContextType = {
   retryOnReconnect?: boolean
   cacheProvider?: CacheStoreType
   revalidateOnMount?: boolean
+  cacheIfError?: boolean
   onFetchStart?(
     req: Request,
     config: FetchConfigType,
@@ -299,6 +300,12 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
    * Will run when the response is received
    */
   onFetchEnd?: FetchContextType['onFetchEnd']
+  /**
+   * If `true`, the last resolved value be returned as `data` if the request fails. If `false`, the default value will be returned instead
+   *
+   * @default true
+   */
+  cacheIfError?: boolean
 }
 
 // If first argument is a string

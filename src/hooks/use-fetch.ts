@@ -53,6 +53,7 @@ import {
   hasBaseUrl,
   isDefined,
   isFunction,
+  jsonCompare,
   notNull,
   queue,
   serialize,
@@ -105,7 +106,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     revalidateOnFocus = ctx.revalidateOnFocus,
     suspense: $suspense,
     onFetchStart = ctx.onFetchStart,
-    onFetchEnd = ctx.onFetchEnd
+    onFetchEnd = ctx.onFetchEnd,
+    cacheIfError = ctx.cacheIfError
   } = optionsConfig
 
   const config = {
@@ -183,7 +185,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const paginationCache = cacheProvider.get(resolvedDataKey)
   const normalCache = cacheProvider.get(resolvedKey)
-  const thisCache = isDefined(paginationCache) ? paginationCache : normalCache
 
   const suspense = $suspense || willSuspend[resolvedKey]
 
@@ -223,8 +224,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     )
   )
 
-  const [resKey, qp] = realUrl.split('?')
-
   // This helps pass default values to other useFetch calls using the same id
   useEffect(() => {
     if (isDefined(optionsConfig.default)) {
@@ -251,10 +250,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }, [resolvedKey])
 
-  const def =
-    resolvedKey in fetcherDefaults
-      ? fetcherDefaults[resolvedKey]
-      : optionsConfig.default
+  const def = optionsConfig?.default ?? fetcherDefaults[resolvedKey]
 
   useEffect(() => {
     if (!canRevalidate) {
@@ -264,15 +260,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const requestCache = cacheProvider.get(resolvedDataKey)
 
-  const initialDataValue = isDefined(valuesMemory[resolvedKey])
-    ? valuesMemory[resolvedKey]
-    : isDefined(cacheProvider.get(resolvedDataKey))
-    ? cacheProvider.get(resolvedDataKey)
-    : def
+  const initialDataValue = valuesMemory[resolvedKey] ?? requestCache ?? def
 
-  const [data, setData] = useState<FetchDataType | undefined>(
-    memory ? initialDataValue : def
-  )
+  const [data, setData] = useState<FetchDataType | undefined>(initialDataValue)
+
+  const thisCache = paginationCache ?? normalCache ?? data
 
   // Used JSON as deppendency instead of directly using a reference to data
   const rawJSON = serialize(data)
@@ -294,8 +286,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   )
   const [completedAttempts, setCompletedAttempts] = useState(0)
 
-  const [requestAbortController, setRequestAbortController] =
-    useState<AbortController>(new AbortController())
+  const requestAbortController: AbortController =
+    abortControllers[resolvedKey] ?? new AbortController()
 
   useEffect(() => {
     if (url !== '') {
@@ -365,10 +357,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         if (!isPending(resolvedKey)) {
           previousConfig[resolvedKey] = serialize(optionsConfig)
           runningRequests[resolvedKey] = true
-          setLoading(true)
           let newAbortController = new AbortController()
-          setRequestAbortController(newAbortController)
-          setError(null)
+          setLoading(true)
           hasErrors[resolvedKey] = null
           requestsProvider.emit(resolvedKey, {
             requestCallId,
@@ -411,10 +401,16 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             const code = json.status
             statusCodes[resolvedKey] = code
 
+            React.startTransition(() => {
+              setError(null)
+            })
+
             requestsProvider.emit(resolvedKey, {
               requestCallId,
-              response: json
+              response: json,
+              error: null
             })
+
             requestsProvider.emit(resolvedKey, {
               requestCallId,
               code
@@ -443,12 +439,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                   }
                 }
               }
-              if (memory) {
-                cacheProvider.set(resolvedDataKey, __data)
-                cacheProvider.set(resolvedKey, __data)
-                valuesMemory[resolvedKey] = __data
-              }
-
+              cacheProvider.set(resolvedDataKey, __data)
+              cacheProvider.set(resolvedKey, __data)
+              valuesMemory[resolvedKey] = __data
               requestsProvider.emit(resolvedKey, {
                 requestCallId,
                 data: __data,
@@ -511,7 +504,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 }
               } else {
                 if (def) {
-                  setData(def)
+                  setData(thisCache)
                   cacheForMutation[idString] = def
                   requestsProvider.emit(resolvedKey, {
                     requestCallId,
@@ -543,30 +536,28 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           } catch (err) {
             const errorString = err?.toString()
             // Only set error if no abort
-            if (!`${errorString}`.match(/abort/i)) {
+            if (!/abort/i.test(errorString)) {
               let _error = new Error(err as any)
               requestsProvider.emit(resolvedKey, {
                 requestCallId,
                 error: _error
               })
-              if (!isDefined(cacheProvider.get(resolvedDataKey))) {
-                if (notNull(def)) {
-                  setData(def)
-                  cacheForMutation[idString] = def
+              if (cacheIfError) {
+                if (notNull(thisCache) && isDefined(thisCache)) {
+                  setData(thisCache)
+                  cacheForMutation[idString] = thisCache
                   requestsProvider.emit(resolvedKey, {
                     requestCallId,
-                    data: def
+                    data: thisCache
                   })
                 }
               } else {
-                if (notNull(requestCache)) {
-                  setData(requestCache)
-                  cacheForMutation[idString] = requestCache
-                  requestsProvider.emit(resolvedKey, {
-                    requestCallId,
-                    data: requestCache
-                  })
-                }
+                setData(def)
+                cacheForMutation[idString] = def
+                requestsProvider.emit(resolvedKey, {
+                  requestCallId,
+                  data: def
+                })
               }
               setError(_error)
               requestsProvider.emit(resolvedKey, {
@@ -581,15 +572,17 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 }
               }
             } else {
-              if (!isDefined(cacheProvider.get(resolvedDataKey))) {
-                if (isDefined(def)) {
-                  setData(def)
-                  cacheForMutation[idString] = def
+              if (!isPending(resolvedKey)) {
+                if (!isDefined(cacheProvider.get(resolvedDataKey))) {
+                  if (isDefined(def)) {
+                    setData(def)
+                    cacheForMutation[idString] = def
+                  }
+                  requestsProvider.emit(resolvedKey, {
+                    requestCallId,
+                    data: def
+                  })
                 }
-                requestsProvider.emit(resolvedKey, {
-                  requestCallId,
-                  data: def
-                })
               }
             }
           } finally {
@@ -713,39 +706,26 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
 
       if (v.requestCallId !== requestCallId) {
-        if (isDefined(completedAttempts)) {
-          queue(() => {
+        React.startTransition(() => {
+          if (isDefined(completedAttempts)) {
             setCompletedAttempts(completedAttempts)
-          })
-        }
-        if (isDefined(requestAbortController)) {
-          queue(() => {
-            setRequestAbortController(requestAbortController)
-          })
-        }
-        if (isDefined(loading)) {
-          queue(() => {
+          }
+          if (isDefined(loading)) {
             setLoading(loading)
-          })
-        }
-        if (isDefined($data)) {
-          queue(() => {
+          }
+          if (isDefined($data)) {
             setData($data)
             cacheProvider.set(resolvedDataKey, $data)
             cacheProvider.set(resolvedKey, $data)
-          })
-        }
-        if (isDefined($error)) {
-          queue(() => {
+          }
+          if (isDefined($error)) {
             setError($error)
             hasErrors[resolvedKey] = $error
-          })
-        }
-        if (isDefined(online)) {
-          queue(() => {
+          }
+          if (isDefined(online)) {
             setOnline(online)
-          })
-        }
+          }
+        })
       }
     }
 
@@ -1150,7 +1130,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             if (previousConfig[resolvedKey] !== serialize(optionsConfig)) {
               setLoading(() => {
                 requestAbortController?.abort()
-                initializeRevalidation()
+                queue(() => {
+                  initializeRevalidation()
+                })
                 return true
               })
             }
@@ -1181,7 +1163,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       if (cancelOnChange) {
         setLoading(() => {
           requestAbortController?.abort()
-          initializeRevalidation()
+          queue(() => {
+            initializeRevalidation()
+          })
           return true
         })
       }
@@ -1200,12 +1184,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     return () => {}
   }, [serialize(optionsConfig)])
 
-  const resolvedData = React.useMemo(() => thisCache, [serialize(thisCache)])
-
   const dateIfNotExists = null
 
+  const cachedData = React.useMemo(() => thisCache, [serialize(thisCache)])
+
   return {
-    data: resolvedData,
+    data: cachedData,
     loading: isPending(resolvedKey) || loading,
     error: hasErrors[resolvedKey] || error,
     online,
