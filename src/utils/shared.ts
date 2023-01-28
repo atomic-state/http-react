@@ -8,6 +8,11 @@ export function notNull(target: any) {
   return target !== null
 }
 
+export function getRequestHeaders(req: Request) {
+  // @ts-ignore Gets the request headers
+  return Object.fromEntries(new Headers(req.headers).entries())
+}
+
 export function isDefined(target: any) {
   return typeof target !== 'undefined'
 }
@@ -223,7 +228,7 @@ const createImperativeFetch = (ctx: FetchContextType) => {
       keys.map(k => [
         k.toLowerCase(),
         (url, config = {}) =>
-          (HttpReact as any)[k.toLowerCase()](
+          (Client as any)[k.toLowerCase()](
             hasBaseUrl(url) ? url : baseUrl + url,
             {
               ...ctx,
@@ -235,19 +240,19 @@ const createImperativeFetch = (ctx: FetchContextType) => {
   ) as ImperativeFetch
 }
 
-const HttpReact = () => {}
+const Client = () => {}
 
-HttpReact.get = createRequestFn('GET', '', {})
-HttpReact.delete = createRequestFn('DELETE', '', {})
-HttpReact.head = createRequestFn('HEAD', '', {})
-HttpReact.options = createRequestFn('OPTIONS', '', {})
-HttpReact.post = createRequestFn('POST', '', {})
-HttpReact.put = createRequestFn('PUT', '', {})
-HttpReact.patch = createRequestFn('PATCH', '', {})
-HttpReact.purge = createRequestFn('PURGE', '', {})
-HttpReact.link = createRequestFn('LINK', '', {})
-HttpReact.unlink = createRequestFn('UNLINK', '', {})
+Client.get = createRequestFn('GET', '', {})
+Client.delete = createRequestFn('DELETE', '', {})
+Client.head = createRequestFn('HEAD', '', {})
+Client.options = createRequestFn('OPTIONS', '', {})
+Client.post = createRequestFn('POST', '', {})
+Client.put = createRequestFn('PUT', '', {})
+Client.patch = createRequestFn('PATCH', '', {})
+Client.purge = createRequestFn('PURGE', '', {})
+Client.link = createRequestFn('LINK', '', {})
+Client.unlink = createRequestFn('UNLINK', '', {})
 
-HttpReact.extend = createImperativeFetch
+Client.extend = createImperativeFetch
 
-export { HttpReact }
+export { Client }

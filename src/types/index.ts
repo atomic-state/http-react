@@ -57,6 +57,7 @@ export type FetchContextType = {
     config: FetchConfigType,
     ctx: FetchContextType
   ): void
+  maxCacheAge?: TimeSpan
 } & Omit<RequestInit, 'body'>
 
 export type CacheStoreType = {
@@ -306,6 +307,19 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
    * @default true
    */
   cacheIfError?: boolean
+  /**
+   * If `true`, the request will be overwriten with other configurations passed to `useFetch` (such as method, query, params, body, etc)
+   * @default true
+   */
+  overwrite?: boolean
+  /**
+   * The max age a page should be cached (with no request)
+   */
+  maxCacheAge?: TimeSpan
+  /**
+   * Similar to `resolver` but takes the data coming from resolver instead of the actual response
+   */
+  middleware?: <R = FetchDataType>(data: R) => FetchDataType
 }
 
 // If first argument is a string

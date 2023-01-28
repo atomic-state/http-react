@@ -192,6 +192,34 @@ export function useFetchMutate<T = any>(
   return mutate
 }
 
+export function useOnline(id: any) {
+  return useFetch({ id }).online
+}
+
+export function useLoadingFirst(id: any) {
+  return useFetch({ id }).loadingFirst
+}
+
+export function useReFetch(id: any) {
+  return useFetch({ id }).reFetch
+}
+
+export function useRevalidating(id: any) {
+  return useFetch({ id }).revalidating
+}
+
+export function useExpiration(id: any) {
+  return useFetch({ id }).expiration
+}
+
+export function useHasData(id: any) {
+  return useFetch({ id }).hasData
+}
+
+export function useSuccess(id: any) {
+  return useFetch({ id }).success
+}
+
 /**
  * Get everything from a `useFetch` call using its id
  */

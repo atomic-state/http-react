@@ -27,5 +27,12 @@ export {
   useResolve,
   useGql,
   useImperative,
-  useFetchSuspense
+  useFetchSuspense,
+  useExpiration,
+  useHasData,
+  useLoadingFirst,
+  useOnline,
+  useReFetch,
+  useRevalidating,
+  useSuccess
 } from './others'
