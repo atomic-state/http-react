@@ -301,12 +301,14 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     data: initialDataValue,
     online: true,
     loading:
-      isPending(resolvedKey) ||
-      (revalidateOnMount
-        ? suspense
-          ? isPending(resolvedKey)
-          : true
-        : previousConfig[resolvedKey] !== serialize(optionsConfig)),
+      url !== '' && auto
+        ? isPending(resolvedKey) ||
+          (revalidateOnMount
+            ? suspense
+              ? isPending(resolvedKey)
+              : true
+            : previousConfig[resolvedKey] !== serialize(optionsConfig))
+        : false,
     error: (hasErrors[resolvedDataKey] || null) as boolean,
     completedAttempts: 0
   })
@@ -460,7 +462,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           }
         })
         if (!isPending(resolvedKey)) {
-          runningRequests[resolvedKey] = true
+          runningRequests[resolvedKey] = auto
           hasErrors[resolvedDataKey] = null
           hasErrors[resolvedKey] = null
 
@@ -1127,17 +1129,19 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   if (suspense) {
-    if (windowExists) {
-      if (!suspenseInitialized[resolvedKey]) {
-        if (!suspenseRevalidationStarted[resolvedKey]) {
-          suspenseRevalidationStarted[resolvedKey] = initializeRevalidation()
+    if (auto) {
+      if (windowExists) {
+        if (!suspenseInitialized[resolvedKey]) {
+          if (!suspenseRevalidationStarted[resolvedKey]) {
+            suspenseRevalidationStarted[resolvedKey] = initializeRevalidation()
+          }
+          throw suspenseRevalidationStarted[resolvedKey]
         }
-        throw suspenseRevalidationStarted[resolvedKey]
-      }
-    } else {
-      throw {
-        message:
-          "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
+      } else {
+        throw {
+          message:
+            "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
+        }
       }
     }
   }
@@ -1279,13 +1283,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         try {
           if (url !== '') {
             if (previousConfig[resolvedKey] !== serialize(optionsConfig)) {
-              setLoading(() => {
-                requestAbortController?.abort()
-                queue(() => {
-                  initializeRevalidation()
+              if (auto) {
+                setLoading(() => {
+                  requestAbortController?.abort()
+                  queue(() => {
+                    initializeRevalidation()
+                  })
+                  return true
                 })
-                return true
-              })
+              }
             }
           }
         } catch (err) {}
@@ -1312,13 +1318,17 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         previousProps[resolvedKey] = optionsConfig
       }
       if (cancelOnChange) {
-        setLoading(() => {
-          requestAbortController?.abort()
-          queue(() => {
-            initializeRevalidation()
-          })
-          return true
-        })
+        if (url !== '') {
+          if (auto) {
+            setLoading(() => {
+              requestAbortController?.abort()
+              queue(() => {
+                initializeRevalidation()
+              })
+              return true
+            })
+          }
+        }
       }
       if (canRevalidate && url !== '') {
         const debounceTimeout = setTimeout(() => {
