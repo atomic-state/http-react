@@ -1095,7 +1095,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, loading, error, rawJSON, completedAttempts, config])
 
-  // @todo - Fix debouncing (currently not working)
   const debounce = optionsConfig.debounce
     ? getMiliseconds(optionsConfig.debounce)
     : 0
@@ -1130,17 +1129,19 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   if (suspense) {
-    if (windowExists) {
-      if (!suspenseInitialized[resolvedKey]) {
-        if (!suspenseRevalidationStarted[resolvedKey]) {
-          suspenseRevalidationStarted[resolvedKey] = initializeRevalidation()
+    if (auto) {
+      if (windowExists) {
+        if (!suspenseInitialized[resolvedKey]) {
+          if (!suspenseRevalidationStarted[resolvedKey]) {
+            suspenseRevalidationStarted[resolvedKey] = initializeRevalidation()
+          }
+          throw suspenseRevalidationStarted[resolvedKey]
         }
-        throw suspenseRevalidationStarted[resolvedKey]
-      }
-    } else {
-      throw {
-        message:
-          "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
+      } else {
+        throw {
+          message:
+            "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
+        }
       }
     }
   }
