@@ -4,6 +4,7 @@ import { useGql } from '../hooks/others'
 import { useFetch } from '../hooks/use-fetch'
 
 import {
+  abortControllers,
   cacheForMutation,
   previousConfig,
   requestInitialTimes,
@@ -80,7 +81,7 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
 /**
  * Revalidate requests that match an id or ids
  */
-export function revalidate(id: any | any[]) {
+export function revalidate(id: any | any[], __reval__ = true) {
   if (Array.isArray(id)) {
     id.map(reqId => {
       if (isDefined(reqId)) {
@@ -88,9 +89,17 @@ export function revalidate(id: any | any[]) {
 
         const resolveKey = serialize({ idString: key })
 
-        previousConfig[resolveKey] = undefined
+        if (__reval__) {
+          previousConfig[resolveKey] = undefined
+        }
 
-        requestsProvider.emit(key, {})
+        abortControllers[resolveKey]?.abort()
+
+        if (__reval__) {
+          queue(() => {
+            requestsProvider.emit(key, {})
+          })
+        }
       }
     })
   } else {
@@ -99,11 +108,23 @@ export function revalidate(id: any | any[]) {
 
       const resolveKey = serialize({ idString: key })
 
-      previousConfig[resolveKey] = undefined
+      if (__reval__) {
+        previousConfig[resolveKey] = undefined
+      }
 
-      requestsProvider.emit(key, {})
+      abortControllers[resolveKey]?.abort()
+
+      if (__reval__) {
+        queue(() => {
+          requestsProvider.emit(key, {})
+        })
+      }
     }
   }
+}
+
+export function cancelRequest(id: any | any[]) {
+  revalidate(id, false)
 }
 
 export function gql<T = any, VT = { [k: string]: any }>(...args: any) {

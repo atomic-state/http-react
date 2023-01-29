@@ -291,6 +291,7 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
   formatBody?: boolean | ((b: BodyType) => any)
   /**
    * The time to wait before revalidation after props change
+   * @deprecated Use the `useDebounceFetch` hook instead
    */
   debounce?: TimeSpan
   /**
