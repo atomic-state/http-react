@@ -337,8 +337,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     })
   }
 
-  const thisCache = paginationCache ?? normalCache ?? data
-
+  const thisCache = paginationCache ?? normalCache ?? data ?? def ?? null
   // Used JSON as deppendency instead of directly using a reference to data
   const rawJSON = serialize(data)
 
@@ -553,9 +552,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
             const resolvedDate = Date.now()
 
-            hasData[resolvedDataKey] = true
-            hasData[resolvedKey] = true
-
             cacheProvider.set(
               'expiration' + resolvedDataKey,
               resolvedDate + maxAge
@@ -581,6 +577,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
             const _data = await (resolver as any)(json)
             if (code >= 200 && code < 400) {
+              hasData[resolvedDataKey] = true
+              hasData[resolvedKey] = true
+
               rpc = {
                 ...rpc,
                 error: null
@@ -656,7 +655,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 cacheForMutation[resolvedKey] = __data
               })
             } else {
+              if (!cacheIfError) {
+                hasData[resolvedDataKey] = false
+                hasData[resolvedKey] = false
+              }
               if (_data.errors && isGqlRequest) {
+                if (!cacheIfError) {
+                  hasData[resolvedDataKey] = false
+                  hasData[resolvedKey] = false
+                }
                 setFetchState(previous => {
                   const newData = {
                     ...previous,
@@ -718,6 +725,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             const errorString = err?.toString()
             // Only set error if no abort
             if (!/abort/i.test(errorString)) {
+              if (!cacheIfError) {
+                hasData[resolvedDataKey] = false
+                hasData[resolvedKey] = false
+              }
+
               let _error = new Error(err as any)
 
               rpc = {
@@ -1345,13 +1357,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     return () => {}
   }, [serialize(optionsConfig)])
 
-  const dateIfNotExists = null
-
-  const cachedData = React.useMemo(
-    () => thisCache,
-    [serialize(thisCache), resolvedDataKey]
-  )
-
   const [$requestStart, $requestEnd] = [
     notNull(cacheProvider.get('requestStart' + resolvedDataKey))
       ? new Date(cacheProvider.get('requestStart' + resolvedDataKey))
@@ -1374,17 +1379,22 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   const isLoading = isPending(resolvedKey) || loading
 
   const isFailed =
-    (hasErrors[resolvedDataKey] || hasErrors[resolvedKey] || error) && !loading
+    (hasErrors[resolvedDataKey] || hasErrors[resolvedKey] || error) &&
+    !isLoading
 
-  const responseData = (error ? cacheIfError : true) ? cachedData : def
-
-  const oneRequestResolved =
-    hasData[resolvedDataKey] || hasData[resolvedKey] || isDefined(responseData)
+  const responseData =
+    (error && isFailed ? (cacheIfError ? thisCache : null) : thisCache) ?? def
 
   const isSuccess = !isLoading && !isFailed
 
   const loadingFirst =
     !(hasData[resolvedDataKey] || hasData[resolvedKey]) && isLoading
+
+  const oneRequestResolved =
+    !loadingFirst &&
+    (hasData[resolvedDataKey] ||
+      hasData[resolvedKey] ||
+      (cacheIfError ? isDefined(responseData) && notNull(responseData) : false))
 
   return {
     revalidating: oneRequestResolved && isLoading,
@@ -1397,7 +1407,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     responseTime: requestResponseTimes[resolvedDataKey] ?? null,
     data: responseData,
     loading: isLoading,
-    error: isFailed,
+    error: isFailed || false,
     online,
     code: statusCodes[resolvedKey],
     reFetch: reValidate,
