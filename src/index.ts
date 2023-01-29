@@ -44,12 +44,19 @@ export {
   useOnline,
   useReFetch,
   useRevalidating,
-  useSuccess
+  useSuccess,
+  useDebounceFetch
 } from './hooks'
 
 export { FetchConfig, SSRSuspense } from './components/server'
 
-export { gql, queryProvider, mutateData, revalidate } from './utils'
+export {
+  gql,
+  queryProvider,
+  mutateData,
+  revalidate,
+  cancelRequest
+} from './utils'
 
 export { defaultCache } from './internal'
 

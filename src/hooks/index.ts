@@ -34,5 +34,6 @@ export {
   useOnline,
   useReFetch,
   useRevalidating,
-  useSuccess
+  useSuccess,
+  useDebounceFetch
 } from './others'
