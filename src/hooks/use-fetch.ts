@@ -201,6 +201,17 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const maxAge = getMiliseconds(maxCacheAge || '0 ms')
 
+  // Revalidates if passed maxCacheAge has changed
+
+  if (!cacheProvider.get('maxAgeValue' + resolvedDataKey)) {
+    cacheProvider.set('maxAgeValue' + resolvedDataKey, maxCacheAge || '0 ms')
+  } else {
+    if (cacheProvider.get('maxAgeValue' + resolvedDataKey) !== maxCacheAge) {
+      cacheProvider.set(ageKey, 0)
+      cacheProvider.set('maxAgeValue' + resolvedDataKey, maxCacheAge)
+    }
+  }
+
   if (
     !isDefined(cacheProvider.get(ageKey)) ||
     !notNull(cacheProvider.get(ageKey))
@@ -208,10 +219,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     cacheProvider.set(ageKey, maxAge)
   }
 
-  const isExpired = React.useMemo(
-    () => Date.now() > cacheProvider.get(ageKey),
-    [serialize(optionsConfig)]
-  )
+  const isExpired = Date.now() > cacheProvider.get(ageKey)
+
+  const debounce = optionsConfig.debounce
+    ? getMiliseconds(optionsConfig.debounce)
+    : 0
 
   const canRevalidate = auto && isExpired
 
@@ -471,6 +483,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           previousConfig[resolvedKey] = serialize(optionsConfig)
 
           let newAbortController = new AbortController()
+
+          cacheProvider.set(ageKey, Date.now() - 1)
 
           // @ts-ignore null is a falsy value
           setFetchState(prev => ({
@@ -920,9 +934,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const reValidate = React.useCallback(
     async function reValidate() {
-      revalidate(id)
+      if (!isPending(resolvedKey) && !loading) {
+        revalidate(id)
+      }
     },
-    [serialize(id)]
+    [serialize(id), loading]
   )
 
   useEffect(() => {
@@ -954,6 +970,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     canRevalidate,
     ctx.auto,
     idString,
+    fetchState,
     id
   ])
 
@@ -1040,19 +1057,23 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   useEffect(() => {
     return () => {
       if (revalidateOnMount) {
-        if (suspenseInitialized[resolvedKey]) {
-          queue(() => {
-            previousConfig[resolvedKey] = undefined
-            hasErrors[resolvedKey] = null
-            hasErrors[resolvedDataKey] = null
-            runningRequests[resolvedKey] = false
-            // Wait for 100ms after suspense unmount
-          }, 100)
-        } else {
-          previousConfig[resolvedKey] = undefined
-          hasErrors[resolvedKey] = null
-          hasErrors[resolvedDataKey] = null
-          runningRequests[resolvedKey] = false
+        if (canRevalidate) {
+          if (url !== '') {
+            if (suspenseInitialized[resolvedKey]) {
+              queue(() => {
+                previousConfig[resolvedKey] = undefined
+                hasErrors[resolvedKey] = null
+                hasErrors[resolvedDataKey] = null
+                runningRequests[resolvedKey] = false
+                // Wait for 100ms after suspense unmount
+              }, 100)
+            } else {
+              previousConfig[resolvedKey] = undefined
+              hasErrors[resolvedKey] = null
+              hasErrors[resolvedDataKey] = null
+              runningRequests[resolvedKey] = false
+            }
+          }
         }
       }
     }
@@ -1106,10 +1127,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     return () => {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, loading, error, rawJSON, completedAttempts, config])
-
-  const debounce = optionsConfig.debounce
-    ? getMiliseconds(optionsConfig.debounce)
-    : 0
 
   const initializeRevalidation = React.useCallback(
     async function initializeRevalidation() {
@@ -1376,7 +1393,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
     : null
 
-  const isLoading = isPending(resolvedKey) || loading
+  const isLoading = isExpired ? isPending(resolvedKey) || loading : false
 
   const isFailed =
     (hasErrors[resolvedDataKey] || hasErrors[resolvedKey] || error) &&

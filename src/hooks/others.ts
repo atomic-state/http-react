@@ -7,7 +7,8 @@ import {
   FetchConfigTypeNoUrl,
   FetchContextType,
   FetchInit,
-  ImperativeFetch
+  ImperativeFetch,
+  TimeSpan
 } from '../types'
 
 import {
@@ -24,7 +25,7 @@ import {
 
 import { useFetch } from './use-fetch'
 
-import { createImperativeFetch } from '../utils'
+import { createImperativeFetch, getMiliseconds } from '../utils'
 
 import { isDefined, isFunction, serialize } from '../utils/shared'
 
@@ -484,6 +485,39 @@ export function useRequestEnd(id: any) {
   return useFetch({
     id
   }).requestEnd
+}
+
+/**
+ * Debounce a fetch by the time given
+ */
+export function useDebounceFetch<FetchDataType = any, BodyType = any>(
+  init:
+    | (Omit<FetchConfigType<FetchDataType, BodyType>, 'debounce'> & {
+        debounce?: TimeSpan
+      })
+    | string
+    | Request,
+  options?: Omit<FetchConfigTypeNoUrl<FetchDataType, BodyType>, 'debounce'> & {
+    debounce?: TimeSpan
+  }
+) {
+  const res = useFetch<FetchDataType, BodyType>(init, {
+    ...options,
+    auto: false
+  })
+
+  // @ts-ignore - debounce can be present in the first arg
+  const debounce = getMiliseconds(init?.debounce || options?.debounce || '0 ms')
+
+  useEffect(() => {
+    const debounceTimeout = setTimeout(res.reFetch, debounce)
+
+    return () => {
+      clearTimeout(debounceTimeout)
+    }
+  }, [serialize({ init, options })])
+
+  return res
 }
 
 /**
