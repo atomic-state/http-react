@@ -29,8 +29,11 @@ export function jsonCompare(a: any, b: any) {
   return JSON.stringify(a) === JSON.stringify(b)
 }
 
-export function serialize(input: any) {
-  return JSON.stringify(input)
+/**
+ * A serialize function that returns a JSON string
+ */
+export function serialize(input: any, replacer?: any, space?: any) {
+  return JSON.stringify(input, replacer, space)
 }
 
 export const isFormData = (target: any) => {
@@ -240,19 +243,21 @@ const createImperativeFetch = (ctx: FetchContextType) => {
   ) as ImperativeFetch
 }
 
-const Client = () => {}
-
-Client.get = createRequestFn('GET', '', {})
-Client.delete = createRequestFn('DELETE', '', {})
-Client.head = createRequestFn('HEAD', '', {})
-Client.options = createRequestFn('OPTIONS', '', {})
-Client.post = createRequestFn('POST', '', {})
-Client.put = createRequestFn('PUT', '', {})
-Client.patch = createRequestFn('PATCH', '', {})
-Client.purge = createRequestFn('PURGE', '', {})
-Client.link = createRequestFn('LINK', '', {})
-Client.unlink = createRequestFn('UNLINK', '', {})
-
-Client.extend = createImperativeFetch
+/**
+ * An Client for making HTTP Requests
+ */
+const Client = {
+  get: createRequestFn('GET', '', {}),
+  delete: createRequestFn('DELETE', '', {}),
+  head: createRequestFn('HEAD', '', {}),
+  options: createRequestFn('OPTIONS', '', {}),
+  post: createRequestFn('POST', '', {}),
+  put: createRequestFn('PUT', '', {}),
+  patch: createRequestFn('PATCH', '', {}),
+  purge: createRequestFn('PURGE', '', {}),
+  link: createRequestFn('LINK', '', {}),
+  unlink: createRequestFn('UNLINK', '', {}),
+  extend: createImperativeFetch
+}
 
 export { Client }

@@ -8,7 +8,9 @@
 
 export type { CacheStoreType, FetchInit } from './types'
 
-export { useFetch as default } from './hooks'
+import { useFetch } from './hooks'
+
+export default useFetch
 
 export {
   useData,
@@ -38,7 +40,6 @@ export {
   useRequestStart,
   useFetchSuspense,
   useExpiration,
-  useFetch,
   useHasData,
   useLoadingFirst,
   useOnline,
