@@ -501,6 +501,9 @@ export function useDebounceFetch<FetchDataType = any, BodyType = any>(
     debounce?: TimeSpan
   }
 ) {
+  // @ts-ignore - auto can be present in the first arg
+  const canDebounce = init?.auto ?? options?.auto ?? true
+
   const res = useFetch<FetchDataType, BodyType>(init, {
     ...options,
     auto: false
@@ -510,12 +513,14 @@ export function useDebounceFetch<FetchDataType = any, BodyType = any>(
   const debounce = getMiliseconds(init?.debounce || options?.debounce || '0 ms')
 
   useEffect(() => {
-    const debounceTimeout = setTimeout(res.reFetch, debounce)
-
+    let debounceTimeout: any = null
+    if (canDebounce) {
+      debounceTimeout = setTimeout(res.reFetch, debounce)
+    }
     return () => {
       clearTimeout(debounceTimeout)
     }
-  }, [serialize({ init, options })])
+  }, [serialize({ init, options }), canDebounce])
 
   return res
 }
