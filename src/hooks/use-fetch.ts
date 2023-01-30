@@ -64,6 +64,13 @@ import {
 } from '../utils/shared'
 
 /**
+ * Passing `undefined` to `new Date()` returns `Invalid Date {}`, so return null instead
+ */
+const getDateIfValid = (d: Date | null) =>
+  // @ts-ignore - Evals to a Date
+  (d?.toString() === 'Invalid Date' || d === null ? null : d) as Date
+
+/**
  * Fetch hook
  */
 export function useFetch<FetchDataType = any, BodyType = any>(
@@ -1418,9 +1425,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     hasData: oneRequestResolved,
     success: isSuccess,
     loadingFirst,
-    requestStart: $requestStart,
-    requestEnd: $requestEnd,
-    expiration: isFailed ? null : expirationDate,
+    requestStart: getDateIfValid($requestStart),
+    requestEnd: getDateIfValid($requestEnd),
+    expiration: getDateIfValid(isFailed ? null : expirationDate),
     responseTime: requestResponseTimes[resolvedDataKey] ?? null,
     data: responseData,
     loading: isLoading,
