@@ -101,7 +101,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     onOnline = ctx.onOnline,
     onOffline = ctx.onOffline,
     onMutate,
-    onPropsChange,
     revalidateOnMount = ctx.revalidateOnMount,
     url = '',
     query = {},
@@ -153,7 +152,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const willResolve = isDefined(onResolve)
   const handleError = isDefined(onError)
-  const handlePropsChange = isDefined(onPropsChange)
   const handleOnAbort = isDefined(onAbort)
   const handleMutate = isDefined(onMutate)
   const handleOnline = isDefined(onOnline)
@@ -334,6 +332,17 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const { data, loading, online, error, completedAttempts } = fetchState
 
+  const isLoading = isExpired ? isPending(resolvedKey) || loading : false
+
+  const loadingFirst =
+    !(hasData[resolvedDataKey] || hasData[resolvedKey]) && isLoading
+
+  if (!isExpired) {
+    if (error) {
+      setError(null)
+    }
+  }
+
   function setData(v: any) {
     setFetchState(p => {
       if (isFunction(v)) {
@@ -493,15 +502,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
           cacheProvider.set(ageKey, Date.now() - 1)
 
-          // @ts-ignore null is a falsy value
-          setFetchState(prev => ({
-            ...prev,
-            loading: true,
-            error: null
-          }))
-
           requestsProvider.emit(resolvedKey, {
-            requestCallId,
+            requestCallId: loadingFirst ? requestCallId : undefined,
             loading: true,
             requestAbortController: newAbortController,
             error: null
@@ -535,6 +537,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
             const r = isRequest
               ? new Request(realUrl + c.query, {
+                  ...ctx,
                   ...reqConfig,
                   ...optionsConfig,
                   signal: (() => {
@@ -544,16 +547,16 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                     'Content-Type': 'application/json',
                     ...ctx.headers,
                     ..._headers,
-                    ...optionsConfig.headers,
+                    ...config.headers,
                     ...c.headers
                   }
                 } as any)
               : new Request(realUrl + c.query, {
                   ...ctx,
+                  ...optionsConfig,
                   signal: (() => {
                     return newAbortController.signal
                   })(),
-                  ...optionsConfig,
                   body: isFunction(formatBody)
                     ? // @ts-ignore // If formatBody is a function
                       formatBody(optionsConfig?.body as any)
@@ -563,7 +566,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                     ...ctx.headers,
                     ...config.headers,
                     ...c.headers
-                  } as Headers
+                  }
                 })
             if (logStart) {
               ;(onFetchStart as any)(r, optionsConfig, ctx)
@@ -813,7 +816,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               ...p,
               data: $$data ?? p.data,
               error: isDefined($$error) ? $$error : p.error,
-              loading: false ?? p.loading,
+              loading: false,
               completedAttempts: $$completedAttempts ?? p.completedAttempts
             }))
 
@@ -828,6 +831,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               ...rpc
             })
 
+            willSuspend[resolvedKey] = false
             queue(() => {
               canDebounce[resolvedKey] = true
             }, debounce)
@@ -917,18 +921,24 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
 
       if (v.requestCallId !== requestCallId) {
-        queue(() => {
-          setFetchState(p => {
-            return {
-              ...p,
-              completedAttempts: completedAttempts ?? p.completedAttempts,
-              loading: loading ?? p.loading,
-              data: !jsonCompare($data, p.data) ? $data : p.data ?? p.data,
-              error: $error,
-              online: online ?? p.online
-            }
+        if (!willSuspend[resolvedKey]) {
+          queue(() => {
+            setFetchState(p => {
+              const n = {
+                ...p,
+                completedAttempts: completedAttempts ?? p.completedAttempts,
+                loading: loading ?? p.loading,
+                data: !jsonCompare($data, p.data) ? $data : p.data ?? p.data,
+                error: $error,
+                online: online ?? p.online
+              }
+
+              if (jsonCompare(n, p)) return p
+
+              return n
+            })
           })
-        })
+        }
       }
     }
 
@@ -937,7 +947,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     return () => {
       requestsProvider.removeListener(resolvedKey, waitFormUpdates)
     }
-  }, [JSON.stringify(optionsConfig), requestCallId])
+  }, [
+    JSON.stringify(optionsConfig),
+    resolvedKey,
+    resolvedDataKey,
+    requestCallId
+  ])
 
   const reValidate = React.useCallback(
     async function reValidate() {
@@ -1182,19 +1197,21 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  useEffect(() => {
-    if (windowExists) {
-      if (canRevalidate && url !== '') {
-        if (!jsonCompare(previousConfig[resolvedKey], optionsConfig)) {
-          if (!isPending(resolvedKey)) {
-            initializeRevalidation()
-          } else {
-            setLoading(true)
+  React.useMemo(() => {
+    if (!runningRequests[resolvedKey] && isExpired) {
+      if (windowExists) {
+        if (canRevalidate && url !== '') {
+          if (!jsonCompare(previousConfig[resolvedKey], optionsConfig)) {
+            if (!isPending(resolvedKey)) {
+              initializeRevalidation()
+            } else {
+              setLoading(true)
+            }
           }
         }
       }
     }
-  }, [resolvedKey, serialize(optionsConfig)])
+  }, [resolvedKey, serialize(optionsConfig), canRevalidate])
 
   useEffect(() => {
     const revalidateAfterUnmount = revalidateOnMount
@@ -1312,75 +1329,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  useEffect(() => {
-    const rev = {
-      revalidate: () => queue(() => revalidate(id)),
-      cancel: () => {
-        try {
-          if (url !== '') {
-            if (previousConfig[resolvedKey] !== serialize(optionsConfig)) {
-              if (auto) {
-                setLoading(() => {
-                  requestAbortController?.abort()
-                  queue(() => {
-                    initializeRevalidation()
-                  })
-                  return true
-                })
-              }
-            }
-          }
-        } catch (err) {}
-      },
-      fetcher: imperativeFetch,
-      props: optionsConfig,
-      previousProps: previousProps[resolvedKey]
-    }
-
-    queue(() => {
-      if (!canRevalidate && url !== '' && debounce) {
-        canDebounce[resolvedKey] = true
-      }
-    })
-
-    if (serialize(previousProps[resolvedKey]) !== serialize(optionsConfig)) {
-      if (debounce) {
-        canDebounce[resolvedKey] = true
-      }
-      if (handlePropsChange) {
-        ;(onPropsChange as any)(rev as any)
-      }
-      if (url !== '') {
-        previousProps[resolvedKey] = optionsConfig
-      }
-      if (cancelOnChange) {
-        if (url !== '') {
-          if (auto) {
-            setLoading(() => {
-              requestAbortController?.abort()
-              queue(() => {
-                initializeRevalidation()
-              })
-              return true
-            })
-          }
-        }
-      }
-      if (canRevalidate && url !== '') {
-        const debounceTimeout = setTimeout(() => {
-          initializeRevalidation()
-          if (suspenseInitialized[resolvedKey]) {
-          }
-        }, debounce)
-
-        return () => {
-          clearTimeout(debounceTimeout)
-        }
-      }
-    }
-    return () => {}
-  }, [serialize(optionsConfig)])
-
   const [$requestStart, $requestEnd] = [
     notNull(cacheProvider.get('requestStart' + resolvedDataKey))
       ? new Date(cacheProvider.get('requestStart' + resolvedDataKey))
@@ -1400,19 +1348,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
     : null
 
-  const isLoading = isExpired ? isPending(resolvedKey) || loading : false
-
-  const isFailed =
-    (hasErrors[resolvedDataKey] || hasErrors[resolvedKey] || error) &&
-    !isLoading
+  const isFailed = (hasErrors[resolvedDataKey] || error) && !isLoading
 
   const responseData =
     (error && isFailed ? (cacheIfError ? thisCache : null) : thisCache) ?? def
 
   const isSuccess = !isLoading && !isFailed
-
-  const loadingFirst =
-    !(hasData[resolvedDataKey] || hasData[resolvedKey]) && isLoading
 
   const oneRequestResolved =
     !loadingFirst &&
