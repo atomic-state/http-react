@@ -192,19 +192,6 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
     fetcher: ImperativeFetch
   ) => void
   /**
-   * Function to run when props change
-   */
-  onPropsChange?: (rev: {
-    revalidate: () => void
-    cancel: {
-      (reason?: any): void
-      (): void
-    }
-    fetcher: ImperativeFetch
-    props: FetchConfigTypeNoUrl<FetchDataType, BodyType>
-    previousProps: FetchConfigTypeNoUrl<FetchDataType, BodyType>
-  }) => void
-  /**
    * Function to run when the request fails
    */
   onError?: (error: Error, req?: Response) => void
@@ -309,18 +296,9 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
    */
   cacheIfError?: boolean
   /**
-   * If `true`, the request will be overwriten with other configurations passed to `useFetch` (such as method, query, params, body, etc)
-   * @default true
-   */
-  overwrite?: boolean
-  /**
    * The max age a page should be cached (with no request)
    */
   maxCacheAge?: TimeSpan
-  /**
-   * Similar to `resolver` but takes the data coming from resolver instead of the actual response
-   */
-  middleware?: <R = FetchDataType>(data: R) => FetchDataType
 }
 
 // If first argument is a string
