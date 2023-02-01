@@ -1178,6 +1178,14 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       suspenseInitialized[resolvedKey] = true
     }
   }
+  useEffect(() => {
+    if (url !== '') {
+      if (!jsonCompare(previousProps[resolvedKey], optionsConfig)) {
+        abortControllers[resolvedKey]?.abort()
+        queue(initializeRevalidation)
+      }
+    }
+  }, [serialize(optionsConfig)])
 
   if (suspense) {
     if (auto) {
