@@ -244,7 +244,7 @@ const createImperativeFetch = (ctx: FetchContextType) => {
       )
     ),
     config: ctx
-  } as unknown as ImperativeFetch
+  } as ImperativeFetch
 }
 
 /**

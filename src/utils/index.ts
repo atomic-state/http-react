@@ -67,7 +67,7 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
       new Map(
         keys.map(k => [
           k.toLowerCase(),
-          (url: string, config = {}) =>
+          (url, config = {}) =>
             (useFetch as any)[k.toLowerCase()](
               hasBaseUrl(url) ? url : baseUrl + url,
               {
@@ -79,7 +79,7 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
       )
     ),
     config: ctx
-  } as unknown as ImperativeFetch
+  } as ImperativeFetch
 }
 
 /**

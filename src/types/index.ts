@@ -13,7 +13,7 @@ export type HTTP_METHODS =
 export type FetchContextType = {
   fetcher?(
     url: string,
-    config: Omit<FetchConfigType, 'fetcher'>
+    config: FetchConfigType
   ): Promise<{
     json?: any
     data?: any
@@ -88,8 +88,7 @@ export type RequestWithBody = <R = any, BodyType = any>(
   /**
    * The request configuration
    */
-  reqConfig?: Omit<RequestInit, 'body'> & {
-    body?: BodyType
+  reqConfig?: Omit<RequestInit & FetchConfigType<R, BodyType>, 'suspense'> & {
     /**
      * Default value
      */
@@ -101,7 +100,7 @@ export type RequestWithBody = <R = any, BodyType = any>(
     /**
      * The function that formats the body
      */
-    formatBody?(b: BodyType): any
+    formatBody?: any
     /**
      * Request params (like Express)
      */

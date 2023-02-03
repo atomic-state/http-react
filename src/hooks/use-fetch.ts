@@ -607,7 +607,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               code
             }
 
-            // @ts-ignore - 'data' is priority if defined because it can come from a custom fetcher
+            // @ts-ignore - 'data' is priority because 'fetcher' can return it
             const _data = json?.['data'] ?? (await (resolver as any)(json))
             if (code >= 200 && code < 400) {
               hasData[resolvedDataKey] = true
