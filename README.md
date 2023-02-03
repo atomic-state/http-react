@@ -16,9 +16,13 @@ With one hook call, you get all the information about a request that you can use
 ```jsx
 import useFetch from "http-react"
 
+// This is the default
+const fetcher = (url, config) => fetch(url, config)
+
 export default function App() {
   const { data, loading, error, responseTime } = useFetch("/api/user-info", {
-    refresh: '30 sec'
+    refresh: '30 sec',
+    fetcher
   })
 
   if (loading) return <p>Loading</p>

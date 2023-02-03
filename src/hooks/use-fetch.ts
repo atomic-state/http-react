@@ -117,7 +117,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     onResolve,
     onAbort,
     refresh = isDefined(ctx.refresh) ? ctx.refresh : 0,
-    cancelOnChange = true,
     attempts = ctx.attempts,
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus,
@@ -125,8 +124,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     onFetchStart = ctx.onFetchStart,
     onFetchEnd = ctx.onFetchEnd,
     cacheIfError = ctx.cacheIfError,
-    maxCacheAge = ctx.maxCacheAge
+    maxCacheAge = ctx.maxCacheAge,
+    fetcher = ctx.fetcher
   } = optionsConfig
+
+  const $fetch = isFunction(fetcher) ? fetcher : fetch
 
   const config = {
     query,
@@ -535,44 +537,50 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             cacheProvider.set('requestStart' + resolvedDataKey, Date.now())
             requestInitialTimes[resolvedDataKey] = Date.now()
 
-            const r = isRequest
-              ? new Request(realUrl + c.query, {
-                  ...ctx,
-                  ...reqConfig,
-                  ...optionsConfig,
-                  signal: (() => {
-                    return newAbortController.signal
-                  })(),
-                  headers: {
-                    'Content-Type': 'application/json',
-                    ...ctx.headers,
-                    ..._headers,
-                    ...config.headers,
-                    ...c.headers
+            const newRequestConfig = (
+              isRequest
+                ? {
+                    ...ctx,
+                    ...reqConfig,
+                    ...optionsConfig,
+                    signal: (() => {
+                      return newAbortController.signal
+                    })(),
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...ctx.headers,
+                      ..._headers,
+                      ...config.headers,
+                      ...c.headers
+                    }
                   }
-                } as any)
-              : new Request(realUrl + c.query, {
-                  ...ctx,
-                  ...optionsConfig,
-                  signal: (() => {
-                    return newAbortController.signal
-                  })(),
-                  body: isFunction(formatBody)
-                    ? // @ts-ignore // If formatBody is a function
-                      formatBody(optionsConfig?.body as any)
-                    : optionsConfig?.body,
-                  headers: {
-                    'Content-Type': 'application/json',
-                    ...ctx.headers,
-                    ...config.headers,
-                    ...c.headers
+                : {
+                    ...ctx,
+                    ...optionsConfig,
+                    signal: (() => {
+                      return newAbortController.signal
+                    })(),
+                    body: isFunction(formatBody)
+                      ? // @ts-ignore // If formatBody is a function
+                        formatBody(optionsConfig?.body as any)
+                      : optionsConfig?.body,
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...ctx.headers,
+                      ...config.headers,
+                      ...c.headers
+                    }
                   }
-                })
+            ) as any
+
+            const r = new Request(realUrl + c.query, newRequestConfig)
+
             if (logStart) {
               ;(onFetchStart as any)(r, optionsConfig, ctx)
             }
 
-            const json = await fetch(r)
+            // @ts-ignore - This could use 'axios' or something similar
+            const json = await $fetch(r.url, newRequestConfig)
 
             const resolvedDate = Date.now()
 
@@ -587,7 +595,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
             lastResponses[resolvedKey] = json
 
-            const code = json.status
+            const code = json.status as number
             statusCodes[resolvedKey] = code
 
             $$error = false
@@ -599,7 +607,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               code
             }
 
-            const _data = await (resolver as any)(json)
+            // @ts-ignore - 'data' is priority because 'fetcher' can return it
+            const _data = json?.['data'] ?? (await (resolver as any)(json))
             if (code >= 200 && code < 400) {
               hasData[resolvedDataKey] = true
               hasData[resolvedKey] = true

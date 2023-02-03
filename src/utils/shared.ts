@@ -121,6 +121,7 @@ export function createRequestFn(
       headers,
       query = {},
       body,
+      method: $method = method,
       formatBody,
       resolver = DEFAULT_RESOLVER,
       onResolve = () => {},
@@ -134,7 +135,7 @@ export function createRequestFn(
       .join('&')
 
     const reqConfig = {
-      method,
+      method: $method,
       headers: {
         'Content-Type': 'application/json',
         ...$headers,
@@ -170,7 +171,7 @@ export function createRequestFn(
           res: req,
           data: def,
           error: true,
-          code: req?.status,
+          status: req?.status,
           config: {
             ...init,
             url: `${baseUrl || ''}${rawUrl}`,
@@ -184,7 +185,7 @@ export function createRequestFn(
           res: req,
           data: data,
           error: false,
-          code: req?.status,
+          status: req?.status,
           config: {
             ...init,
             url: `${baseUrl || ''}${rawUrl}`,
@@ -199,7 +200,7 @@ export function createRequestFn(
         res: r,
         data: def,
         error: true,
-        code: r?.status,
+        status: r?.status,
         config: {
           ...init,
           url: requestUrl,
@@ -226,21 +227,24 @@ const createImperativeFetch = (ctx: FetchContextType) => {
 
   const { baseUrl } = ctx
 
-  return Object.fromEntries(
-    new Map(
-      keys.map(k => [
-        k.toLowerCase(),
-        (url, config = {}) =>
-          (Client as any)[k.toLowerCase()](
-            hasBaseUrl(url) ? url : baseUrl + url,
-            {
-              ...ctx,
-              ...config
-            }
-          )
-      ])
-    )
-  ) as ImperativeFetch
+  return {
+    ...Object.fromEntries(
+      new Map(
+        keys.map(k => [
+          k.toLowerCase(),
+          (url: string, config = {}) =>
+            (Client as any)[k.toLowerCase()](
+              hasBaseUrl(url) ? url : baseUrl + url,
+              {
+                ...ctx,
+                ...config
+              }
+            )
+        ])
+      )
+    ),
+    config: ctx
+  } as ImperativeFetch
 }
 
 /**

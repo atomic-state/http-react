@@ -62,21 +62,24 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
 
   const { baseUrl } = ctx
 
-  return Object.fromEntries(
-    new Map(
-      keys.map(k => [
-        k.toLowerCase(),
-        (url, config = {}) =>
-          (useFetch as any)[k.toLowerCase()](
-            hasBaseUrl(url) ? url : baseUrl + url,
-            {
-              ...ctx,
-              ...config
-            }
-          )
-      ])
-    )
-  ) as ImperativeFetch
+  return {
+    ...Object.fromEntries(
+      new Map(
+        keys.map(k => [
+          k.toLowerCase(),
+          (url, config = {}) =>
+            (useFetch as any)[k.toLowerCase()](
+              hasBaseUrl(url) ? url : baseUrl + url,
+              {
+                ...ctx,
+                ...config
+              }
+            )
+        ])
+      )
+    ),
+    config: ctx
+  } as ImperativeFetch
 }
 
 /**
