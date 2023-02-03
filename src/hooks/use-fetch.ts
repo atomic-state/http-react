@@ -326,7 +326,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               : true
             : previousConfig[resolvedKey] !== serialize(optionsConfig))
         : false,
-    error: (hasErrors[resolvedDataKey] || null) as boolean,
+    error: (hasErrors[resolvedDataKey] || false) as boolean,
     completedAttempts: 0
   })
 
@@ -339,7 +339,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   if (!isExpired) {
     if (error) {
-      setError(null)
+      setError(false)
     }
   }
 
@@ -490,8 +490,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         })
         if (!isPending(resolvedKey)) {
           runningRequests[resolvedKey] = auto
-          hasErrors[resolvedDataKey] = null
-          hasErrors[resolvedKey] = null
+          hasErrors[resolvedDataKey] = false
+          hasErrors[resolvedKey] = false
 
           resolvedOnErrorCalls[resolvedKey] = false
           resolvedHookCalls[resolvedKey] = false
@@ -506,13 +506,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             requestCallId: loadingFirst ? requestCallId : undefined,
             loading: true,
             requestAbortController: newAbortController,
-            error: null
+            error: false
           })
 
           abortControllers[resolvedKey] = newAbortController
 
           let $$data: any
-          let $$error: any = null
+          let $$error: any = false
           let $$response
           let $$code
           let $$loading
@@ -590,12 +590,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             const code = json.status
             statusCodes[resolvedKey] = code
 
-            $$error = null
+            $$error = false
 
             rpc = {
               ...rpc,
               response: json,
-              error: null,
+              error: false,
               code
             }
 
@@ -606,7 +606,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
               rpc = {
                 ...rpc,
-                error: null
+                error: false
               }
 
               const dataExpirationTime = Date.now() + maxAge
@@ -644,7 +644,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 data: __data,
                 isResolved: true,
                 loading: false,
-                error: _data?.errors && isGqlRequest ? true : null,
+                error: _data?.errors && isGqlRequest,
                 variables: isGqlRequest
                   ? (optionsConfig as any)?.variables || {}
                   : undefined,
@@ -657,13 +657,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               if (!_data?.errors && isGqlRequest) {
                 rpc = {
                   ...rpc,
-                  error: null
+                  error: false
                 }
 
-                $$error = null
+                $$error = false
 
-                hasErrors[resolvedDataKey] = null
-                hasErrors[resolvedKey] = null
+                hasErrors[resolvedDataKey] = false
+                hasErrors[resolvedKey] = false
               }
               $$loading = false
               if (willResolve) {
@@ -797,28 +797,36 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 }
               }
             } else {
+              rpc = {
+                ...rpc,
+                loading: true
+              }
               if (!isPending(resolvedKey)) {
                 if (!isDefined(cacheProvider.get(resolvedDataKey))) {
                   if (isDefined(def)) {
                     $$data = def
                     cacheForMutation[idString] = def
                   }
-
                   rpc = {
                     ...rpc,
-                    data: def
+                    data: def,
+                    loading: true
                   }
                 }
               }
             }
           } finally {
-            setFetchState(p => ({
-              ...p,
-              data: $$data ?? p.data,
-              error: isDefined($$error) ? $$error : p.error,
-              loading: false,
-              completedAttempts: $$completedAttempts ?? p.completedAttempts
-            }))
+            setFetchState(p => {
+              const n = {
+                ...p,
+                data: $$data ?? p.data,
+                loading: rpc?.loading ?? false,
+                error: isDefined($$error) ? $$error : p.error,
+                completedAttempts: $$completedAttempts ?? p.completedAttempts
+              }
+              if (jsonCompare(n, p)) return p
+              return n
+            })
 
             runningRequests[resolvedKey] = false
             suspenseInitialized[resolvedKey] = true
@@ -827,7 +835,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               requestCallId,
               loading: false,
               error:
-                hasErrors[resolvedKey] || hasErrors[resolvedDataKey] || null,
+                hasErrors[resolvedKey] || hasErrors[resolvedDataKey] || false,
               ...rpc
             })
 
@@ -849,7 +857,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       realUrl,
       requestCallId,
       memory,
-      def
+      def,
+      loadingFirst
     ]
   )
 
@@ -926,11 +935,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             setFetchState(p => {
               const n = {
                 ...p,
-                completedAttempts: completedAttempts ?? p.completedAttempts,
-                loading: loading ?? p.loading,
                 data: !jsonCompare($data, p.data) ? $data : p.data ?? p.data,
+                online: online ?? p.online,
+                loading: loading ?? p.loading,
                 error: $error,
-                online: online ?? p.online
+                completedAttempts: completedAttempts ?? p.completedAttempts
               }
 
               if (jsonCompare(n, p)) return p
@@ -951,7 +960,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     JSON.stringify(optionsConfig),
     resolvedKey,
     resolvedDataKey,
-    requestCallId
+    requestCallId,
+    fetchState
   ])
 
   const reValidate = React.useCallback(
@@ -984,6 +994,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       requestsProvider.removeListener(idString, forceRefresh)
     }
   }, [
+    fetchState,
     resolvedKey,
     suspense,
     loading,
@@ -1084,15 +1095,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             if (suspenseInitialized[resolvedKey]) {
               queue(() => {
                 previousConfig[resolvedKey] = undefined
-                hasErrors[resolvedKey] = null
-                hasErrors[resolvedDataKey] = null
+                hasErrors[resolvedKey] = false
+                hasErrors[resolvedDataKey] = false
                 runningRequests[resolvedKey] = false
                 // Wait for 100ms after suspense unmount
               }, 100)
             } else {
               previousConfig[resolvedKey] = undefined
-              hasErrors[resolvedKey] = null
-              hasErrors[resolvedDataKey] = null
+              hasErrors[resolvedKey] = false
+              hasErrors[resolvedDataKey] = false
               runningRequests[resolvedKey] = false
             }
           }
@@ -1164,13 +1175,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           // It means a url is not passed
           setFetchState(prev => ({
             ...prev,
-            error: hasErrors[resolvedDataKey] || hasErrors[resolvedKey],
-            loading: false
+            loading: false,
+            error: hasErrors[resolvedDataKey] || hasErrors[resolvedKey]
           }))
         }
       }
     },
-    [serialize(serialize(optionsConfig))]
+    [serialize(serialize(optionsConfig)), fetchState]
   )
 
   if (!suspense) {
@@ -1389,8 +1400,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     abort: () => {
       abortControllers[resolvedKey]?.abort()
       if (loading) {
-        setError(null)
-        hasErrors[resolvedDataKey] = null
+        setError(false)
+        hasErrors[resolvedDataKey] = false
         setLoading(false)
         setData(requestCache)
         requestsProvider.emit(resolvedKey, {

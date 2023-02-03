@@ -6,6 +6,7 @@ import { useFetch } from '../hooks/use-fetch'
 import {
   abortControllers,
   cacheForMutation,
+  isPending,
   previousConfig,
   requestInitialTimes,
   requestsProvider,
@@ -96,9 +97,14 @@ export function revalidate(id: any | any[], __reval__ = true) {
         abortControllers[resolveKey]?.abort()
 
         if (__reval__) {
-          queue(() => {
-            requestsProvider.emit(key, {})
-          })
+          if (!isPending(key)) {
+            queue(() => {
+              requestsProvider.emit(key, {
+                loading: true,
+                error: false
+              })
+            })
+          }
         }
       }
     })
@@ -115,16 +121,53 @@ export function revalidate(id: any | any[], __reval__ = true) {
       abortControllers[resolveKey]?.abort()
 
       if (__reval__) {
-        queue(() => {
-          requestsProvider.emit(key, {})
-        })
+        if (!isPending(key)) {
+          queue(() => {
+            requestsProvider.emit(key, {
+              loading: true,
+              error: false
+            })
+          })
+        }
       }
     }
   }
 }
 
 export function cancelRequest(id: any | any[]) {
-  revalidate(id, false)
+  if (Array.isArray(id)) {
+    id.map(reqId => {
+      if (isDefined(reqId)) {
+        const key = serialize({
+          idString: serialize(reqId)
+        })
+        if (isPending(key)) {
+          revalidate(reqId, false)
+          queue(() => {
+            requestsProvider.emit(key, {
+              loading: false,
+              error: false
+            })
+          })
+        }
+      }
+    })
+  } else {
+    if (isDefined(id)) {
+      const key = serialize({
+        idString: serialize(id)
+      })
+      if (isPending(key)) {
+        revalidate(id, false)
+        queue(() => {
+          requestsProvider.emit(key, {
+            loading: false,
+            error: false
+          })
+        })
+      }
+    }
+  }
 }
 
 export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
