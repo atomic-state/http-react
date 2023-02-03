@@ -11,6 +11,16 @@ export type HTTP_METHODS =
   | 'UNLINK'
 
 export type FetchContextType = {
+  fetcher?(
+    url: string,
+    config: Omit<FetchConfigType, 'fetcher'>
+  ): Promise<{
+    json?: any
+    data?: any
+    status?: number
+    blob?: any
+    text?: any
+  }>
   headers?: any
   baseUrl?: string
   /**
@@ -114,7 +124,7 @@ export type RequestWithBody = <R = any, BodyType = any>(
   error: any
   data: R
   config: RequestInit
-  code: number
+  status: number
   res: CustomResponse<R>
 }>
 
@@ -136,12 +146,24 @@ export type ImperativeFetch = {
   purge: RequestWithBody
   link: RequestWithBody
   unlink: RequestWithBody
+  config?: FetchContextType & FetchInit
 }
 
 export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
   RequestInit,
-  'body'
+  'body' | 'headers'
 > & {
+  headers?: any
+  fetcher?(
+    url: string,
+    config: FetchConfigType<FetchDataType, BodyType>
+  ): Promise<{
+    json?: any
+    data?: any
+    status?: number
+    blob?: any
+    text?: any
+  }>
   body?: BodyType
   /**
    * Any serializable id. This is optional.
