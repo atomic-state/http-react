@@ -829,6 +829,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               const n = {
                 ...p,
                 data: $$data ?? p.data,
+                online: p.online,
                 loading: rpc?.loading ?? false,
                 error: isDefined($$error) ? $$error : p.error,
                 completedAttempts: $$completedAttempts ?? p.completedAttempts
@@ -852,6 +853,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             queue(() => {
               canDebounce[resolvedKey] = true
             }, debounce)
+            return $$data
           }
         }
       }
@@ -1172,23 +1174,29 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const initializeRevalidation = React.useCallback(
     async function initializeRevalidation() {
+      let d = undefined
       if (canRevalidate) {
         if (url !== '') {
-          fetchData({
+          d = await fetchData({
             query: Object.keys(reqQuery)
               .map(q => [q, reqQuery[q]].join('='))
               .join('&'),
             params: reqParams
           })
         } else {
+          d = def
           // It means a url is not passed
           setFetchState(prev => ({
             ...prev,
             loading: false,
-            error: hasErrors[resolvedDataKey] || hasErrors[resolvedKey]
+            error: hasErrors[resolvedDataKey] || hasErrors[resolvedKey],
+            completedAttempts: prev.completedAttempts
           }))
         }
+      } else {
+        d = def
       }
+      return d
     },
     [serialize(serialize(optionsConfig)), fetchState]
   )
