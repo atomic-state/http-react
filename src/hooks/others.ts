@@ -128,7 +128,7 @@ export function useFetchCode(id: any) {
 export function useFetchLoading(id: any): boolean {
   const idString = serialize({ idString: serialize(id) })
 
-  const { data } = useFetch({
+  const { loading } = useFetch({
     id: id
   })
 
