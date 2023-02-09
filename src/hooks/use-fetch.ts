@@ -47,7 +47,8 @@ import {
   createImperativeFetch,
   getMiliseconds,
   getTimePassed,
-  revalidate
+  revalidate,
+  useIsomorphicLayoutEffect
 } from '../utils'
 import {
   createRequestFn,
@@ -1207,7 +1208,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (url !== '') {
       if (!jsonCompare(previousProps[resolvedKey], optionsConfig)) {
         abortControllers[resolvedKey]?.abort()
@@ -1236,7 +1237,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!runningRequests[resolvedKey] && isExpired) {
       if (windowExists) {
         if (canRevalidate && url !== '') {
@@ -1254,7 +1255,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }, [resolvedKey, serialize(optionsConfig), canRevalidate, thisDeps])
 
-  React.useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const revalidateAfterUnmount = revalidateOnMount
       ? true
       : previousConfig[resolvedKey] !== serialize(optionsConfig)

@@ -23,7 +23,14 @@ import {
   FetchInit,
   TimeSpan
 } from '../types'
-import { hasBaseUrl, isDefined, isFunction, queue, serialize } from './shared'
+import {
+  hasBaseUrl,
+  isDefined,
+  isFunction,
+  queue,
+  serialize,
+  windowExists
+} from './shared'
 
 export function getMiliseconds(v: TimeSpan): number {
   if (typeof v === 'number') return v
@@ -81,6 +88,10 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
     config: ctx
   } as ImperativeFetch
 }
+
+export const useIsomorphicLayoutEffect = windowExists
+  ? React.useLayoutEffect
+  : React.useEffect
 
 /**
  * Revalidate requests that match an id or ids
