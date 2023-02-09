@@ -322,9 +322,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     loading: auto
       ? isPending(resolvedKey) ||
         (revalidateOnMount
-          ? suspense
-            ? isPending(resolvedKey)
-            : true
+          ? previousConfig[resolvedKey] !== serialize(optionsConfig)
           : previousConfig[resolvedKey] !== serialize(optionsConfig))
       : false,
     error: (hasErrors[resolvedDataKey] || false) as boolean,
@@ -337,7 +335,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     loading: false,
     error: false,
     completedAttempts: false
-  })
+  }).current
+
+  const inDeps = (k: keyof typeof thisDeps) => {
+    return thisDeps[k]
+  }
 
   const { data, loading, online, error, completedAttempts } = fetchState
 
@@ -833,32 +835,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               }
             }
           } finally {
-            setFetchState(p => {
-              const n = {
-                ...p,
-                data: thisDeps.current.data ? $$data ?? p.data : p.data,
-                online: thisDeps.current.online ? p.online : p.online,
-                loading: thisDeps.current.loading
-                  ? rpc?.loading ?? false
-                  : p.loading,
-                error: thisDeps.current.error
-                  ? isDefined($$error)
-                    ? $$error
-                    : p.error
-                  : p.error,
-                completedAttempts: thisDeps.current.completedAttempts
-                  ? $$completedAttempts ?? p.completedAttempts
-                  : p.completedAttempts
-              }
-              if (jsonCompare(n, p)) return p
-              return n
-            })
-
             runningRequests[resolvedKey] = false
             suspenseInitialized[resolvedKey] = true
 
             requestsProvider.emit(resolvedKey, {
-              requestCallId,
               error:
                 hasErrors[resolvedKey] || hasErrors[resolvedDataKey] || false,
               ...rpc,
@@ -875,7 +855,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
     },
     [
-      thisDeps.current,
+      thisDeps,
       canRevalidate,
       ctx.auto,
       stringDeps,
@@ -960,28 +940,21 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       if (v.requestCallId !== requestCallId) {
         if (!willSuspend[resolvedKey]) {
           queue(() => {
-            setFetchState(p => {
-              const n = {
-                ...p,
-                data: thisDeps.current.data
-                  ? !jsonCompare($data, p.data)
-                    ? $data
-                    : p.data ?? p.data
-                  : p.data,
-                online: thisDeps.current.online ? online ?? p.online : p.online,
-                loading: thisDeps.current.loading
-                  ? loading ?? p.loading
-                  : p.loading,
-                error: thisDeps.current.error ? Boolean($error) : p.error,
-                completedAttempts: thisDeps.current.completedAttempts
-                  ? completedAttempts ?? p.completedAttempts
-                  : p.completedAttempts
-              }
-
-              if (jsonCompare(n, p)) return p
-
-              return n
-            })
+            if (inDeps('data')) {
+              setData($data)
+            }
+            if (inDeps('online')) {
+              setOnline(online)
+            }
+            if (inDeps('loading')) {
+              setLoading(loading)
+            }
+            if (inDeps('error')) {
+              setError($error)
+            }
+            if (inDeps('completedAttempts')) {
+              setCompletedAttempts(completedAttempts)
+            }
           })
         }
       }
@@ -993,7 +966,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       requestsProvider.removeListener(resolvedKey, waitFormUpdates)
     }
   }, [
-    thisDeps.current,
+    thisDeps,
     JSON.stringify(optionsConfig),
     resolvedKey,
     resolvedDataKey,
@@ -1172,7 +1145,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               online: false,
               error: true
             })
-            if (thisDeps.current.online) setOnline(false)
+            if (inDeps('online')) setOnline(false)
           }
         }
       }, getMiliseconds(attemptInterval as TimeSpan))
@@ -1225,7 +1198,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
       return d
     },
-    [serialize(serialize(optionsConfig)), fetchState]
+    [serialize(serialize(optionsConfig)), fetchState, thisDeps]
   )
 
   if (!suspense) {
@@ -1233,14 +1206,17 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       suspenseInitialized[resolvedKey] = true
     }
   }
-  useEffect(() => {
+
+  React.useLayoutEffect(() => {
     if (url !== '') {
       if (!jsonCompare(previousProps[resolvedKey], optionsConfig)) {
         abortControllers[resolvedKey]?.abort()
-        queue(initializeRevalidation)
+        if (inDeps('data')) {
+          queue(initializeRevalidation)
+        }
       }
     }
-  }, [serialize(optionsConfig)])
+  }, [serialize(optionsConfig), thisDeps])
 
   if (suspense) {
     if (auto) {
@@ -1260,13 +1236,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  React.useMemo(() => {
+  React.useLayoutEffect(() => {
     if (!runningRequests[resolvedKey] && isExpired) {
       if (windowExists) {
         if (canRevalidate && url !== '') {
           if (!jsonCompare(previousConfig[resolvedKey], optionsConfig)) {
             if (!isPending(resolvedKey)) {
-              initializeRevalidation()
+              if (inDeps('data')) {
+                initializeRevalidation()
+              }
             } else {
               setLoading(true)
             }
@@ -1274,16 +1252,18 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         }
       }
     }
-  }, [resolvedKey, serialize(optionsConfig), canRevalidate])
+  }, [resolvedKey, serialize(optionsConfig), canRevalidate, thisDeps])
 
-  useEffect(() => {
+  React.useLayoutEffect(() => {
     const revalidateAfterUnmount = revalidateOnMount
       ? true
       : previousConfig[resolvedKey] !== serialize(optionsConfig)
 
     function revalidate() {
       if (!debounce && !canDebounce[resolvedKey]) {
-        initializeRevalidation()
+        if (inDeps('data')) {
+          initializeRevalidation()
+        }
       }
     }
 
@@ -1298,7 +1278,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serialize(optionsConfig)])
+  }, [serialize(optionsConfig), thisDeps])
 
   useEffect(() => {
     function addFocusListener() {
@@ -1411,7 +1391,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
     : null
 
-  const isFailed = hasErrors[resolvedDataKey] || error
+  const isFailed = hasErrors[resolvedDataKey] || hasErrors[resolvedKey] || error
 
   const responseData =
     (error && isFailed ? (cacheIfError ? thisCache : null) : thisCache) ?? def
@@ -1426,64 +1406,64 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   return {
     get revalidating() {
-      thisDeps.current.loading = true
+      thisDeps.loading = true
       return oneRequestResolved && isLoading
     },
     get hasData() {
-      thisDeps.current.data = true
+      thisDeps.data = true
       return oneRequestResolved
     },
     get success() {
-      thisDeps.current.loading = true
-      thisDeps.current.error = true
+      thisDeps.loading = true
+      thisDeps.error = true
       return isSuccess
     },
     get loadingFirst() {
-      thisDeps.current.loading = true
+      thisDeps.loading = true
       return loadingFirst
     },
     get requestStart() {
-      thisDeps.current.loading = true
+      thisDeps.loading = true
       return getDateIfValid($requestStart)
     },
     get requestEnd() {
-      thisDeps.current.loading = true
+      thisDeps.loading = true
       return getDateIfValid($requestEnd)
     },
     get expiration() {
-      thisDeps.current.loading = true
+      thisDeps.loading = true
       return getDateIfValid(isFailed ? null : expirationDate)
     },
     get responseTime() {
-      thisDeps.current.loading = true
+      thisDeps.loading = true
       return requestResponseTimes[resolvedDataKey] ?? null
     },
     get data() {
-      thisDeps.current.data = true
+      thisDeps.data = true
       return responseData
     },
     get loading() {
-      thisDeps.current.loading = true
+      thisDeps.loading = true
       return isLoading
     },
     get error() {
-      thisDeps.current.error = true
+      thisDeps.error = true
       return isFailed || false
     },
     get online() {
-      thisDeps.current.online = true
+      thisDeps.online = true
       return online
     },
     get code() {
-      thisDeps.current.loading = true
+      thisDeps.loading = true
       return statusCodes[resolvedKey]
     },
     get reFetch() {
-      thisDeps.current.loading = true
+      thisDeps.loading = true
       return reValidate
     },
     get mutate() {
-      thisDeps.current.data = true
+      thisDeps.data = true
       return forceMutate
     },
     get fetcher() {
@@ -1508,7 +1488,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     },
     config: __config,
     get response() {
-      thisDeps.current.loading = true
+      thisDeps.loading = true
       return lastResponses[resolvedKey]
     },
     id,

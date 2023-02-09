@@ -126,13 +126,17 @@ export function useFetchCode(id: any) {
  * Get the loading state of a request using its id
  */
 export function useFetchLoading(id: any): boolean {
-  const idString = serialize({ idString: serialize(id) })
-
-  const { loading } = useFetch({
-    id: id
+  const { loading, ...all } = useFetch({
+    id
   })
-
-  return !isDefined(runningRequests[idString]) ? true : isPending(idString)
+  return (
+    loading &&
+    isPending(
+      serialize({
+        idString: serialize(id)
+      })
+    )
+  )
 }
 
 /**
@@ -159,11 +163,11 @@ export function useFetchError(id: any, onError?: (err?: any) => void) {
     }
   }, [resolvedKey])
 
-  const { error } = useFetch({
-    id: id
-  })
-
-  return error
+  return (
+    useFetch({
+      id: id
+    }).error || hasErrors[resolvedKey]
+  )
 }
 
 /**
