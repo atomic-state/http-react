@@ -168,8 +168,7 @@ const defaultContextVaue: FetchContextType = {
   online: ONLINE,
   retryOnReconnect: RETRY_ON_RECONNECT,
   revalidateOnMount: REVALIDATE_ON_MOUNT,
-  cacheIfError: true,
-  maxCacheAge: '250 ms'
+  cacheIfError: true
 }
 
 export const FetchContext = createContext<FetchContextType>(defaultContextVaue)

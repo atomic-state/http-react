@@ -330,20 +330,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   })
 
   const thisDeps = React.useRef({
-    data: undefined as unknown as boolean,
-    online: undefined as unknown as boolean,
-    loading: undefined as unknown as boolean,
-    error: undefined as unknown as boolean,
-    completedAttempts: undefined as unknown as boolean
-  })
+    data: false,
+    online: false,
+    loading: false,
+    error: false,
+    completedAttempts: false
+  }).current
 
-  const inDeps = (k: keyof typeof thisDeps.current) => {
-    return !isDefined(thisDeps.current[k]) || thisDeps.current[k]
-  }
-  const setDep = (k: keyof typeof thisDeps.current) => {
-    if (!isDefined(thisDeps.current[k])) {
-      thisDeps.current[k] = false
-    }
+  const inDeps = (k: keyof typeof thisDeps) => {
+    return thisDeps[k]
   }
 
   const { data, loading, online, error, completedAttempts } = fetchState
@@ -860,11 +855,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
     },
     [
-      thisDeps.current.data,
-      thisDeps.current.online,
-      thisDeps.current.loading,
-      thisDeps.current.error,
-      thisDeps.current.completedAttempts,
+      thisDeps,
       canRevalidate,
       ctx.auto,
       stringDeps,
@@ -959,7 +950,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               setLoading(loading)
             }
             if (inDeps('error')) {
-              setData($error)
+              setError($error)
             }
             if (inDeps('completedAttempts')) {
               setCompletedAttempts(completedAttempts)
@@ -975,11 +966,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       requestsProvider.removeListener(resolvedKey, waitFormUpdates)
     }
   }, [
-    thisDeps.current.data,
-    thisDeps.current.online,
-    thisDeps.current.loading,
-    thisDeps.current.error,
-    thisDeps.current.completedAttempts,
+    thisDeps,
     JSON.stringify(optionsConfig),
     resolvedKey,
     resolvedDataKey,
@@ -1187,33 +1174,31 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const initializeRevalidation = React.useCallback(
     async function initializeRevalidation() {
-      if (inDeps('data')) {
-        let d = undefined
-        if (canRevalidate) {
-          if (url !== '') {
-            d = await fetchData({
-              query: Object.keys(reqQuery)
-                .map(q => [q, reqQuery[q]].join('='))
-                .join('&'),
-              params: reqParams
-            })
-          } else {
-            d = def
-            // It means a url is not passed
-            setFetchState(prev => ({
-              ...prev,
-              loading: false,
-              error: hasErrors[resolvedDataKey] || hasErrors[resolvedKey],
-              completedAttempts: prev.completedAttempts
-            }))
-          }
+      let d = undefined
+      if (canRevalidate) {
+        if (url !== '') {
+          d = await fetchData({
+            query: Object.keys(reqQuery)
+              .map(q => [q, reqQuery[q]].join('='))
+              .join('&'),
+            params: reqParams
+          })
         } else {
           d = def
+          // It means a url is not passed
+          setFetchState(prev => ({
+            ...prev,
+            loading: false,
+            error: hasErrors[resolvedDataKey] || hasErrors[resolvedKey],
+            completedAttempts: prev.completedAttempts
+          }))
         }
-        return d
+      } else {
+        d = def
       }
+      return d
     },
-    [serialize(serialize(optionsConfig)), fetchState, thisDeps.current.data]
+    [serialize(serialize(optionsConfig)), fetchState, thisDeps]
   )
 
   if (!suspense) {
@@ -1221,43 +1206,45 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       suspenseInitialized[resolvedKey] = true
     }
   }
-  useEffect(() => {
+
+  React.useLayoutEffect(() => {
     if (url !== '') {
       if (!jsonCompare(previousProps[resolvedKey], optionsConfig)) {
         abortControllers[resolvedKey]?.abort()
-        queue(initializeRevalidation)
+        if (inDeps('data')) {
+          queue(initializeRevalidation)
+        }
       }
     }
-  }, [serialize(optionsConfig)])
+  }, [serialize(optionsConfig), thisDeps])
 
   if (suspense) {
-    if (inDeps('data')) {
-      if (auto) {
-        if (windowExists) {
-          if (!suspenseInitialized[resolvedKey]) {
-            if (!suspenseRevalidationStarted[resolvedKey]) {
-              suspenseRevalidationStarted[resolvedKey] =
-                initializeRevalidation()
-            }
-            throw suspenseRevalidationStarted[resolvedKey]
+    if (auto) {
+      if (windowExists) {
+        if (!suspenseInitialized[resolvedKey]) {
+          if (!suspenseRevalidationStarted[resolvedKey]) {
+            suspenseRevalidationStarted[resolvedKey] = initializeRevalidation()
           }
-        } else {
-          throw {
-            message:
-              "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
-          }
+          throw suspenseRevalidationStarted[resolvedKey]
+        }
+      } else {
+        throw {
+          message:
+            "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
         }
       }
     }
   }
 
-  React.useMemo(() => {
+  React.useLayoutEffect(() => {
     if (!runningRequests[resolvedKey] && isExpired) {
       if (windowExists) {
         if (canRevalidate && url !== '') {
           if (!jsonCompare(previousConfig[resolvedKey], optionsConfig)) {
             if (!isPending(resolvedKey)) {
-              initializeRevalidation()
+              if (inDeps('data')) {
+                initializeRevalidation()
+              }
             } else {
               setLoading(true)
             }
@@ -1265,16 +1252,18 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         }
       }
     }
-  }, [resolvedKey, serialize(optionsConfig), canRevalidate])
+  }, [resolvedKey, serialize(optionsConfig), canRevalidate, thisDeps])
 
-  useEffect(() => {
+  React.useLayoutEffect(() => {
     const revalidateAfterUnmount = revalidateOnMount
       ? true
       : previousConfig[resolvedKey] !== serialize(optionsConfig)
 
     function revalidate() {
       if (!debounce && !canDebounce[resolvedKey]) {
-        initializeRevalidation()
+        if (inDeps('data')) {
+          initializeRevalidation()
+        }
       }
     }
 
@@ -1289,7 +1278,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serialize(optionsConfig)])
+  }, [serialize(optionsConfig), thisDeps])
 
   useEffect(() => {
     function addFocusListener() {
@@ -1417,123 +1406,64 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   return {
     get revalidating() {
-      thisDeps.current.loading = true
-      setDep('data')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.loading = true
       return oneRequestResolved && isLoading
     },
     get hasData() {
-      thisDeps.current.data = true
-      setDep('loading')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.data = true
       return oneRequestResolved
     },
     get success() {
-      thisDeps.current.loading = true
-      thisDeps.current.error = true
-      setDep('data')
-      setDep('online')
-      setDep('completedAttempts')
+      thisDeps.loading = true
+      thisDeps.error = true
       return isSuccess
     },
     get loadingFirst() {
-      thisDeps.current.loading = true
-      setDep('data')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.loading = true
       return loadingFirst
     },
     get requestStart() {
-      thisDeps.current.loading = true
-      setDep('data')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.loading = true
       return getDateIfValid($requestStart)
     },
     get requestEnd() {
-      thisDeps.current.loading = true
-      setDep('data')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.loading = true
       return getDateIfValid($requestEnd)
     },
     get expiration() {
-      thisDeps.current.loading = true
-      setDep('data')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.loading = true
       return getDateIfValid(isFailed ? null : expirationDate)
     },
     get responseTime() {
-      thisDeps.current.loading = true
-      setDep('data')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.loading = true
       return requestResponseTimes[resolvedDataKey] ?? null
     },
     get data() {
-      thisDeps.current.data = true
-      setDep('loading')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.data = true
       return responseData
     },
     get loading() {
-      thisDeps.current.loading = true
-      setDep('data')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.loading = true
       return isLoading
     },
     get error() {
-      thisDeps.current.error = true
-      setDep('loading')
-      setDep('data')
-      setDep('online')
-      setDep('completedAttempts')
+      thisDeps.error = true
       return isFailed || false
     },
     get online() {
-      thisDeps.current.online = true
-      setDep('loading')
-      setDep('data')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.online = true
       return online
     },
     get code() {
-      thisDeps.current.loading = true
-      setDep('data')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.loading = true
       return statusCodes[resolvedKey]
     },
     get reFetch() {
-      thisDeps.current.loading = true
-      setDep('data')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.loading = true
       return reValidate
     },
     get mutate() {
-      thisDeps.current.data = true
-      setDep('loading')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.data = true
       return forceMutate
     },
     get fetcher() {
@@ -1558,11 +1488,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     },
     config: __config,
     get response() {
-      thisDeps.current.loading = true
-      setDep('data')
-      setDep('online')
-      setDep('error')
-      setDep('completedAttempts')
+      thisDeps.loading = true
       return lastResponses[resolvedKey]
     },
     id,
