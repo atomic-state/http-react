@@ -80,6 +80,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 ) {
   const ctx = useHRFContext()
 
+  // @ts-ignore
   const isRequest = init instanceof Object && init?.json
 
   const optionsConfig =
@@ -535,6 +536,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           try {
             let reqConfig = {}
 
+            // @ts-ignore
             let _headers = isRequest ? getRequestHeaders(init) : {}
 
             if (isRequest) {
@@ -770,6 +772,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           } catch (err) {
             const errorString = err?.toString()
             // Only set error if no abort
+            // @ts-ignore
             if (!/abort/i.test(errorString)) {
               if (!cacheIfError) {
                 hasData[resolvedDataKey] = false

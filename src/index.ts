@@ -25,6 +25,7 @@ export {
   useLINK,
   useLoading,
   useMutate,
+  useManualFetch,
   useOPTIONS,
   usePATCH,
   usePOST,

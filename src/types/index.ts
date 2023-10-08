@@ -163,7 +163,7 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
     blob?: any
     text?: any
   }>
-  body?: BodyType
+  body?: any
   /**
    * Any serializable id. This is optional.
    */
