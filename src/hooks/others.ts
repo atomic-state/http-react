@@ -422,6 +422,19 @@ export function useUNLINK<FetchDataType = any, BodyType = any>(
 }
 
 /**
+ * Use a request without making it automatically
+ */
+export function useManualFetch<FetchDataType = any, BodyType = any>(
+  init: FetchConfigType<FetchDataType, BodyType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+) {
+  return useFetch(init, {
+    ...options,
+    auto: false
+  })
+}
+
+/**
  * Get a blob of the response. You can pass an `objectURL` property that will convet that blob into a string using `URL.createObjectURL`
  */
 export function useFetchBlob<FetchDataType = string, BodyType = any>(
