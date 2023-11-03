@@ -47,7 +47,8 @@ export {
   useReFetch,
   useRevalidating,
   useSuccess,
-  useDebounceFetch
+  useDebounceFetch,
+  createActionsHook
 } from './hooks'
 
 export { FetchConfig, SSRSuspense } from './components/server'
@@ -72,3 +73,5 @@ export {
   serialize,
   notNull
 } from './utils/shared'
+
+export { createActionHandler } from './server'
