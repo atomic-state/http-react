@@ -1,6 +1,8 @@
 'use client'
 export { useFetch } from './use-fetch'
 
+export { useIsomorphicLayoutEffect } from '../utils'
+
 export {
   useFetchLoading as useLoading,
   useFetchConfig as useConfig,
