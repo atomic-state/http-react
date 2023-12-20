@@ -131,7 +131,11 @@ export function createRequestFn(
     const rawUrl = setURLParams(url, params)
 
     const reqQueryString = Object.keys(query)
-      .map(q => [q, query[q]].join('='))
+      .map(q =>
+        Array.isArray(query[q])
+          ? query[q].map((queryItem: any) => [q, queryItem].join('=')).join('&')
+          : [q, query[q]].join('=')
+      )
       .join('&')
 
     const reqConfig = {
@@ -153,8 +157,10 @@ export function createRequestFn(
     const requestUrl = [
       baseUrl || '',
       rawUrl,
-      url.includes('?') ? '&' : '?',
       reqQueryString
+        ? (rawUrl.includes('?') ? (rawUrl.endsWith('?') ? '' : '&') : '?') +
+          reqQueryString
+        : ''
     ].join('')
 
     try {

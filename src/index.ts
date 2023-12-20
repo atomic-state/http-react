@@ -48,7 +48,8 @@ export {
   useRevalidating,
   useSuccess,
   useDebounceFetch,
-  createActionsHook
+  createActionsHook,
+  useIsomorphicLayoutEffect
 } from './hooks'
 
 export { FetchConfig, SSRSuspense } from './components/server'

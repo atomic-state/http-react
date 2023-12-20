@@ -487,7 +487,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
       const realUrl =
         urlWithParams +
-        (urlWithParams.includes('?') ? (c?.query !== '' ? `&` : '') : '?')
+        (urlWithParams.includes('?') ? (c?.query !== '' ? `&` : '') : '')
 
       if (previousConfig[resolvedKey] !== serialize(optionsConfig)) {
         previousProps[resolvedKey] = optionsConfig
@@ -585,7 +585,17 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                   }
             ) as any
 
-            const r = new Request(realUrl + c.query, newRequestConfig)
+            const r = new Request(
+              (
+                realUrl +
+                (realUrl.includes('?')
+                  ? c.query
+                  : c.query
+                  ? '?' + c.query
+                  : c.query)
+              ).replace('?&', '?'),
+              newRequestConfig
+            )
 
             if (logStart) {
               ;(onFetchStart as any)(r, optionsConfig, ctx)
@@ -995,7 +1005,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         if (url !== '') {
           fetchData({
             query: Object.keys(reqQuery)
-              .map(q => [q, reqQuery[q]].join('='))
+              .map(q =>
+                Array.isArray(reqQuery[q])
+                  ? reqQuery[q]
+                      .map((queryItem: any) => [q, queryItem].join('='))
+                      .join('&')
+                  : [q, reqQuery[q]].join('=')
+              )
               .join('&'),
             params: reqParams
           })
@@ -1183,7 +1199,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         if (url !== '') {
           d = await fetchData({
             query: Object.keys(reqQuery)
-              .map(q => [q, reqQuery[q]].join('='))
+              .map(q =>
+                Array.isArray(reqQuery[q])
+                  ? reqQuery[q]
+                      .map((queryItem: any) => [q, queryItem].join('='))
+                      .join('&')
+                  : [q, reqQuery[q]].join('=')
+              )
               .join('&'),
             params: reqParams
           })
