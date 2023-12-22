@@ -72,7 +72,9 @@ export {
   isFormData,
   isFunction,
   serialize,
-  notNull
+  notNull,
+  setQueryParams,
+  setParamsAndQuery
 } from './utils/shared'
 
 export { createActionHandler } from './server'
