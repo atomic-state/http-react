@@ -106,6 +106,38 @@ export function setURLParams(str: string = '', $params: any = {}) {
   )
 }
 
+export function setQueryParams(url: string, params: any = {}) {
+  const paramsString = Object.keys(params)
+    .map(paramName => {
+      if (Array.isArray(params[paramName])) {
+        return params[paramName]
+          .map((p: any) => `${paramName}=${encodeURIComponent(p)}`)
+          .join('&')
+      } else {
+        return `${paramName}=${encodeURIComponent(params[paramName])}`
+      }
+    })
+    .join('&')
+
+  return (
+    url +
+    (paramsString.length
+      ? (url.includes('?') ? (url.endsWith('?') ? '' : '&') : '?') +
+        paramsString
+      : '')
+  )
+}
+
+export function setParamsAndQuery(
+  url: string,
+  p: { params?: any; query?: any } = {
+    params: {},
+    query: {}
+  }
+) {
+  return setURLParams(setQueryParams(url, p.query), p.params)
+}
+
 /**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
  */
