@@ -19,92 +19,92 @@ import {
 /**
  * This marks which requests are running
  */
-export const runningRequests: any = {}
+export const runningRequests = new Map()
 
 export function isPending(id: any): boolean {
-  return runningRequests[id]
+  return runningRequests.get(id)
 }
 
-export const statusCodes: any = {}
+export const statusCodes = new Map()
 
-export const lastResponses: any = {}
+export const lastResponses = new Map()
 
 /**
  * Previous request configurations (useful for deduplication)
  */
-export const previousConfig: any = {}
+export const previousConfig = new Map()
 
-export const previousProps: any = {}
+export const previousProps = new Map()
 
-export const valuesMemory: any = {}
+export const valuesMemory = new Map()
 
 /**
  * Online / offline
  */
-export const onlineHandled: any = {}
+export const onlineHandled = new Map()
 
-export const offlineHandled: any = {}
+export const offlineHandled = new Map()
 
 /**
  * To let know if it's revalidating there is at least one succesful request
  */
 
-export const hasData: any = {}
+export const hasData = new Map()
 
 /**
  * Max pagination age
  */
 
-export const pageStarted: any = {}
+export const pageStarted = new Map()
 
-export const maxAges: any = {}
+export const maxAges = new Map()
 
 /**
  * For Suspense
  */
 
-export const willSuspend: any = {}
+export const willSuspend = new Map()
 
-export const resolvedRequests: any = {}
+export const resolvedRequests = new Map()
 
-export const resolvedHookCalls: any = {}
+export const resolvedHookCalls = new Map()
 
-export const resolvedOnErrorCalls: any = {}
+export const resolvedOnErrorCalls = new Map()
 
-export const abortControllers: any = {}
+export const abortControllers = new Map()
 
-export const canDebounce: any = {}
+export const canDebounce = new Map()
 
-export const requestInitialTimes: any = {}
+export const requestInitialTimes = new Map()
 
-export const requestResponseTimes: any = {}
+export const requestResponseTimes = new Map()
 
-export const requestStarts: any = {}
+export const requestStarts = new Map()
 
-export const requestEnds: any = {}
+export const requestEnds = new Map()
 
-export const suspenseRevalidationStarted: any = {}
+export const suspenseRevalidationStarted = new Map()
 
-export const maxPaginationAges: any = {}
+export const maxPaginationAges = new Map()
 
 /**
  * Request with errors
  */
-export const hasErrors: any = {}
+export const hasErrors = new Map()
 
 /**
  * Suspense calls that resolved
  */
-export const suspenseInitialized: any = {}
+export const suspenseInitialized = new Map()
 
 /**
  * Defaults used as fallback data (works with SSR)
  */
-export const fetcherDefaults: any = {}
+export const fetcherDefaults = new Map()
 
-export const cacheForMutation: any = {}
+export const cacheForMutation = new Map()
 
-export const runningMutate: any = {}
+export const runningMutate = new Map()
 
 export const urls: {
   [k: string]: {
@@ -118,38 +118,38 @@ export const urls: {
  */
 export const defaultCache: CacheStoreType = {
   get(k) {
-    return resolvedRequests[k]
+    return resolvedRequests.get(k)
   },
   set(k, v) {
-    resolvedRequests[k] = v
+    resolvedRequests.set(k, v)
   },
   remove(k) {
-    delete resolvedRequests[k]
+    resolvedRequests.delete(k)
   }
 }
 
-const requestsSubscribers: {
-  [k: string]: any[]
-} = {}
+const requestsSubscribers = new Map()
 
 export const requestsProvider = {
   addListener(requestId?: any, listener?: any) {
-    if (!requestsSubscribers[requestId]) {
-      requestsSubscribers[requestId] = []
+    if (!requestsSubscribers.has(requestId)) {
+      requestsSubscribers.set(requestId, [])
     }
-    requestsSubscribers[requestId].push(listener)
+    requestsSubscribers.get(requestId).push(listener)
   },
   removeListener(requestId?: any, listener?: any) {
-    if (!requestsSubscribers[requestId]) {
-      requestsSubscribers[requestId] = []
+    if (!requestsSubscribers.has(requestId)) {
+      requestsSubscribers.set(requestId, [])
     }
-    requestsSubscribers[requestId] = requestsSubscribers[requestId].filter(
-      l => l !== listener
+
+    requestsSubscribers.set(
+      requestId,
+      requestsSubscribers.get(requestId).filter((l: any) => l !== listener)
     )
   },
   emit(requestId?: any, payload?: any) {
-    if (requestsSubscribers[requestId]) {
-      requestsSubscribers[requestId].forEach(listener => {
+    if (requestsSubscribers.has(requestId)) {
+      requestsSubscribers.get(requestId).forEach((listener: any) => {
         listener(payload)
       })
     }

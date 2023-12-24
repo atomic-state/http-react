@@ -1,6 +1,5 @@
-"use client"
-import * as React from "react"
-import { useState, useEffect } from "react"
+'use client'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import {
   abortControllers,
@@ -29,10 +28,10 @@ import {
   suspenseRevalidationStarted,
   onlineHandled,
   offlineHandled,
-  hasData,
-} from "../internal"
+  hasData
+} from '../internal'
 
-import { DEFAULT_RESOLVER, METHODS } from "../internal/constants"
+import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
 
 import {
   CustomResponse,
@@ -40,16 +39,16 @@ import {
   FetchConfigTypeNoUrl,
   HTTP_METHODS,
   ImperativeFetch,
-  TimeSpan,
-} from "../types"
+  TimeSpan
+} from '../types'
 
 import {
   createImperativeFetch,
   getMiliseconds,
   getTimePassed,
   revalidate,
-  useIsomorphicLayoutEffect,
-} from "../utils"
+  useIsomorphicLayoutEffect
+} from '../utils'
 import {
   createRequestFn,
   getRequestHeaders,
@@ -61,15 +60,15 @@ import {
   queue,
   serialize,
   setURLParams,
-  windowExists,
-} from "../utils/shared"
+  windowExists
+} from '../utils/shared'
 
 /**
  * Passing `undefined` to `new Date()` returns `Invalid Date {}`, so return null instead
  */
 const getDateIfValid = (d: Date | null) =>
   // @ts-ignore - Evals to a Date
-  (d?.toString() === "Invalid Date" || d === null ? null : d) as Date
+  (d?.toString() === 'Invalid Date' || d === null ? null : d) as Date
 
 /**
  * Fetch hook
@@ -84,18 +83,18 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   const isRequest = init instanceof Object && init?.json
 
   const optionsConfig =
-    typeof init === "string"
+    typeof init === 'string'
       ? {
           // Pass init as the url if init is a string
           url: init,
-          ...options,
+          ...options
         }
       : isRequest
       ? {
           url: init.url,
           method: init.method,
           init,
-          ...options,
+          ...options
         }
       : (init as FetchConfigType<FetchDataType, BodyType>)
 
@@ -104,14 +103,14 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     onOffline = ctx.onOffline,
     onMutate,
     revalidateOnMount = ctx.revalidateOnMount,
-    url = "",
+    url = '',
     query = {},
     params = {},
     baseUrl = undefined,
     method = isRequest ? init.method : (METHODS.GET as HTTP_METHODS),
     headers = {} as Headers,
     body = undefined as unknown as Body,
-    formatBody = (e) => JSON.stringify(e),
+    formatBody = e => JSON.stringify(e),
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
     auto = isDefined(ctx.auto) ? ctx.auto : true,
@@ -127,7 +126,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     onFetchEnd = ctx.onFetchEnd,
     cacheIfError = ctx.cacheIfError,
     maxCacheAge = ctx.maxCacheAge,
-    fetcher = ctx.fetcher,
+    fetcher = ctx.fetcher
   } = optionsConfig
 
   const $fetch = isFunction(fetcher) ? fetcher : fetch
@@ -139,7 +138,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     method,
     headers,
     body,
-    formatBody,
+    formatBody
   }
 
   const { cacheProvider: $cacheProvider = defaultCache } = ctx
@@ -149,10 +148,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const { cacheProvider = $cacheProvider } = optionsConfig
 
-  const requestCallId = React.useMemo(
-    () => `${Math.random()}`.split(".")[1],
-    []
-  )
+  const requestCallId = useMemo(() => `${Math.random()}`.split('.')[1], [])
 
   const willResolve = isDefined(onResolve)
   const handleError = isDefined(onError)
@@ -170,30 +166,30 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const reqQuery = {
     ...ctx.query,
-    ...config.query,
+    ...config.query
   }
 
   const reqParams = {
     ...ctx.params,
-    ...config.params,
+    ...config.params
   }
 
   const rawUrl =
     (hasBaseUrl(url)
-      ? ""
+      ? ''
       : !isDefined(config.baseUrl)
       ? !isDefined(ctx.baseUrl)
-        ? ""
+        ? ''
         : ctx.baseUrl
       : config.baseUrl) + url
 
-  const defaultId = [method, url].join(" ")
+  const defaultId = [method, url].join(' ')
 
   const { id = defaultId } = optionsConfig
 
   const idString = serialize(id)
 
-  const urlWithParams = React.useMemo(
+  const urlWithParams = useMemo(
     () => setURLParams(rawUrl, reqParams),
     [serialize(reqParams), config.baseUrl, ctx.baseUrl, url]
   )
@@ -202,22 +198,22 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const resolvedDataKey = serialize({ idString, reqQuery, reqParams })
 
-  const ageKey = ["max-age", resolvedDataKey].join("-")
+  const ageKey = ['max-age', resolvedDataKey].join('-')
 
   const paginationCache = cacheProvider.get(resolvedDataKey)
 
   const normalCache = cacheProvider.get(resolvedKey)
 
-  const maxAge = getMiliseconds(maxCacheAge || "0 ms")
+  const maxAge = getMiliseconds(maxCacheAge || '0 ms')
 
   // Revalidates if passed maxCacheAge has changed
 
-  if (!cacheProvider.get("maxAgeValue" + resolvedDataKey)) {
-    cacheProvider.set("maxAgeValue" + resolvedDataKey, maxCacheAge || "0 ms")
+  if (!cacheProvider.get('maxAgeValue' + resolvedDataKey)) {
+    cacheProvider.set('maxAgeValue' + resolvedDataKey, maxCacheAge || '0 ms')
   } else {
-    if (cacheProvider.get("maxAgeValue" + resolvedDataKey) !== maxCacheAge) {
+    if (cacheProvider.get('maxAgeValue' + resolvedDataKey) !== maxCacheAge) {
       cacheProvider.set(ageKey, 0)
-      cacheProvider.set("maxAgeValue" + resolvedDataKey, maxCacheAge)
+      cacheProvider.set('maxAgeValue' + resolvedDataKey, maxCacheAge)
     }
   }
 
@@ -236,33 +232,33 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const canRevalidate = auto && isExpired
 
-  const suspense = $suspense || willSuspend[resolvedKey]
+  const suspense = $suspense || willSuspend.get(resolvedKey)
 
   if (!suspense) {
-    if (url !== "") {
-      suspenseInitialized[resolvedKey] = true
+    if (url !== '') {
+      suspenseInitialized.set(resolvedKey, true)
     }
   }
 
-  if (suspense && !willSuspend[resolvedKey]) {
-    if (!suspenseInitialized[resolvedKey]) {
-      willSuspend[resolvedKey] = true
+  if (suspense && !willSuspend.get(resolvedKey)) {
+    if (!suspenseInitialized.get(resolvedKey)) {
+      willSuspend.set(resolvedKey, true)
     }
   }
 
   const realUrl =
     urlWithParams +
-    (urlWithParams.includes("?") ? (optionsConfig?.query ? `&` : "") : "?")
+    (urlWithParams.includes('?') ? (optionsConfig?.query ? `&` : '') : '?')
 
-  if (!isDefined(previousProps[resolvedKey])) {
-    if (url !== "") {
-      previousProps[resolvedKey] = optionsConfig
+  if (!previousProps.has(resolvedKey)) {
+    if (url !== '') {
+      previousProps.set(resolvedKey, optionsConfig)
     }
   }
 
   const configUrl = urls[resolvedKey] || {
     realUrl,
-    rawUrl,
+    rawUrl
   }
 
   const stringDeps = serialize(
@@ -283,40 +279,40 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   // This helps pass default values to other useFetch calls using the same id
   useEffect(() => {
     if (isDefined(optionsConfig.default)) {
-      if (!isDefined(fetcherDefaults[resolvedKey])) {
-        if (url !== "") {
+      if (!fetcherDefaults.has(resolvedKey)) {
+        if (url !== '') {
           if (!isDefined(cacheProvider.get(resolvedDataKey))) {
-            fetcherDefaults[resolvedKey] = optionsConfig.default
+            fetcherDefaults.set(resolvedKey, optionsConfig.default)
           }
         } else {
           if (!isDefined(cacheProvider.get(resolvedDataKey))) {
             requestsProvider.emit(resolvedKey, {
               requestCallId,
-              data: optionsConfig.default,
+              data: optionsConfig.default
             })
           }
         }
       }
     } else {
-      if (isDefined(fetcherDefaults[resolvedKey])) {
+      if (fetcherDefaults.has(resolvedKey)) {
         if (!isDefined(cacheProvider.get(resolvedDataKey))) {
-          setData(fetcherDefaults[resolvedKey])
+          setData(fetcherDefaults.get(resolvedKey))
         }
       }
     }
   }, [resolvedKey])
 
-  const def = optionsConfig?.default ?? fetcherDefaults[resolvedKey]
+  const def = optionsConfig?.default ?? fetcherDefaults.get(resolvedKey)
 
   useEffect(() => {
     if (!canRevalidate) {
-      runningRequests[resolvedKey] = false
+      runningRequests.set(resolvedKey, false)
     }
   }, [])
 
   const requestCache = cacheProvider.get(resolvedDataKey)
 
-  const initialDataValue = valuesMemory[resolvedKey] ?? requestCache ?? def
+  const initialDataValue = valuesMemory.get(resolvedKey) ?? requestCache ?? def
 
   const [fetchState, setFetchState] = useState({
     data: initialDataValue,
@@ -324,19 +320,19 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     loading: auto
       ? isPending(resolvedKey) ||
         (revalidateOnMount
-          ? previousConfig[resolvedKey] !== serialize(optionsConfig)
-          : previousConfig[resolvedKey] !== serialize(optionsConfig))
+          ? previousConfig.get(resolvedKey) !== serialize(optionsConfig)
+          : previousConfig.get(resolvedKey) !== serialize(optionsConfig))
       : false,
-    error: (hasErrors[resolvedDataKey] || false) as boolean,
-    completedAttempts: 0,
+    error: (hasErrors.get(resolvedDataKey) || false) as boolean,
+    completedAttempts: 0
   })
 
-  const thisDeps = React.useRef({
+  const thisDeps = useRef({
     data: false,
     online: false,
     loading: false,
     error: false,
-    completedAttempts: false,
+    completedAttempts: false
   }).current
 
   const inDeps = (k: keyof typeof thisDeps) => {
@@ -348,7 +344,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   const isLoading = isExpired ? isPending(resolvedKey) || loading : false
 
   const loadingFirst =
-    !(hasData[resolvedDataKey] || hasData[resolvedKey]) && isLoading
+    !(hasData.get(resolvedDataKey) || hasData.get(resolvedKey)) && isLoading
 
   if (!isExpired) {
     if (error) {
@@ -357,20 +353,20 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   function setData(v: any) {
-    setFetchState((p) => {
+    setFetchState(p => {
       if (isFunction(v)) {
         const newVal = v(p.data)
         if (!jsonCompare(p.data, newVal)) {
           return {
             ...p,
-            data: newVal,
+            data: newVal
           }
         }
       } else {
         if (!jsonCompare(p.data, v)) {
           return {
             ...p,
-            data: v,
+            data: v
           }
         }
       }
@@ -383,11 +379,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   const rawJSON = serialize(data)
 
   function setOnline(v: any) {
-    setFetchState((p) => {
+    setFetchState(p => {
       if (online !== p.online) {
         return {
           ...p,
-          online: v,
+          online: v
         }
       }
       return p
@@ -396,24 +392,24 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const requestHeaders = {
     ...ctx.headers,
-    ...config.headers,
+    ...config.headers
   }
 
   function setError(v: any) {
-    setFetchState((p) => {
+    setFetchState(p => {
       if (isFunction(v)) {
         const newErroValue = v(p.error)
         if (newErroValue !== p.error) {
           return {
             ...p,
-            error: newErroValue,
+            error: newErroValue
           }
         }
       } else {
         if (v !== p.error) {
           return {
             ...p,
-            error: v,
+            error: v
           }
         }
       }
@@ -422,20 +418,20 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   function setLoading(v: any) {
-    setFetchState((p) => {
+    setFetchState(p => {
       if (isFunction(v)) {
         const newLoadingValue = v(p.loading)
         if (newLoadingValue !== p.loading) {
           return {
             ...p,
-            loading: newLoadingValue,
+            loading: newLoadingValue
           }
         }
       } else {
         if (v !== p.loading) {
           return {
             ...p,
-            loading: v,
+            loading: v
           }
         }
       }
@@ -444,20 +440,20 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   function setCompletedAttempts(v: any) {
-    setFetchState((p) => {
+    setFetchState(p => {
       if (isFunction(v)) {
         const newCompletedAttempts = v(p.completedAttempts)
         if (newCompletedAttempts !== p.completedAttempts) {
           return {
             ...p,
-            completedAttempts: newCompletedAttempts,
+            completedAttempts: newCompletedAttempts
           }
         }
       } else {
         if (v !== p.completedAttempts) {
           return {
             ...p,
-            completedAttempts: v,
+            completedAttempts: v
           }
         }
       }
@@ -466,20 +462,20 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   const requestAbortController: AbortController =
-    abortControllers[resolvedKey] ?? new AbortController()
+    abortControllers.get(resolvedKey) ?? new AbortController()
 
-  const isGqlRequest = isDefined((optionsConfig as any)["__gql"])
+  const isGqlRequest = isDefined((optionsConfig as any)['__gql'])
 
-  const fetchData = React.useCallback(
+  const fetchData = useCallback(
     async function fetchData(
       c: { headers?: any; body?: BodyType; query?: any; params?: any } = {}
     ) {
       const rawUrl =
         (hasBaseUrl(url)
-          ? ""
+          ? ''
           : !isDefined(config.baseUrl)
           ? !isDefined(ctx.baseUrl)
-            ? ""
+            ? ''
             : ctx.baseUrl
           : config.baseUrl) + url
 
@@ -487,29 +483,29 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
       const realUrl =
         urlWithParams +
-        (urlWithParams.includes("?") ? (c?.query !== "" ? `&` : "") : "")
+        (urlWithParams.includes('?') ? (c?.query !== '' ? `&` : '') : '')
 
-      if (previousConfig[resolvedKey] !== serialize(optionsConfig)) {
-        previousProps[resolvedKey] = optionsConfig
+      if (previousConfig.get(resolvedKey) !== serialize(optionsConfig)) {
+        previousProps.set(resolvedKey, optionsConfig)
         queue(() => {
-          if (url !== "") {
+          if (url !== '') {
             const newUrls = {
               realUrl,
-              rawUrl,
+              rawUrl
             }
 
             urls[resolvedKey] = newUrls
           }
         })
         if (!isPending(resolvedKey)) {
-          runningRequests[resolvedKey] = auto
-          hasErrors[resolvedDataKey] = false
-          hasErrors[resolvedKey] = false
+          runningRequests.set(resolvedKey, auto)
+          hasErrors.set(resolvedDataKey, false)
+          hasErrors.set(resolvedKey, false)
 
-          resolvedOnErrorCalls[resolvedKey] = false
-          resolvedHookCalls[resolvedKey] = false
+          resolvedOnErrorCalls.set(resolvedKey, false)
+          resolvedHookCalls.set(resolvedKey, false)
 
-          previousConfig[resolvedKey] = serialize(optionsConfig)
+          previousConfig.set(resolvedKey, serialize(optionsConfig))
 
           let newAbortController = new AbortController()
 
@@ -519,17 +515,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             requestCallId: loadingFirst ? requestCallId : undefined,
             loading: true,
             requestAbortController: newAbortController,
-            error: false,
+            error: false
           })
 
-          abortControllers[resolvedKey] = newAbortController
+          abortControllers.set(resolvedKey, newAbortController)
 
           let $$data: any
-          let $$error: any = false
-          let $$response
-          let $$code
-          let $$loading
-          let $$completedAttempts: number
 
           let rpc: any = {}
 
@@ -546,8 +537,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               }
             }
 
-            cacheProvider.set("requestStart" + resolvedDataKey, Date.now())
-            requestInitialTimes[resolvedDataKey] = Date.now()
+            cacheProvider.set('requestStart' + resolvedDataKey, Date.now())
+            requestInitialTimes.set(resolvedDataKey, Date.now())
 
             const newRequestConfig = (
               isRequest
@@ -559,12 +550,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                       return newAbortController.signal
                     })(),
                     headers: {
-                      "Content-Type": "application/json",
+                      'Content-Type': 'application/json',
                       ...ctx.headers,
                       ..._headers,
                       ...config.headers,
-                      ...c.headers,
-                    },
+                      ...c.headers
+                    }
                   }
                 : {
                     ...ctx,
@@ -577,23 +568,23 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                         formatBody(optionsConfig?.body as any)
                       : optionsConfig?.body,
                     headers: {
-                      "Content-Type": "application/json",
+                      'Content-Type': 'application/json',
                       ...ctx.headers,
                       ...config.headers,
-                      ...c.headers,
-                    },
+                      ...c.headers
+                    }
                   }
             ) as any
 
             const r = new Request(
               (
                 realUrl +
-                (realUrl.includes("?")
+                (realUrl.includes('?')
                   ? c.query
                   : c.query
-                  ? "?" + c.query
+                  ? '?' + c.query
                   : c.query)
-              ).replace("?&", "?"),
+              ).replace('?&', '?'),
               newRequestConfig
             )
 
@@ -607,37 +598,37 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             const resolvedDate = Date.now()
 
             cacheProvider.set(
-              "expiration" + resolvedDataKey,
+              'expiration' + resolvedDataKey,
               resolvedDate + maxAge
             )
 
-            cacheProvider.set("requestEnds" + resolvedDataKey, resolvedDate)
-            requestResponseTimes[resolvedDataKey] =
+            cacheProvider.set('requestEnds' + resolvedDataKey, resolvedDate)
+            requestResponseTimes.set(
+              resolvedDataKey,
               getTimePassed(resolvedDataKey)
+            )
 
-            lastResponses[resolvedKey] = json
+            lastResponses.set(resolvedKey, json)
 
             const code = json.status as number
-            statusCodes[resolvedKey] = code
-
-            $$error = false
+            statusCodes.set(resolvedKey, code)
 
             rpc = {
               ...rpc,
               response: json,
               error: false,
-              code,
+              code
             }
 
             // @ts-ignore - 'data' is priority because 'fetcher' can return it
-            const _data = json?.["data"] ?? (await (resolver as any)(json))
+            const _data = json?.['data'] ?? (await (resolver as any)(json))
             if (code >= 200 && code < 400) {
-              hasData[resolvedDataKey] = true
-              hasData[resolvedKey] = true
+              hasData.set(resolvedDataKey, true)
+              hasData.set(resolvedKey, true)
 
               rpc = {
                 ...rpc,
-                error: false,
+                error: false
               }
 
               const dataExpirationTime = Date.now() + maxAge
@@ -647,28 +638,27 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 ? {
                     ..._data,
                     variables: (optionsConfig as any)?.variables,
-                    errors: _data?.errors ? _data.errors : undefined,
+                    errors: _data?.errors ? _data.errors : undefined
                   }
                 : _data
 
               if (_data?.errors && isGqlRequest) {
-                $$error = true
-                hasErrors[resolvedDataKey] = true
-                hasErrors[resolvedKey] = true
+                hasErrors.set(resolvedDataKey, true)
+                hasErrors.set(resolvedKey, true)
                 rpc = {
                   ...rpc,
-                  error: true,
+                  error: true
                 }
                 if (handleError) {
-                  if (!resolvedOnErrorCalls[resolvedKey]) {
-                    resolvedOnErrorCalls[resolvedKey] = true
+                  if (!resolvedOnErrorCalls.get(resolvedKey)) {
+                    resolvedOnErrorCalls.set(resolvedKey, true)
                     ;(onError as any)(true)
                   }
                 }
               }
               cacheProvider.set(resolvedDataKey, __data)
               cacheProvider.set(resolvedKey, __data)
-              valuesMemory[resolvedKey] = __data
+              valuesMemory.set(resolvedKey, __data)
 
               rpc = {
                 ...rpc,
@@ -678,65 +668,63 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 variables: isGqlRequest
                   ? (optionsConfig as any)?.variables || {}
                   : undefined,
-                completedAttempts: 0,
+                completedAttempts: 0
               }
 
               $$data = __data
-              cacheForMutation[idString] = __data
+              cacheForMutation.set(idString, __data)
 
               if (!_data?.errors && isGqlRequest) {
                 rpc = {
                   ...rpc,
-                  error: false,
+                  error: false
                 }
 
-                $$error = false
-
-                hasErrors[resolvedDataKey] = false
-                hasErrors[resolvedKey] = false
+                hasErrors.set(resolvedDataKey, false)
+                hasErrors.set(resolvedKey, false)
               }
-              $$loading = false
+
               if (willResolve) {
-                if (!resolvedHookCalls[resolvedKey]) {
-                  ;(onResolve as any)(__data, lastResponses[resolvedKey])
-                  resolvedHookCalls[resolvedKey] = true
+                if (!resolvedHookCalls.get(resolvedKey)) {
+                  ;(onResolve as any)(__data, lastResponses.get(resolvedKey))
+                  resolvedHookCalls.set(resolvedKey, true)
                 }
               }
-              runningRequests[resolvedKey] = false
+              runningRequests.set(resolvedKey, false)
               // If a request completes succesfuly, reset the error attempts to 0
-              $$completedAttempts = 0
+
               queue(() => {
-                cacheForMutation[resolvedKey] = __data
+                cacheForMutation.set(resolvedKey, __data)
               })
             } else {
               rpc = {
                 ...rpc,
-                error: true,
+                error: true
               }
               if (!cacheIfError) {
-                hasData[resolvedDataKey] = false
-                hasData[resolvedKey] = false
+                hasData.set(resolvedDataKey, false)
+                hasData.set(resolvedKey, false)
               }
               if (_data.errors && isGqlRequest) {
                 if (!cacheIfError) {
-                  hasData[resolvedDataKey] = false
-                  hasData[resolvedKey] = false
+                  hasData.set(resolvedDataKey, false)
+                  hasData.set(resolvedKey, false)
                 }
-                setFetchState((previous) => {
+                setFetchState(previous => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
-                    errors: _data.errors,
+                    errors: _data.errors
                   } as any
 
                   $$data = newData
 
-                  cacheForMutation[idString] = newData
+                  cacheForMutation.set(idString, newData)
 
                   rpc = {
                     ...rpc,
                     data: newData,
-                    error: true,
+                    error: true
                   }
 
                   cacheProvider.set(resolvedDataKey, newData)
@@ -745,36 +733,36 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                   return previous
                 })
                 if (handleError) {
-                  if (!resolvedOnErrorCalls[resolvedKey]) {
-                    resolvedOnErrorCalls[resolvedKey] = true
+                  if (!resolvedOnErrorCalls.get(resolvedKey)) {
+                    resolvedOnErrorCalls.set(resolvedKey, true)
                     ;(onError as any)(true, json)
                   }
                 }
               } else {
                 if (def) {
                   $$data = thisCache
-                  cacheForMutation[idString] = def
+                  cacheForMutation.set(idString, def)
 
                   rpc = {
                     ...rpc,
-                    data: def,
+                    data: def
                   }
                 }
                 if (handleError) {
-                  if (!resolvedOnErrorCalls[resolvedKey]) {
-                    resolvedOnErrorCalls[resolvedKey] = true
+                  if (!resolvedOnErrorCalls.get(resolvedKey)) {
+                    resolvedOnErrorCalls.set(resolvedKey, true)
                     ;(onError as any)(_data, json)
                   }
                 }
               }
-              $$error = true
-              hasErrors[resolvedDataKey] = true
-              hasErrors[resolvedKey] = true
-              runningRequests[resolvedKey] = false
+
+              hasErrors.set(resolvedDataKey, true)
+              hasErrors.set(resolvedKey, true)
+              runningRequests.set(resolvedKey, false)
             }
             if (logEnd) {
               ;(onFetchEnd as any)(
-                lastResponses[resolvedKey],
+                lastResponses.get(resolvedKey),
                 optionsConfig,
                 ctx
               )
@@ -785,23 +773,23 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             // @ts-ignore
             if (!/abort/i.test(errorString)) {
               if (!cacheIfError) {
-                hasData[resolvedDataKey] = false
-                hasData[resolvedKey] = false
+                hasData.set(resolvedDataKey, false)
+                hasData.set(resolvedKey, false)
               }
 
               rpc = {
                 ...rpc,
-                error: true,
+                error: true
               }
 
               if (cacheIfError) {
                 if (notNull(thisCache) && isDefined(thisCache)) {
                   $$data = thisCache
-                  cacheForMutation[idString] = thisCache
+                  cacheForMutation.set(idString, thisCache)
 
                   rpc = {
                     ...rpc,
-                    data: thisCache,
+                    data: thisCache
                   }
                 }
               } else {
@@ -809,59 +797,60 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
                 rpc = {
                   ...rpc,
-                  data: def,
+                  data: def
                 }
 
-                cacheForMutation[idString] = def
+                cacheForMutation.set(idString, def)
               }
-              $$error = true
 
               rpc = {
                 ...rpc,
-                error: true,
+                error: true
               }
 
-              hasErrors[resolvedDataKey] = true
-              hasErrors[resolvedKey] = true
+              hasErrors.set(resolvedDataKey, true)
+              hasErrors.set(resolvedKey, true)
               if (handleError) {
-                if (!resolvedOnErrorCalls[resolvedKey]) {
-                  resolvedOnErrorCalls[resolvedKey] = true
+                if (!resolvedOnErrorCalls.get(resolvedKey)) {
+                  resolvedOnErrorCalls.set(resolvedKey, true)
                   ;(onError as any)(err as any)
                 }
               }
             } else {
               rpc = {
                 ...rpc,
-                loading: true,
+                loading: true
               }
               if (!isPending(resolvedKey)) {
                 if (!isDefined(cacheProvider.get(resolvedDataKey))) {
                   if (isDefined(def)) {
                     $$data = def
-                    cacheForMutation[idString] = def
+                    cacheForMutation.set(idString, def)
                   }
                   rpc = {
                     ...rpc,
                     data: def,
-                    loading: true,
+                    loading: true
                   }
                 }
               }
             }
           } finally {
-            runningRequests[resolvedKey] = false
-            suspenseInitialized[resolvedKey] = true
+            runningRequests.set(resolvedKey, false)
+            suspenseInitialized.set(resolvedKey, true)
 
             requestsProvider.emit(resolvedKey, {
               error:
-                hasErrors[resolvedKey] || hasErrors[resolvedDataKey] || false,
+                hasErrors.get(resolvedKey) ||
+                hasErrors.get(resolvedDataKey) ||
+                false,
               ...rpc,
-              loading: false,
+              loading: false
             })
 
-            willSuspend[resolvedKey] = false
+            willSuspend.set(resolvedKey, false)
             queue(() => {
-              canDebounce[resolvedKey] = true
+              canDebounce.set(resolvedKey, true)
             }, debounce)
             return $$data
           }
@@ -880,7 +869,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       requestCallId,
       memory,
       def,
-      loadingFirst,
+      loadingFirst
     ]
   )
 
@@ -896,21 +885,21 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         }
       }
     }
-    signal?.addEventListener("abort", abortCallback)
+    signal?.addEventListener('abort', abortCallback)
     return () => {
-      signal?.removeEventListener("abort", abortCallback)
+      signal?.removeEventListener('abort', abortCallback)
     }
   }, [requestAbortController, resolvedKey, onAbort, loading])
 
-  const imperativeFetch = React.useMemo(() => {
+  const imperativeFetch = useMemo(() => {
     const __headers = {
       ...ctx.headers,
-      ...config.headers,
+      ...config.headers
     }
 
     const __params = {
       ...ctx.params,
-      ...config.params,
+      ...config.params
     }
 
     const __baseUrl = isDefined(config.baseUrl) ? config.baseUrl : ctx.baseUrl
@@ -918,7 +907,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       ...ctx,
       headers: __headers,
       baseUrl: __baseUrl,
-      params: __params,
+      params: __params
     })
   }, [serialize(ctx)])
 
@@ -930,19 +919,19 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         error: $error,
         online,
         loading,
-        completedAttempts,
+        completedAttempts
       } = v || {}
 
       if (isMutating) {
-        if (serialize($data) !== serialize(cacheForMutation[resolvedKey])) {
-          cacheForMutation[idString] = data
+        if (serialize($data) !== serialize(cacheForMutation.get(resolvedKey))) {
+          cacheForMutation.set(idString, data)
           if (isMutating) {
             if (handleMutate) {
-              if (url === "") {
+              if (url === '') {
                 ;(onMutate as any)($data, imperativeFetch)
               } else {
-                if (!runningMutate[resolvedKey]) {
-                  runningMutate[resolvedKey] = true
+                if (!runningMutate.get(resolvedKey)) {
+                  runningMutate.set(resolvedKey, true)
                   ;(onMutate as any)($data, imperativeFetch)
                 }
               }
@@ -952,21 +941,21 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
 
       if (v.requestCallId !== requestCallId) {
-        if (!willSuspend[resolvedKey]) {
+        if (!willSuspend.get(resolvedKey)) {
           queue(() => {
-            if (inDeps("data")) {
+            if (inDeps('data')) {
               setData($data)
             }
-            if (inDeps("online")) {
+            if (inDeps('online')) {
               setOnline(online)
             }
-            if (inDeps("loading")) {
+            if (inDeps('loading')) {
               setLoading(loading)
             }
-            if (inDeps("error")) {
+            if (inDeps('error')) {
               setError($error)
             }
-            if (inDeps("completedAttempts")) {
+            if (inDeps('completedAttempts')) {
               setCompletedAttempts(completedAttempts)
             }
           })
@@ -985,10 +974,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     resolvedKey,
     resolvedDataKey,
     requestCallId,
-    fetchState,
+    fetchState
   ])
 
-  const reValidate = React.useCallback(
+  const reValidate = useCallback(
     async function reValidate() {
       if (!isPending(resolvedKey) && !loading) {
         revalidate(id)
@@ -1002,18 +991,18 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       if (!isPending(resolvedKey)) {
         // preventing revalidation where only need updates about
         // 'loading', 'error' and 'data' because the url can be ommited.
-        if (url !== "") {
+        if (url !== '') {
           fetchData({
             query: Object.keys(reqQuery)
-              .map((q) =>
+              .map(q =>
                 Array.isArray(reqQuery[q])
                   ? reqQuery[q]
-                      .map((queryItem: any) => [q, queryItem].join("="))
-                      .join("&")
-                  : [q, reqQuery[q]].join("=")
+                      .map((queryItem: any) => [q, queryItem].join('='))
+                      .join('&')
+                  : [q, reqQuery[q]].join('=')
               )
-              .join("&"),
-            params: reqParams,
+              .join('&'),
+            params: reqParams
           })
         }
       }
@@ -1034,7 +1023,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     ctx.auto,
     idString,
     fetchState,
-    id,
+    id
   ])
 
   useEffect(() => {
@@ -1045,13 +1034,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
       requestsProvider.emit(resolvedKey, {
         requestCallId,
-        online: true,
+        online: true
       })
       setOnline(true)
-      offlineHandled[resolvedKey] = false
+      offlineHandled.set(resolvedKey, false)
       if (handleOnline) {
-        if (!onlineHandled[resolvedKey]) {
-          onlineHandled[resolvedKey] = true
+        if (!onlineHandled.get(resolvedKey)) {
+          onlineHandled.set(resolvedKey, true)
           ;(onOnline as any)({ cancel: cancelReconectionAttempt })
         }
       }
@@ -1062,9 +1051,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
     function addOnlineListener() {
       if (windowExists) {
-        if ("addEventListener" in window) {
+        if ('addEventListener' in window) {
           if (retryOnReconnect) {
-            window.addEventListener("online", backOnline)
+            window.addEventListener('online', backOnline)
           }
         }
       }
@@ -1074,8 +1063,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
     return () => {
       if (windowExists) {
-        if ("addEventListener" in window) {
-          window.removeEventListener("online", backOnline)
+        if ('addEventListener' in window) {
+          window.removeEventListener('online', backOnline)
         }
       }
     }
@@ -1083,16 +1072,16 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   useEffect(() => {
     function wentOffline() {
-      runningRequests[resolvedKey] = false
+      runningRequests.set(resolvedKey, false)
       setOnline(false)
       requestsProvider.emit(resolvedKey, {
         requestCallId,
-        online: false,
+        online: false
       })
-      onlineHandled[resolvedKey] = false
+      onlineHandled.set(resolvedKey, false)
       if (handleOffline) {
-        if (!offlineHandled[resolvedKey]) {
-          offlineHandled[resolvedKey] = true
+        if (!offlineHandled.get(resolvedKey)) {
+          offlineHandled.set(resolvedKey, true)
           ;(onOffline as any)()
         }
       }
@@ -1100,8 +1089,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
     function addOfflineListener() {
       if (windowExists) {
-        if ("addEventListener" in window) {
-          window.addEventListener("offline", wentOffline)
+        if ('addEventListener' in window) {
+          window.addEventListener('offline', wentOffline)
         }
       }
     }
@@ -1110,8 +1099,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
     return () => {
       if (windowExists) {
-        if ("addEventListener" in window) {
-          window.removeEventListener("offline", wentOffline)
+        if ('addEventListener' in window) {
+          window.removeEventListener('offline', wentOffline)
         }
       }
     }
@@ -1121,20 +1110,20 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     return () => {
       if (revalidateOnMount) {
         if (canRevalidate) {
-          if (url !== "") {
-            if (suspenseInitialized[resolvedKey]) {
+          if (url !== '') {
+            if (suspenseInitialized.get(resolvedKey)) {
               queue(() => {
-                previousConfig[resolvedKey] = undefined
-                hasErrors[resolvedKey] = false
-                hasErrors[resolvedDataKey] = false
-                runningRequests[resolvedKey] = false
+                previousConfig.set(resolvedKey, undefined)
+                hasErrors.set(resolvedKey, false)
+                hasErrors.set(resolvedDataKey, false)
+                runningRequests.set(resolvedKey, false)
                 // Wait for 100ms after suspense unmount
               }, 100)
             } else {
-              previousConfig[resolvedKey] = undefined
-              hasErrors[resolvedKey] = false
-              hasErrors[resolvedDataKey] = false
-              runningRequests[resolvedKey] = false
+              previousConfig.set(resolvedKey, undefined)
+              hasErrors.set(resolvedKey, false)
+              hasErrors.set(resolvedDataKey, false)
+              runningRequests.set(resolvedKey, false)
             }
           }
         }
@@ -1154,7 +1143,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
               requestsProvider.emit(resolvedKey, {
                 requestCallId,
-                completedAttempts: newAttemptsValue,
+                completedAttempts: newAttemptsValue
               })
 
               return newAttemptsValue
@@ -1163,9 +1152,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             requestsProvider.emit(resolvedKey, {
               requestCallId,
               online: false,
-              error: true,
+              error: true
             })
-            if (inDeps("online")) setOnline(false)
+            if (inDeps('online')) setOnline(false)
           }
         }
       }, getMiliseconds(attemptInterval as TimeSpan))
@@ -1192,31 +1181,31 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh, loading, error, rawJSON, completedAttempts, config])
 
-  const initializeRevalidation = React.useCallback(
+  const initializeRevalidation = useCallback(
     async function initializeRevalidation() {
       let d = undefined
       if (canRevalidate) {
-        if (url !== "") {
+        if (url !== '') {
           d = await fetchData({
             query: Object.keys(reqQuery)
-              .map((q) =>
+              .map(q =>
                 Array.isArray(reqQuery[q])
                   ? reqQuery[q]
-                      .map((queryItem: any) => [q, queryItem].join("="))
-                      .join("&")
-                  : [q, reqQuery[q]].join("=")
+                      .map((queryItem: any) => [q, queryItem].join('='))
+                      .join('&')
+                  : [q, reqQuery[q]].join('=')
               )
-              .join("&"),
-            params: reqParams,
+              .join('&'),
+            params: reqParams
           })
         } else {
           d = def
           // It means a url is not passed
-          setFetchState((prev) => ({
+          setFetchState(prev => ({
             ...prev,
             loading: false,
-            error: hasErrors[resolvedDataKey] || hasErrors[resolvedKey],
-            completedAttempts: prev.completedAttempts,
+            error: hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey),
+            completedAttempts: prev.completedAttempts
           }))
         }
       } else {
@@ -1228,16 +1217,16 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   )
 
   if (!suspense) {
-    if (url !== "") {
-      suspenseInitialized[resolvedKey] = true
+    if (url !== '') {
+      suspenseInitialized.set(resolvedKey, true)
     }
   }
 
   useIsomorphicLayoutEffect(() => {
-    if (url !== "") {
-      if (!jsonCompare(previousProps[resolvedKey], optionsConfig)) {
-        abortControllers[resolvedKey]?.abort()
-        if (inDeps("data")) {
+    if (url !== '') {
+      if (!jsonCompare(previousProps.get(resolvedKey), optionsConfig)) {
+        abortControllers.get(resolvedKey)?.abort()
+        if (inDeps('data')) {
           queue(initializeRevalidation)
         }
       }
@@ -1247,28 +1236,31 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   if (suspense) {
     if (auto) {
       if (windowExists) {
-        if (!suspenseInitialized[resolvedKey]) {
-          if (!suspenseRevalidationStarted[resolvedKey]) {
-            suspenseRevalidationStarted[resolvedKey] = initializeRevalidation()
+        if (!suspenseInitialized.get(resolvedKey)) {
+          if (!suspenseRevalidationStarted.get(resolvedKey)) {
+            suspenseRevalidationStarted.set(
+              resolvedKey,
+              initializeRevalidation()
+            )
           }
-          throw suspenseRevalidationStarted[resolvedKey]
+          throw suspenseRevalidationStarted.get(resolvedKey)
         }
       } else {
         throw {
           message:
-            "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense",
+            "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
         }
       }
     }
   }
 
   useIsomorphicLayoutEffect(() => {
-    if (!runningRequests[resolvedKey] && isExpired) {
+    if (!runningRequests.get(resolvedKey) && isExpired) {
       if (windowExists) {
-        if (canRevalidate && url !== "") {
-          if (!jsonCompare(previousConfig[resolvedKey], optionsConfig)) {
+        if (canRevalidate && url !== '') {
+          if (!jsonCompare(previousConfig.get(resolvedKey), optionsConfig)) {
             if (!isPending(resolvedKey)) {
-              if (inDeps("data")) {
+              if (inDeps('data')) {
                 initializeRevalidation()
               }
             } else {
@@ -1283,11 +1275,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   useIsomorphicLayoutEffect(() => {
     const revalidateAfterUnmount = revalidateOnMount
       ? true
-      : previousConfig[resolvedKey] !== serialize(optionsConfig)
+      : previousConfig.get(resolvedKey) !== serialize(optionsConfig)
 
     function revalidate() {
-      if (!debounce && !canDebounce[resolvedKey]) {
-        if (inDeps("data")) {
+      if (!debounce && !canDebounce.get(resolvedKey)) {
+        if (inDeps('data')) {
           initializeRevalidation()
         }
       }
@@ -1295,7 +1287,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
     if (revalidateAfterUnmount) {
       if (suspense) {
-        if (suspenseInitialized[resolvedKey]) {
+        if (suspenseInitialized.get(resolvedKey)) {
           revalidate()
         }
       } else {
@@ -1309,8 +1301,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   useEffect(() => {
     function addFocusListener() {
       if (revalidateOnFocus && windowExists) {
-        if ("addEventListener" in window) {
-          window.addEventListener("focus", reValidate as any)
+        if ('addEventListener' in window) {
+          window.addEventListener('focus', reValidate as any)
         }
       }
     }
@@ -1319,8 +1311,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
     return () => {
       if (windowExists) {
-        if ("addEventListener" in window) {
-          window.removeEventListener("focus", reValidate as any)
+        if ('addEventListener' in window) {
+          window.removeEventListener('focus', reValidate as any)
         }
       }
     }
@@ -1332,29 +1324,29 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     loading,
     reValidate,
     refresh,
-    serialize(config),
+    serialize(config)
   ])
 
   const __config = {
     ...config,
     ...optionsConfig,
-    ...previousProps[resolvedKey],
+    ...previousProps.get(resolvedKey),
     params: {
       ...reqParams,
-      ...previousProps[resolvedKey]?.params,
+      ...previousProps.get(resolvedKey)?.params
     },
     headers: {
       ...requestHeaders,
-      ...previousProps[resolvedKey]?.headers,
+      ...previousProps.get(resolvedKey)?.headers
     },
     body: config.body,
     baseUrl: ctx.baseUrl || config.baseUrl,
-    url: configUrl?.realUrl?.replace("?", ""),
+    url: configUrl?.realUrl?.replace('?', ''),
     rawUrl: configUrl?.rawUrl,
     query: {
       ...reqQuery,
-      ...previousProps[resolvedKey]?.query,
-    },
+      ...previousProps.get(resolvedKey)?.query
+    }
   }
 
   function forceMutate(
@@ -1368,13 +1360,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         callback(newValue as any, imperativeFetch)
         cacheProvider.set(resolvedDataKey, newValue)
         cacheProvider.set(resolvedKey, newValue)
-        valuesMemory[resolvedKey] = newValue
-        cacheForMutation[idString] = newValue
-        runningMutate[resolvedKey] = false
+        valuesMemory.set(resolvedKey, newValue)
+        cacheForMutation.set(idString, newValue)
+        runningMutate.set(resolvedKey, false)
         requestsProvider.emit(resolvedKey, {
           requestCallId,
           isMutating: true,
-          data: newValue,
+          data: newValue
         })
         setData(newValue as any)
       }
@@ -1384,13 +1376,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         callback(newVal, imperativeFetch)
         cacheProvider.set(resolvedDataKey, newVal)
         cacheProvider.set(resolvedKey, newVal)
-        valuesMemory[resolvedKey] = newVal
-        cacheForMutation[idString] = newVal
-        runningMutate[resolvedKey] = false
+        valuesMemory.set(resolvedKey, newVal)
+        cacheForMutation.set(idString, newVal)
+        runningMutate.set(resolvedKey, false)
         requestsProvider.emit(resolvedKey, {
           requestCallId,
           isMutating: true,
-          data: newVal,
+          data: newVal
         })
 
         setData(newVal)
@@ -1399,12 +1391,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   const [$requestStart, $requestEnd] = [
-    notNull(cacheProvider.get("requestStart" + resolvedDataKey))
-      ? new Date(cacheProvider.get("requestStart" + resolvedDataKey))
+    notNull(cacheProvider.get('requestStart' + resolvedDataKey))
+      ? new Date(cacheProvider.get('requestStart' + resolvedDataKey))
       : null,
-    notNull(cacheProvider.get("requestEnds" + resolvedDataKey))
-      ? new Date(cacheProvider.get("requestEnds" + resolvedDataKey))
-      : null,
+    notNull(cacheProvider.get('requestEnds' + resolvedDataKey))
+      ? new Date(cacheProvider.get('requestEnds' + resolvedDataKey))
+      : null
   ]
 
   const expirationDate = error
@@ -1413,11 +1405,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       : null
     : maxAge === 0
     ? null
-    : notNull(cacheProvider.get("expiration" + resolvedDataKey))
-    ? new Date(cacheProvider.get("expiration" + resolvedDataKey))
+    : notNull(cacheProvider.get('expiration' + resolvedDataKey))
+    ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
     : null
 
-  const isFailed = hasErrors[resolvedDataKey] || hasErrors[resolvedKey] || error
+  const isFailed =
+    hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey) || error
 
   const responseData =
     (error && isFailed ? (cacheIfError ? thisCache : null) : thisCache) ?? def
@@ -1426,8 +1419,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const oneRequestResolved =
     !loadingFirst &&
-    (hasData[resolvedDataKey] ||
-      hasData[resolvedKey] ||
+    (hasData.get(resolvedDataKey) ||
+      hasData.get(resolvedKey) ||
       (cacheIfError ? isDefined(responseData) && notNull(responseData) : false))
 
   return {
@@ -1462,7 +1455,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     },
     get responseTime() {
       thisDeps.loading = true
-      return requestResponseTimes[resolvedDataKey] ?? null
+      return requestResponseTimes.get(resolvedDataKey) ?? null
     },
     get data() {
       thisDeps.data = true
@@ -1482,7 +1475,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     },
     get code() {
       thisDeps.loading = true
-      return statusCodes[resolvedKey]
+      return statusCodes.get(resolvedKey)
     },
     get reFetch() {
       thisDeps.loading = true
@@ -1497,17 +1490,17 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     },
     get abort() {
       return () => {
-        abortControllers[resolvedKey]?.abort()
+        abortControllers.get(resolvedKey)?.abort()
         if (loading) {
           setError(false)
-          hasErrors[resolvedDataKey] = false
+          hasErrors.set(resolvedDataKey, false)
           setLoading(false)
           setData(requestCache)
           requestsProvider.emit(resolvedKey, {
             requestCallId,
             error: false,
             loading: false,
-            data: requestCache,
+            data: requestCache
           })
         }
       }
@@ -1515,13 +1508,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     config: __config,
     get response() {
       thisDeps.loading = true
-      return lastResponses[resolvedKey]
+      return lastResponses.get(resolvedKey)
     },
     id,
     /**
      * The request key
      */
-    key: resolvedKey,
+    key: resolvedKey
   } as unknown as {
     hasData: boolean
     /**
@@ -1557,15 +1550,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 }
 
-useFetch.get = createRequestFn("GET", "", {})
-useFetch.delete = createRequestFn("DELETE", "", {})
-useFetch.head = createRequestFn("HEAD", "", {})
-useFetch.options = createRequestFn("OPTIONS", "", {})
-useFetch.post = createRequestFn("POST", "", {})
-useFetch.put = createRequestFn("PUT", "", {})
-useFetch.patch = createRequestFn("PATCH", "", {})
-useFetch.purge = createRequestFn("PURGE", "", {})
-useFetch.link = createRequestFn("LINK", "", {})
-useFetch.unlink = createRequestFn("UNLINK", "", {})
+useFetch.get = createRequestFn('GET', '', {})
+useFetch.delete = createRequestFn('DELETE', '', {})
+useFetch.head = createRequestFn('HEAD', '', {})
+useFetch.options = createRequestFn('OPTIONS', '', {})
+useFetch.post = createRequestFn('POST', '', {})
+useFetch.put = createRequestFn('PUT', '', {})
+useFetch.patch = createRequestFn('PATCH', '', {})
+useFetch.purge = createRequestFn('PURGE', '', {})
+useFetch.link = createRequestFn('LINK', '', {})
+useFetch.unlink = createRequestFn('UNLINK', '', {})
 
 useFetch.extend = createImperativeFetch
