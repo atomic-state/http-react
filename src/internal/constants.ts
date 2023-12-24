@@ -12,27 +12,6 @@ const REVALIDATE_ON_MOUNT = true
 const DEFAULT_GRAPHQL_PATH = '/graphql'
 const DEFAULT_RESOLVER = (e: any) => e.json()
 
-const ALLOWED_CONTEXT_KEYS = [
-  'headers',
-  'baseUrl',
-  'body',
-  'defaults',
-  'resolver',
-  'auto',
-  'memory',
-  'refresh',
-  'attempts',
-  'attemptInterval',
-  'revalidateOnFocus',
-  'query',
-  'params',
-  'onOnline',
-  'onOffline',
-  'online',
-  'retryOnReconnect',
-  'cache'
-]
-
 const METHODS = {
   GET: 'GET',
   DELETE: 'DELETE',
@@ -71,7 +50,6 @@ export {
   REVALIDATE_ON_MOUNT,
   DEFAULT_GRAPHQL_PATH,
   DEFAULT_RESOLVER,
-  ALLOWED_CONTEXT_KEYS,
   METHODS,
   UNITS_MILISECONDS_EQUIVALENTS
 }

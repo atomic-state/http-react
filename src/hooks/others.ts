@@ -1,6 +1,5 @@
 'use client'
-import * as React from 'react'
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import {
   FetchConfigType,
@@ -29,10 +28,7 @@ import { createImperativeFetch, getMiliseconds } from '../utils'
 
 import { isDefined, isFunction, serialize } from '../utils/shared'
 
-import {
-  ALLOWED_CONTEXT_KEYS,
-  DEFAULT_GRAPHQL_PATH
-} from '../internal/constants'
+import { DEFAULT_GRAPHQL_PATH } from '../internal/constants'
 
 /**
  * Get the current fetcher config
@@ -166,7 +162,7 @@ export function useFetchError(id: any, onError?: (err?: any) => void) {
   return (
     useFetch({
       id: id
-    }).error || hasErrors[resolvedKey]
+    }).error || hasErrors.get(resolvedKey)
   )
 }
 
@@ -232,7 +228,7 @@ export function useFetchId<ResponseType = any, BodyType = any>(id: any) {
   const defaultsKey = serialize({
     idString: serialize(id)
   })
-  const def = fetcherDefaults[defaultsKey]
+  const def = fetcherDefaults.get(defaultsKey)
 
   return useFetch<ResponseType, BodyType>({
     id,
@@ -277,7 +273,7 @@ export function useResolve<ResponseType = any, VT = any>(
       const { isResolved, data } = v
       if (isResolved) {
         if (isFunction(onResolve)) {
-          onResolve(data, lastResponses[defaultsKey])
+          onResolve(data, lastResponses.get(defaultsKey))
         }
       }
     }
@@ -629,7 +625,7 @@ export function useGql<T = any, VT = { [k: string]: any }>(
 export function useImperative() {
   const ctx = useFetchConfig()
 
-  const imperativeFetch = React.useMemo(
+  const imperativeFetch = useMemo(
     () => createImperativeFetch(ctx as any),
     [serialize(ctx)]
   )
@@ -643,7 +639,7 @@ export const createActionsHook = <Acts>(cfg?: FetchInit) =>
     otherConfig?: FetchInit<T>
   ) {
     type K = keyof Acts
-    const [args, setArgs] = React.useState<any>()
+    const [args, setArgs] = useState<any>()
 
     const { reFetch, ...other } = useFetch<T>('/[action]', {
       baseUrl: '/api/actions',

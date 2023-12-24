@@ -1,5 +1,4 @@
 'use client'
-import * as React from 'react'
 import { useEffect, useState, Suspense } from 'react'
 
 import {
@@ -53,11 +52,11 @@ export function FetchConfig(props: FetchContextType) {
     })
 
     if (isDefined(id)) {
-      if (!isDefined(valuesMemory[resolvedKey])) {
-        valuesMemory[resolvedKey] = defaults[defaultKey]?.value
+      if (!isDefined(valuesMemory.get(resolvedKey))) {
+        valuesMemory.set(resolvedKey, defaults[defaultKey]?.value)
       }
-      if (!isDefined(fetcherDefaults[resolvedKey])) {
-        fetcherDefaults[resolvedKey] = defaults[defaultKey]?.value
+      if (!isDefined(fetcherDefaults.get(resolvedKey))) {
+        fetcherDefaults.set(resolvedKey, defaults[defaultKey]?.value)
       }
     }
 
@@ -70,7 +69,7 @@ export function FetchConfig(props: FetchContextType) {
     const key = serialize({
       idString: serialize(suspenseKey)
     })
-    willSuspend[key] = true
+    willSuspend.set(key, true)
   }
 
   let mergedConfig = {

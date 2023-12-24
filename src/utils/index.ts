@@ -1,5 +1,5 @@
 'use client'
-import * as React from 'react'
+import { useLayoutEffect, useEffect, useMemo } from 'react'
 import { useGql } from '../hooks/others'
 import { useFetch } from '../hooks/use-fetch'
 
@@ -49,7 +49,7 @@ export function getMiliseconds(v: TimeSpan): number {
 export function getTimePassed(key: any) {
   return (
     Date.now() -
-    (isDefined(requestInitialTimes[key]) ? requestInitialTimes[key] : 0)
+    (isDefined(requestInitialTimes.get(key)) ? requestInitialTimes.get(key) : 0)
   )
 }
 
@@ -90,8 +90,8 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
 }
 
 export const useIsomorphicLayoutEffect = windowExists
-  ? React.useLayoutEffect
-  : React.useEffect
+  ? useLayoutEffect
+  : useEffect
 
 /**
  * Revalidate requests that match an id or ids
@@ -105,10 +105,10 @@ export function revalidate(id: any | any[], __reval__ = true) {
         const resolveKey = serialize({ idString: key })
 
         if (__reval__) {
-          previousConfig[resolveKey] = undefined
+          previousConfig.set(resolveKey, undefined)
         }
 
-        abortControllers[resolveKey]?.abort()
+        abortControllers.get(resolveKey)?.abort()
 
         if (__reval__) {
           if (!isPending(key)) {
@@ -129,10 +129,10 @@ export function revalidate(id: any | any[], __reval__ = true) {
       const resolveKey = serialize({ idString: key })
 
       if (__reval__) {
-        previousConfig[resolveKey] = undefined
+        previousConfig.set(resolveKey, undefined)
       }
 
-      abortControllers[resolveKey]?.abort()
+      abortControllers.get(resolveKey)?.abort()
 
       if (__reval__) {
         if (!isPending(key)) {
@@ -301,7 +301,7 @@ export function queryProvider<R>(
       variables: queryVariables
     })
 
-    const thisData = React.useMemo(
+    const thisData = useMemo(
       () => ({
         ...g?.data,
         variables: queryVariables
@@ -342,35 +342,35 @@ export function mutateData(
       const key = serialize({ idString: serialize(k) })
       const requestCallId = ''
       if (isFunction(v)) {
-        let newVal = v(cacheForMutation[key])
-        runningMutate[key] = undefined
+        let newVal = v(cacheForMutation.get(key))
+        runningMutate.set(key, undefined)
         requestsProvider.emit(key, {
           data: newVal,
           isMutating: true,
           requestCallId
         })
         if (_revalidate) {
-          previousConfig[key] = undefined
+          previousConfig.set(key, undefined)
           requestsProvider.emit(serialize(k), {})
         }
         queue(() => {
-          valuesMemory[key] = newVal
-          cacheForMutation[key] = newVal
+          valuesMemory.set(key, newVal)
+          cacheForMutation.set(key, newVal)
         })
       } else {
-        runningMutate[key] = undefined
+        runningMutate.set(key, undefined)
         requestsProvider.emit(key, {
           requestCallId,
           isMutating: true,
           data: v
         })
         if (_revalidate) {
-          previousConfig[key] = undefined
+          previousConfig.set(key, undefined)
           requestsProvider.emit(serialize(k), {})
         }
         queue(() => {
-          valuesMemory[key] = v
-          cacheForMutation[key] = v
+          valuesMemory.set(key, v)
+          cacheForMutation.set(key, v)
         })
       }
     } catch (err) {}
