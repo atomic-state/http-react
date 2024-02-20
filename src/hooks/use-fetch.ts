@@ -46,6 +46,7 @@ import {
   createImperativeFetch,
   getMiliseconds,
   getTimePassed,
+  removeUndefinedObjectProps,
   revalidate,
   useIsomorphicLayoutEffect
 } from '../utils'
@@ -54,6 +55,7 @@ import {
   getRequestHeaders,
   hasBaseUrl,
   isDefined,
+  isFormData,
   isFunction,
   jsonCompare,
   notNull,
@@ -549,13 +551,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                     signal: (() => {
                       return newAbortController.signal
                     })(),
-                    headers: {
-                      'Content-Type': 'application/json',
+                    headers: removeUndefinedObjectProps({
+                      'Content-Type': isFormData(optionsConfig?.body)
+                        ? undefined
+                        : 'application/json',
                       ...ctx.headers,
                       ..._headers,
                       ...config.headers,
                       ...c.headers
-                    }
+                    })
                   }
                 : {
                     ...ctx,
@@ -563,16 +567,20 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                     signal: (() => {
                       return newAbortController.signal
                     })(),
-                    body: isFunction(formatBody)
+                    body: isFormData(optionsConfig?.body)
+                      ? optionsConfig?.body
+                      : isFunction(formatBody)
                       ? // @ts-ignore // If formatBody is a function
                         formatBody(optionsConfig?.body as any)
                       : optionsConfig?.body,
-                    headers: {
-                      'Content-Type': 'application/json',
+                    headers: removeUndefinedObjectProps({
+                      'Content-Type': isFormData(optionsConfig?.body)
+                        ? undefined
+                        : 'application/json',
                       ...ctx.headers,
                       ...config.headers,
                       ...c.headers
-                    }
+                    })
                   }
             ) as any
 

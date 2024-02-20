@@ -1,3 +1,4 @@
+import { removeUndefinedObjectProps } from '.'
 import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
 
 import { FetchContextType, ImperativeFetch, RequestWithBody } from '../types'
@@ -172,12 +173,14 @@ export function createRequestFn(
 
     const reqConfig = {
       method: $method,
-      headers: {
-        'Content-Type': 'application/json',
+      headers: removeUndefinedObjectProps({
+        'Content-Type': isFormData(body) ? undefined : 'application/json',
         ...$headers,
         ...headers
-      },
-      body: canHaveBody(method as any)
+      }),
+      body: isFormData(body)
+        ? body
+        : canHaveBody(method as any)
         ? isFunction(formatBody)
           ? (formatBody as any)(body)
           : body
