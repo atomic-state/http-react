@@ -46,12 +46,10 @@ import {
   createImperativeFetch,
   getMiliseconds,
   getTimePassed,
-  removeUndefinedObjectProps,
   revalidate,
   useIsomorphicLayoutEffect
 } from '../utils'
 import {
-  createRequestFn,
   getRequestHeaders,
   hasBaseUrl,
   isDefined,
@@ -62,7 +60,8 @@ import {
   queue,
   serialize,
   setURLParams,
-  windowExists
+  windowExists,
+  removeUndefinedObjectProps
 } from '../utils/shared'
 
 /**
@@ -1557,16 +1556,3 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     requestEnd: Date
   }
 }
-
-useFetch.get = createRequestFn('GET', '', {})
-useFetch.delete = createRequestFn('DELETE', '', {})
-useFetch.head = createRequestFn('HEAD', '', {})
-useFetch.options = createRequestFn('OPTIONS', '', {})
-useFetch.post = createRequestFn('POST', '', {})
-useFetch.put = createRequestFn('PUT', '', {})
-useFetch.patch = createRequestFn('PATCH', '', {})
-useFetch.purge = createRequestFn('PURGE', '', {})
-useFetch.link = createRequestFn('LINK', '', {})
-useFetch.unlink = createRequestFn('UNLINK', '', {})
-
-useFetch.extend = createImperativeFetch

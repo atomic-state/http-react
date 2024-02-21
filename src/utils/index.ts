@@ -376,18 +376,3 @@ export function mutateData(
     } catch (err) {}
   }
 }
-
-export function removeUndefinedObjectProps(obj: any) {
-  try {
-    return Object.fromEntries(
-      Object.keys(obj || {})
-        .filter(k => typeof obj[k] !== 'undefined')
-        .map(noUndefinedProperty => [
-          noUndefinedProperty,
-          obj[noUndefinedProperty]
-        ])
-    )
-  } catch {
-    return {}
-  }
-}

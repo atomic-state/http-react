@@ -1,4 +1,3 @@
-import { removeUndefinedObjectProps } from '.'
 import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
 
 import { FetchContextType, ImperativeFetch, RequestWithBody } from '../types'
@@ -303,6 +302,21 @@ const Client = {
   link: createRequestFn('LINK', '', {}),
   unlink: createRequestFn('UNLINK', '', {}),
   extend: createImperativeFetch
+}
+
+export function removeUndefinedObjectProps(obj: any) {
+  try {
+    return Object.fromEntries(
+      Object.keys(obj || {})
+        .filter(k => typeof obj[k] !== 'undefined')
+        .map(noUndefinedProperty => [
+          noUndefinedProperty,
+          obj[noUndefinedProperty]
+        ])
+    )
+  } catch {
+    return {}
+  }
 }
 
 export { Client }
