@@ -48,7 +48,6 @@ export {
   useRevalidating,
   useSuccess,
   useDebounceFetch,
-  createActionsHook,
   useIsomorphicLayoutEffect
 } from './hooks'
 
@@ -76,5 +75,3 @@ export {
   setQueryParams,
   setParamsAndQuery
 } from './utils/shared'
-
-export { createActionHandler } from './server'
