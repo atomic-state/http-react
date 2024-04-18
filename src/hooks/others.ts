@@ -632,3 +632,18 @@ export function useImperative() {
 
   return imperativeFetch
 }
+
+export function useServerAction<T extends (args: any) => any>(
+  action: T,
+  config: Omit<
+    FetchConfigTypeNoUrl<Awaited<ReturnType<T>>['data']>,
+    'params'
+  > & {
+    params?: Parameters<T>[0]
+  }
+) {
+  return useFetch(action.name, {
+    fetcher: (_, config) => action(config.params),
+    ...config
+  })
+}
