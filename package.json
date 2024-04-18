@@ -1,11 +1,11 @@
 {
   "name": "http-react",
-  "version": "3.2.6",
+  "version": "3.2.7",
   "description": "React hooks for data fetching",
   "main": "dist/index.js",
   "scripts": {
     "test": "tsc && webpack --mode production && jest",
-    "compile": "tsc && webpack --mode production"
+    "compile": "tsc"
   },
   "repository": {
     "type": "git",
@@ -29,7 +29,8 @@
     "gql",
     "suspense",
     "pagination",
-    "optimistic-ui"
+    "optimistic-ui",
+    "server actions"
   ],
   "author": "Dany Beltran",
   "license": "MIT",
