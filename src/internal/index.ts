@@ -6,6 +6,7 @@ import {
   ATTEMPTS,
   ATTEMPT_INTERVAL,
   DEFAULTS,
+  DEFAULT_MIDDLEWARE,
   ONLINE,
   ON_OFFLINE,
   ON_ONLINE,
@@ -168,7 +169,8 @@ const defaultContextVaue: FetchContextType = {
   online: ONLINE,
   retryOnReconnect: RETRY_ON_RECONNECT,
   revalidateOnMount: REVALIDATE_ON_MOUNT,
-  cacheIfError: true
+  cacheIfError: true,
+  middleware: DEFAULT_MIDDLEWARE
 }
 
 export const FetchContext = createContext<FetchContextType>(defaultContextVaue)

@@ -41,6 +41,7 @@ export type FetchContextType = {
   }
   suspense?: any[]
   resolver?: (r: Response) => any
+  middleware?(incomindgData: any, previousData: any): any
   children?: any
   auto?: boolean
   memory?: boolean
@@ -153,6 +154,15 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
   'body' | 'headers'
 > & {
   headers?: any
+  /**
+   * The middleware function should return the data that will be commited to the state. It can be used for pagination, logging, etc.
+   *
+   * It assumes `previousData`, `incomingData` and the returned data have the same type for consistency.
+   */
+  middleware?(
+    incomindgData: FetchDataType,
+    previousData: FetchDataType
+  ): FetchDataType
   fetcher?(
     url: string,
     config: FetchConfigType<FetchDataType, BodyType>
