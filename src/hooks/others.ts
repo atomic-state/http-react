@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import {
   FetchConfigType,
@@ -16,9 +16,7 @@ import {
   hasErrors,
   isPending,
   lastResponses,
-  requestResponseTimes,
   requestsProvider,
-  runningRequests,
   useHRFContext
 } from '../internal'
 
@@ -633,17 +631,71 @@ export function useImperative() {
   return imperativeFetch
 }
 
+/**
+ * This code is related to using server actions with http-react.
+ *
+ * Mock ids are necessary because server actions are proxied and reading their Function's `name`
+ * in client side code always returns `proxy`, which could cause conflicts between useFetch calls.
+ *
+ * An `id` can also be passed in config (the second argument of `useServerAction`)
+ */
+
+/**
+ * ServerActionIds
+ */
+const serverActionIds = new WeakMap()
+
+/**
+ * Uses the action proxy as the weakmap key
+ */
+function getMockServerActionId(action: any) {
+  let mockServerActionId = serverActionIds.get(action)
+
+  if (!mockServerActionId) {
+    mockServerActionId = crypto.randomUUID()
+
+    serverActionIds.set(action, mockServerActionId)
+  }
+
+  return mockServerActionId
+}
+
+/**
+ * Uses a server action as fetcher. It provides complete TypeScript support.
+ *
+ *
+ * @param action The Server action. It must, at least, return a `data` property which will help with type inference. It can also return a `status` code. @example {
+ *    data: 'Some data',
+ *    status: 200
+ *  }
+ * @param config The request config. Use it to pass the server action argument in the `params` property. For now, only passing a single argument is supported.
+ * You can pass other things like `onResolve`, `onError`, etc.
+ *
+ * @example { params: { userId: 32 }, onResolve(data){ console.log("Data is", data)  } }
+ */
+
 export function useServerAction<T extends (args: any) => any>(
   action: T,
-  config: Omit<
+  config?: Omit<
     FetchConfigTypeNoUrl<Awaited<ReturnType<T>>['data']>,
     'params'
   > & {
     params?: Parameters<T>[0]
   }
 ) {
+  let mockServerActionId = getMockServerActionId(action)
+
   return useFetch(action.name, {
-    fetcher: (_, config) => action(config.params),
+    fetcher: async (_, config) => {
+      const actionResult = await action(config?.params)
+      /**
+       * Default status code is 200 if no status is returned from the server action.
+       */
+      const { data, status = 200 } = actionResult
+
+      return { data, status }
+    },
+    id: mockServerActionId,
     ...config
   })
 }
