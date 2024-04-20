@@ -11,6 +11,7 @@ const RETRY_ON_RECONNECT = true
 const REVALIDATE_ON_MOUNT = true
 const DEFAULT_GRAPHQL_PATH = '/graphql'
 const DEFAULT_RESOLVER = (e: any) => e.json()
+const DEFAULT_MIDDLEWARE = (incoming: any, previous: any) => incoming
 
 const METHODS = {
   GET: 'GET',
@@ -51,5 +52,6 @@ export {
   DEFAULT_GRAPHQL_PATH,
   DEFAULT_RESOLVER,
   METHODS,
-  UNITS_MILISECONDS_EQUIVALENTS
+  UNITS_MILISECONDS_EQUIVALENTS,
+  DEFAULT_MIDDLEWARE
 }

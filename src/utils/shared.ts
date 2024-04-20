@@ -111,12 +111,19 @@ export function setQueryParams(url: string, params: any = {}) {
     .map(paramName => {
       if (Array.isArray(params[paramName])) {
         return params[paramName]
-          .map((p: any) => `${paramName}=${encodeURIComponent(p)}`)
+          .map((p: any) =>
+            typeof p === 'undefined'
+              ? ''
+              : `${paramName}=${encodeURIComponent(p)}`
+          )
+          .filter(Boolean)
           .join('&')
       } else {
+        if (typeof params[paramName] === 'undefined') return ''
         return `${paramName}=${encodeURIComponent(params[paramName])}`
       }
     })
+    .filter(Boolean)
     .join('&')
 
   return (

@@ -126,7 +126,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     onFetchEnd = ctx.onFetchEnd,
     cacheIfError = ctx.cacheIfError,
     maxCacheAge = ctx.maxCacheAge,
-    fetcher = ctx.fetcher
+    fetcher = ctx.fetcher,
+    middleware = ctx.middleware
   } = optionsConfig
 
   const $fetch = isFunction(fetcher) ? fetcher : fetch
@@ -621,7 +622,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             }
 
             // @ts-ignore - 'data' is priority because 'fetcher' can return it
-            const _data = json?.['data'] ?? (await (resolver as any)(json))
+            const incoming = json?.['data'] ?? (await (resolver as any)(json))
+
+            const _data = isFunction(middleware)
+              ? await middleware!(incoming as any, thisCache)
+              : incoming
+
             if (code >= 200 && code < 400) {
               hasData.set(resolvedDataKey, true)
               hasData.set(resolvedKey, true)
