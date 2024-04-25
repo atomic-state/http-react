@@ -24,8 +24,20 @@ export type FetchContextType = {
   headers?: any
   baseUrl?: string
   /**
-   * Keys in `defaults` are just friendly names. Defaults are based on the `id` and `value` passed
+   * Sets the default (placeholder) value of request data.
+   *
+   * @example {
+   *  // If you are not setting `ìd`
+   *  'GET /profile': dbUserProfile,
+   *  'GET /todos': [],
+   *
+   *  // If you are setting `id`:
+   *  'MyCustomId': { 'a': 'b' }
+   * }
    */
+  value?: {
+    [key: string]: any
+  }
   defaults?: {
     [key: string]: {
       /**

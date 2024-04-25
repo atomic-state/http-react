@@ -145,6 +145,18 @@ export function setParamsAndQuery(
   return setURLParams(setQueryParams(url, p.query), p.params)
 }
 
+export function actionResult<T>(
+  data: T,
+  config?: {
+    status?: number
+  }
+) {
+  return {
+    data,
+    ...config
+  }
+}
+
 /**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
  */
