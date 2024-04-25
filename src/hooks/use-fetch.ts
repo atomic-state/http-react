@@ -1434,6 +1434,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       thisDeps.loading = true
       return oneRequestResolved && isLoading
     },
+    get isRevalidating() {
+      thisDeps.loading = true
+      return oneRequestResolved && isLoading
+    },
     get hasData() {
       thisDeps.data = true
       return oneRequestResolved
@@ -1444,6 +1448,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       return isSuccess
     },
     get loadingFirst() {
+      thisDeps.loading = true
+      return loadingFirst
+    },
+    get isLoadingFirst() {
       thisDeps.loading = true
       return loadingFirst
     },
@@ -1468,6 +1476,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       return responseData
     },
     get loading() {
+      thisDeps.loading = true
+      return isLoading
+    },
+    get isLoading() {
       thisDeps.loading = true
       return isLoading
     },
@@ -1529,9 +1541,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     revalidating: boolean
     success: boolean
     loadingFirst: boolean
+    isLoadingFirst: boolean
     expiration: Date
     data: FetchDataType
     loading: boolean
+    isLoading: boolean
+    isRevalidating: boolean
     error: Error | null
     online: boolean
     code: number

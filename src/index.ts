@@ -49,7 +49,8 @@ export {
   useSuccess,
   useDebounceFetch,
   useIsomorphicLayoutEffect,
-  useServerAction
+  useServerAction,
+  useServerMutation
 } from './hooks'
 
 export { FetchConfig, SSRSuspense } from './components/server'
@@ -74,5 +75,6 @@ export {
   serialize,
   notNull,
   setQueryParams,
-  setParamsAndQuery
+  setParamsAndQuery,
+  actionResult
 } from './utils/shared'

@@ -39,11 +39,28 @@ export function SSRSuspense({
 }
 
 export function FetchConfig(props: FetchContextType) {
-  const { children, defaults = {}, suspense = [] } = props
+  const { children, defaults = {}, value = {}, suspense = [] } = props
 
   const previousConfig = useHRFContext()
 
   const { cacheProvider = defaultCache } = previousConfig
+
+  for (let valueKey in value) {
+    const resolvedKey = serialize({
+      idString: serialize(valueKey)
+    })
+
+    if (!isDefined(valuesMemory.get(resolvedKey))) {
+      valuesMemory.set(resolvedKey, value[valueKey])
+    }
+    if (!isDefined(fetcherDefaults.get(resolvedKey))) {
+      fetcherDefaults.set(resolvedKey, value[valueKey])
+    }
+
+    if (!isDefined(cacheProvider.get(resolvedKey))) {
+      cacheProvider.set(resolvedKey, value[valueKey])
+    }
+  }
 
   for (let defaultKey in defaults) {
     const { id = defaultKey } = defaults[defaultKey]

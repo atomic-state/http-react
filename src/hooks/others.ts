@@ -652,7 +652,10 @@ function getMockServerActionId(action: any) {
   let mockServerActionId = serverActionIds.get(action)
 
   if (!mockServerActionId) {
-    mockServerActionId = crypto.randomUUID()
+    let mockServerActionId = `${Math.random()}`.split('.')[1]
+    try {
+      mockServerActionId = crypto.randomUUID()
+    } catch {}
 
     serverActionIds.set(action, mockServerActionId)
   }
@@ -679,9 +682,12 @@ export function useServerAction<T extends (args: any) => any>(
   config?: Omit<
     FetchConfigTypeNoUrl<Awaited<ReturnType<T>>['data']>,
     'params'
-  > & {
-    params?: Parameters<T>[0]
-  }
+  > &
+    (Parameters<T>[0] extends typeof undefined
+      ? {}
+      : {
+          params: Parameters<T>[0]
+        })
 ) {
   let mockServerActionId = getMockServerActionId(action)
 
@@ -697,5 +703,28 @@ export function useServerAction<T extends (args: any) => any>(
     },
     id: mockServerActionId,
     ...config
+  })
+}
+
+/**
+ * `useServerMutation` works exactly like `useServerAction` except it is not automatic
+ */
+
+export function useServerMutation<T extends (args: any) => any>(
+  action: T,
+  config?: Omit<
+    FetchConfigTypeNoUrl<Awaited<ReturnType<T>>['data']>,
+    'params'
+  > &
+    (Parameters<T>[0] extends typeof undefined
+      ? {}
+      : {
+          params: Parameters<T>[0]
+        })
+) {
+  // @ts-expect-error
+  return useServerAction(action, {
+    ...config,
+    auto: false
   })
 }
