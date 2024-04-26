@@ -39,6 +39,7 @@ export {
   useRevalidating,
   useSuccess,
   useDebounceFetch,
+  useMutation,
   useServerAction,
   useServerMutation
 } from './others'

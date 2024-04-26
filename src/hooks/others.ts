@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 
 import {
   FetchConfigType,
@@ -22,7 +22,7 @@ import {
 
 import { useFetch } from './use-fetch'
 
-import { createImperativeFetch, getMiliseconds } from '../utils'
+import { createImperativeFetch, getMiliseconds, revalidate } from '../utils'
 
 import { isDefined, isFunction, serialize } from '../utils/shared'
 
@@ -677,6 +677,8 @@ function getMockServerActionId(action: any) {
  * @example { params: { userId: 32 }, onResolve(data){ console.log("Data is", data)  } }
  */
 
+const actionForms = new Map()
+
 export function useServerAction<T extends (args: any) => any>(
   action: T,
   config?: Omit<
@@ -685,25 +687,50 @@ export function useServerAction<T extends (args: any) => any>(
   > &
     (Parameters<T>[0] extends typeof undefined
       ? {}
+      : Parameters<T>[0] extends FormData
+      ? {
+          params?: FormData
+        }
       : {
           params: Parameters<T>[0]
         })
 ) {
-  let mockServerActionId = getMockServerActionId(action)
+  let mockServerActionId = config?.id ?? getMockServerActionId(action)
 
-  return useFetch(action.name, {
-    fetcher: async (_, config) => {
-      const actionResult = await action(config?.params)
+  useResolve(mockServerActionId, () => {
+    actionForms.delete(mockServerActionId)
+  })
+
+  const submit = useCallback(
+    (form: FormData) => {
+      actionForms.set(mockServerActionId, form)
+      revalidate(mockServerActionId)
+    },
+    [action, config, mockServerActionId]
+  )
+
+  const $action = useFetch(action.name, {
+    fetcher: async function proxied(_, config) {
+      const actionParam = actionForms.get(mockServerActionId) ?? config?.params
+
+      const actionResult = await action(actionParam)
       /**
        * Default status code is 200 if no status is returned from the server action.
        */
-      const { data, status = 200 } = actionResult
+      const { data, error, status = 200 } = actionResult
 
-      return { data, status }
+      return { data, error, status }
     },
     id: mockServerActionId,
     ...config
   })
+
+  // @ts-expect-error - Adding the submit method
+  $action.submit = submit
+
+  return $action as typeof $action & {
+    submit: (form: FormData) => void
+  }
 }
 
 /**
@@ -718,6 +745,10 @@ export function useServerMutation<T extends (args: any) => any>(
   > &
     (Parameters<T>[0] extends typeof undefined
       ? {}
+      : Parameters<T>[0] extends FormData
+      ? {
+          params?: FormData
+        }
       : {
           params: Parameters<T>[0]
         })
@@ -728,3 +759,5 @@ export function useServerMutation<T extends (args: any) => any>(
     auto: false
   })
 }
+
+export const useMutation = useManualFetch
