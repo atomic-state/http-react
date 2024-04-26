@@ -1499,6 +1499,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       thisDeps.loading = true
       return reValidate
     },
+    get submit() {
+      thisDeps.loading = true
+      return reValidate
+    },
     get mutate() {
       thisDeps.data = true
       return forceMutate
@@ -1551,6 +1555,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     online: boolean
     code: number
     reFetch: () => Promise<void>
+    submit: () => Promise<void>
     mutate: (
       update: FetchDataType | ((prev: FetchDataType) => FetchDataType),
       callback?: (data: FetchDataType, fetcher: ImperativeFetch) => void
