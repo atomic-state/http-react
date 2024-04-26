@@ -1,7 +1,7 @@
-'use client'
-import { createContext, useContext } from 'react'
+"use client"
+import { createContext, useContext } from "react"
 
-import { CacheStoreType, FetchContextType } from '../types'
+import { CacheStoreType, FetchContextType } from "../types"
 import {
   ATTEMPTS,
   ATTEMPT_INTERVAL,
@@ -14,8 +14,8 @@ import {
   QUERY,
   RETRY_ON_RECONNECT,
   REVALIDATE_ON_FOCUS,
-  REVALIDATE_ON_MOUNT
-} from './constants'
+  REVALIDATE_ON_MOUNT,
+} from "./constants"
 
 /**
  * This marks which requests are running
@@ -126,7 +126,7 @@ export const defaultCache: CacheStoreType = {
   },
   remove(k) {
     resolvedRequests.delete(k)
-  }
+  },
 }
 
 const requestsSubscribers = new Map()
@@ -154,7 +154,7 @@ export const requestsProvider = {
         listener(payload)
       })
     }
-  }
+  },
 }
 
 const defaultContextVaue: FetchContextType = {
@@ -170,7 +170,7 @@ const defaultContextVaue: FetchContextType = {
   retryOnReconnect: RETRY_ON_RECONNECT,
   revalidateOnMount: REVALIDATE_ON_MOUNT,
   cacheIfError: true,
-  middleware: DEFAULT_MIDDLEWARE
+  middleware: DEFAULT_MIDDLEWARE,
 }
 
 export const FetchContext = createContext<FetchContextType>(defaultContextVaue)

@@ -149,6 +149,7 @@ export function actionResult<T>(
   data: T,
   config?: {
     status?: number
+    error?: any
   }
 ) {
   return {

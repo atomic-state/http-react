@@ -624,6 +624,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             // @ts-ignore - 'data' is priority because 'fetcher' can return it
             const incoming = json?.['data'] ?? (await (resolver as any)(json))
 
+            const actionError =
+              // @ts-ignore Errors could be returned
+              fetcher?.name === 'proxied' ? json?.['error'] : undefined
+
             const _data = isFunction(middleware)
               ? await middleware!(incoming as any, thisCache)
               : incoming
@@ -705,7 +709,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             } else {
               rpc = {
                 ...rpc,
-                error: true
+                error: actionError ?? true
               }
               if (!cacheIfError) {
                 hasData.set(resolvedDataKey, false)
@@ -730,7 +734,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                   rpc = {
                     ...rpc,
                     data: newData,
-                    error: true
+                    error: actionError ?? true
                   }
 
                   cacheProvider.set(resolvedDataKey, newData)
@@ -740,8 +744,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 })
                 if (handleError) {
                   if (!resolvedOnErrorCalls.get(resolvedKey)) {
-                    resolvedOnErrorCalls.set(resolvedKey, true)
-                    ;(onError as any)(true, json)
+                    resolvedOnErrorCalls.set(resolvedKey, actionError ?? true)
+                    ;(onError as any)(actionError ?? true, json)
                   }
                 }
               } else {
@@ -756,14 +760,14 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 }
                 if (handleError) {
                   if (!resolvedOnErrorCalls.get(resolvedKey)) {
-                    resolvedOnErrorCalls.set(resolvedKey, true)
+                    resolvedOnErrorCalls.set(resolvedKey, actionError ?? true)
                     ;(onError as any)(_data, json)
                   }
                 }
               }
 
-              hasErrors.set(resolvedDataKey, true)
-              hasErrors.set(resolvedKey, true)
+              hasErrors.set(resolvedDataKey, actionError ?? true)
+              hasErrors.set(resolvedKey, actionError ?? true)
               runningRequests.set(resolvedKey, false)
             }
             if (logEnd) {
@@ -785,7 +789,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
               rpc = {
                 ...rpc,
-                error: true
+                error: err ?? true
               }
 
               if (cacheIfError) {
@@ -811,11 +815,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
               rpc = {
                 ...rpc,
-                error: true
+                error: err ?? true
               }
 
-              hasErrors.set(resolvedDataKey, true)
-              hasErrors.set(resolvedKey, true)
+              hasErrors.set(resolvedDataKey, err ?? true)
+              hasErrors.set(resolvedKey, err ?? true)
               if (handleError) {
                 if (!resolvedOnErrorCalls.get(resolvedKey)) {
                   resolvedOnErrorCalls.set(resolvedKey, true)
@@ -1483,6 +1487,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       thisDeps.loading = true
       return isLoading
     },
+    get isPending() {
+      thisDeps.loading = true
+      return isLoading
+    },
     get error() {
       thisDeps.error = true
       return isFailed || false
@@ -1496,10 +1504,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       return statusCodes.get(resolvedKey)
     },
     get reFetch() {
-      thisDeps.loading = true
-      return reValidate
-    },
-    get submit() {
       thisDeps.loading = true
       return reValidate
     },
@@ -1548,14 +1552,14 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     isLoadingFirst: boolean
     expiration: Date
     data: FetchDataType
+    isPending?: boolean
     loading: boolean
     isLoading: boolean
     isRevalidating: boolean
-    error: Error | null
+    error: any
     online: boolean
     code: number
     reFetch: () => Promise<void>
-    submit: () => Promise<void>
     mutate: (
       update: FetchDataType | ((prev: FetchDataType) => FetchDataType),
       callback?: (data: FetchDataType, fetcher: ImperativeFetch) => void
