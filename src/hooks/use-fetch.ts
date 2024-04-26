@@ -71,6 +71,11 @@ const getDateIfValid = (d: Date | null) =>
   (d?.toString() === 'Invalid Date' || d === null ? null : d) as Date
 
 /**
+ *  Termporary form data is set with the submit method in useFetch and is deleted immediately after resolving (see line #858)
+ * */
+const temporaryFormData = new Map()
+
+/**
  * Fetch hook
  */
 export function useFetch<FetchDataType = any, BodyType = any>(
@@ -564,12 +569,16 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                     signal: (() => {
                       return newAbortController.signal
                     })(),
-                    body: isFunction(formatBody)
-                      ? // @ts-ignore // If formatBody is a function
-                        formatBody(optionsConfig?.body as any)
-                      : optionsConfig?.body,
+                    body:
+                      temporaryFormData.get(resolvedKey) ??
+                      (isFunction(formatBody)
+                        ? // @ts-ignore // If formatBody is a function
+                          formatBody(optionsConfig?.body as any)
+                        : optionsConfig?.body),
                     headers: {
-                      'Content-Type': 'application/json',
+                      ...(temporaryFormData.get(resolvedKey)
+                        ? {}
+                        : { 'Content-Type': 'application/json' }),
                       ...ctx.headers,
                       ...config.headers,
                       ...c.headers
@@ -846,6 +855,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               }
             }
           } finally {
+            temporaryFormData.delete(resolvedKey)
             runningRequests.set(resolvedKey, false)
             suspenseInitialized.set(resolvedKey, true)
 
@@ -1433,6 +1443,14 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       hasData.get(resolvedKey) ||
       (cacheIfError ? isDefined(responseData) && notNull(responseData) : false))
 
+  const submit = useCallback(
+    (form: FormData) => {
+      temporaryFormData.set(resolvedKey, form)
+      reValidate()
+    },
+    [resolvedKey, reValidate]
+  )
+
   return {
     get revalidating() {
       thisDeps.loading = true
@@ -1507,6 +1525,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       thisDeps.loading = true
       return reValidate
     },
+    submit,
     get mutate() {
       thisDeps.data = true
       return forceMutate
@@ -1560,6 +1579,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     online: boolean
     code: number
     reFetch: () => Promise<void>
+    submit: (form: FormData) => Promise<void>
     mutate: (
       update: FetchDataType | ((prev: FetchDataType) => FetchDataType),
       callback?: (data: FetchDataType, fetcher: ImperativeFetch) => void

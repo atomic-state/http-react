@@ -759,3 +759,5 @@ export function useServerMutation<T extends (args: any) => any>(
     auto: false
   })
 }
+
+export const useMutation = useManualFetch
