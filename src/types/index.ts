@@ -216,6 +216,7 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
    * @default true
    */
   memory?: boolean
+  onSubmit?: (form: HTMLFormElement, data: FormData) => void
   /**
    * Function to run when request is resolved succesfuly
    */

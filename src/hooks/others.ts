@@ -701,14 +701,6 @@ export function useServerAction<T extends (args: any) => any>(
     actionForms.delete(mockServerActionId)
   })
 
-  const submit = useCallback(
-    (form: FormData) => {
-      actionForms.set(mockServerActionId, form)
-      revalidate(mockServerActionId)
-    },
-    [action, config, mockServerActionId]
-  )
-
   const $action = useFetch(action.name, {
     fetcher: async function proxied(_, config) {
       const actionParam = actionForms.get(mockServerActionId) ?? config?.params
@@ -725,8 +717,20 @@ export function useServerAction<T extends (args: any) => any>(
     ...config
   })
 
-  // @ts-expect-error - Adding the submit method
+  const submit = useCallback(
+    async (form: FormData) => {
+      if (config?.onSubmit) {
+        config.onSubmit($action.formRef.current!, form)
+      }
+      actionForms.set(mockServerActionId, form)
+      revalidate(mockServerActionId)
+    },
+    [action, config, $action.formRef.current, mockServerActionId]
+  )
+
   $action.submit = submit
+
+  $action.formProps.action = submit
 
   return $action as typeof $action & {
     submit: (form: FormData) => void

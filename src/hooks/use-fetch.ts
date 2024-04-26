@@ -84,6 +84,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 ) {
   const ctx = useHRFContext()
 
+  const formRef = useRef<HTMLFormElement>(null)
+
   // @ts-ignore
   const isRequest = init instanceof Object && init?.json
 
@@ -121,6 +123,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     auto = isDefined(ctx.auto) ? ctx.auto : true,
     memory = isDefined(ctx.memory) ? ctx.memory : true,
     onResolve,
+    onSubmit,
     onAbort,
     refresh = isDefined(ctx.refresh) ? ctx.refresh : 0,
     attempts = ctx.attempts,
@@ -706,6 +709,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               if (willResolve) {
                 if (!resolvedHookCalls.get(resolvedKey)) {
                   ;(onResolve as any)(__data, lastResponses.get(resolvedKey))
+
                   resolvedHookCalls.set(resolvedKey, true)
                 }
               }
@@ -878,6 +882,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
     },
     [
+      formRef.current,
       thisDeps,
       canRevalidate,
       ctx.auto,
@@ -1445,13 +1450,23 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const submit = useCallback(
     (form: FormData) => {
+      if (formRef.current) {
+        if (onSubmit) {
+          onSubmit(formRef.current, form)
+        }
+      }
       temporaryFormData.set(resolvedKey, form)
       reValidate()
     },
-    [resolvedKey, reValidate]
+    [resolvedKey, formRef.current, reValidate]
   )
 
   return {
+    formProps: {
+      action: submit,
+      ref: formRef
+    },
+    formRef,
     get revalidating() {
       thisDeps.loading = true
       return oneRequestResolved && isLoading
@@ -1561,6 +1576,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
      */
     key: resolvedKey
   } as unknown as {
+    formProps: {
+      action: (form: FormData) => Promise<void>
+      ref: typeof formRef
+    }
+    formRef: typeof formRef
     hasData: boolean
     /**
      * Revalidating means that at least one request has finished succesfuly and a new request is being sent
