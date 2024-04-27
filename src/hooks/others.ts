@@ -719,8 +719,18 @@ export function useServerAction<T extends (args: any) => any>(
 
   const submit = useCallback(
     async (form: FormData) => {
-      if (config?.onSubmit) {
-        config.onSubmit($action.formRef.current!, form)
+      const onSubmit = config?.onSubmit
+
+      if (onSubmit) {
+        if (typeof onSubmit === 'function') {
+          onSubmit($action.formRef.current!, form)
+        } else {
+          if (onSubmit === 'reset') {
+            if ($action.formRef.current) {
+              $action.formRef.current.reset()
+            }
+          }
+        }
       }
       actionForms.set(mockServerActionId, form)
       revalidate(mockServerActionId)

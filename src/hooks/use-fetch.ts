@@ -1452,7 +1452,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     (form: FormData) => {
       if (formRef.current) {
         if (onSubmit) {
-          onSubmit(formRef.current, form)
+          if (onSubmit !== 'reset') {
+            onSubmit(formRef.current, form)
+          } else {
+            if (formRef.current) {
+              formRef.current.reset()
+            }
+          }
         }
       }
       temporaryFormData.set(resolvedKey, form)
