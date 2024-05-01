@@ -683,9 +683,12 @@ export function useServerAction<T extends (args: any) => any>(
   action: T,
   config?: Omit<
     FetchConfigTypeNoUrl<Awaited<ReturnType<T>>['data']>,
-    'params'
-  > &
-    (Parameters<T>[0] extends typeof undefined
+    'params' | 'onSubmit'
+  > & {
+    onSubmit?:
+      | 'reset'
+      | ((form: HTMLFormElement, data: Parameters<T>[0]) => void)
+  } & (Parameters<T>[0] extends typeof undefined
       ? {}
       : {
           params?: Parameters<T>[0]
@@ -751,9 +754,12 @@ export function useServerMutation<T extends (args: any) => any>(
   action: T,
   config?: Omit<
     FetchConfigTypeNoUrl<Awaited<ReturnType<T>>['data']>,
-    'params'
-  > &
-    (Parameters<T>[0] extends typeof undefined
+    'params' | 'onSubmit'
+  > & {
+    onSubmit?:
+      | 'reset'
+      | ((form: HTMLFormElement, data: Parameters<T>[0]) => void)
+  } & (Parameters<T>[0] extends typeof undefined
       ? {}
       : {
           params?: Parameters<T>[0]
