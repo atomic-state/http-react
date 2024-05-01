@@ -1605,7 +1605,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     online: boolean
     code: number
     reFetch: () => Promise<void>
-    submit: (form: FormData) => Promise<void>
+    submit: (form: any) => Promise<void>
     mutate: (
       update: FetchDataType | ((prev: FetchDataType) => FetchDataType),
       callback?: (data: FetchDataType, fetcher: ImperativeFetch) => void
