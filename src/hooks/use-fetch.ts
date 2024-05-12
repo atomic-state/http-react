@@ -1467,7 +1467,18 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     [resolvedKey, formRef.current, reValidate]
   )
 
+  function resetError() {
+    setError(null)
+    requestsProvider.emit(requestCallId, {
+      error: null
+    })
+  }
+
   return {
+    get resetError() {
+      thisDeps.error = true
+      return resetError
+    },
     formProps: {
       action: submit,
       ref: formRef

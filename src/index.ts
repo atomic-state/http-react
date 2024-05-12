@@ -61,7 +61,8 @@ export {
   queryProvider,
   mutateData,
   revalidate,
-  cancelRequest
+  cancelRequest,
+  getMiliseconds
 } from './utils'
 
 export { defaultCache } from './internal'
@@ -77,5 +78,9 @@ export {
   notNull,
   setQueryParams,
   setParamsAndQuery,
-  actionResult
+  actionResult,
+  actionData,
+  $form,
+  jsonCompare,
+  windowExists
 } from './utils/shared'
