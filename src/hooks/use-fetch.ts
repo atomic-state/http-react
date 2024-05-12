@@ -1593,6 +1593,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
      */
     key: resolvedKey
   } as unknown as {
+    resetError(): void
     formProps: {
       action: (form: FormData) => Promise<void>
       ref: typeof formRef
