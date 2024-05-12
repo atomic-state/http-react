@@ -59,7 +59,7 @@ export async function getData({ id }: { id: number }) {
 ```tsx
 // page.tsx
 'use client'
-import { useServerAction, useServerMutation } from 'http-react'
+import { useServerAction } from 'http-react'
 
 import { getData } from '@/actions'
 
