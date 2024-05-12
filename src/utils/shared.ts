@@ -158,6 +158,12 @@ export function actionResult<T>(
   }
 }
 
+export const actionData = actionResult
+
+export function $form<T = any>(form: FormData) {
+  return Object.fromEntries(form.entries()) as T
+}
+
 /**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
  */

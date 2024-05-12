@@ -652,7 +652,7 @@ function getMockServerActionId(action: any) {
   let mockServerActionId = serverActionIds.get(action)
 
   if (!mockServerActionId) {
-    let mockServerActionId = `${Math.random()}`.split('.')[1]
+    mockServerActionId = `${Math.random()}`.split('.')[1]
     try {
       mockServerActionId = crypto.randomUUID()
     } catch {}
@@ -683,23 +683,18 @@ export function useServerAction<T extends (args: any) => any>(
   action: T,
   config?: Omit<
     FetchConfigTypeNoUrl<Awaited<ReturnType<T>>['data']>,
-    'params'
-  > &
-    (Parameters<T>[0] extends typeof undefined
+    'params' | 'onSubmit'
+  > & {
+    onSubmit?:
+      | 'reset'
+      | ((form: HTMLFormElement, data: Parameters<T>[0]) => void)
+  } & (Parameters<T>[0] extends typeof undefined
       ? {}
-      : Parameters<T>[0] extends FormData
-      ? {
-          params?: FormData
-        }
       : {
-          params: Parameters<T>[0]
+          params?: Parameters<T>[0]
         })
 ) {
   let mockServerActionId = config?.id ?? getMockServerActionId(action)
-
-  useResolve(mockServerActionId, () => {
-    actionForms.delete(mockServerActionId)
-  })
 
   const $action = useFetch(action.name, {
     fetcher: async function proxied(_, config) {
@@ -714,7 +709,11 @@ export function useServerAction<T extends (args: any) => any>(
       return { data, error, status }
     },
     id: mockServerActionId,
-    ...config
+    ...config,
+    onResolve(...c) {
+      if (config?.onResolve) config.onResolve(...c)
+      actionForms.delete(mockServerActionId)
+    }
   })
 
   const submit = useCallback(
@@ -742,8 +741,8 @@ export function useServerAction<T extends (args: any) => any>(
 
   $action.formProps.action = submit
 
-  return $action as typeof $action & {
-    submit: (form: FormData) => void
+  return $action as Omit<typeof $action, 'submit'> & {
+    submit: (form: Parameters<T>[0]) => void
   }
 }
 
@@ -755,19 +754,17 @@ export function useServerMutation<T extends (args: any) => any>(
   action: T,
   config?: Omit<
     FetchConfigTypeNoUrl<Awaited<ReturnType<T>>['data']>,
-    'params'
-  > &
-    (Parameters<T>[0] extends typeof undefined
+    'params' | 'onSubmit'
+  > & {
+    onSubmit?:
+      | 'reset'
+      | ((form: HTMLFormElement, data: Parameters<T>[0]) => void)
+  } & (Parameters<T>[0] extends typeof undefined
       ? {}
-      : Parameters<T>[0] extends FormData
-      ? {
-          params?: FormData
-        }
       : {
-          params: Parameters<T>[0]
+          params?: Parameters<T>[0]
         })
 ) {
-  // @ts-expect-error
   return useServerAction(action, {
     ...config,
     auto: false

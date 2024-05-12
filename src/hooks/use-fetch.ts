@@ -1467,7 +1467,18 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     [resolvedKey, formRef.current, reValidate]
   )
 
+  function resetError() {
+    setError(null)
+    requestsProvider.emit(requestCallId, {
+      error: null
+    })
+  }
+
   return {
+    get resetError() {
+      thisDeps.error = true
+      return resetError
+    },
     formProps: {
       action: submit,
       ref: formRef
@@ -1605,7 +1616,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     online: boolean
     code: number
     reFetch: () => Promise<void>
-    submit: (form: FormData) => Promise<void>
+    submit: (form: any) => Promise<void>
     mutate: (
       update: FetchDataType | ((prev: FetchDataType) => FetchDataType),
       callback?: (data: FetchDataType, fetcher: ImperativeFetch) => void
