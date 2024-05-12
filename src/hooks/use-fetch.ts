@@ -1468,9 +1468,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   )
 
   function resetError() {
-    setError(null)
-    requestsProvider.emit(requestCallId, {
-      error: null
+    hasErrors.set(resolvedKey, false)
+    hasErrors.set(resolvedDataKey, false)
+
+    requestsProvider.emit(resolvedKey, {
+      error: false
     })
   }
 
