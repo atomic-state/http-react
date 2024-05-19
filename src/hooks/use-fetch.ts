@@ -1004,7 +1004,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const reValidate = useCallback(
     async function reValidate() {
-      if (!isPending(resolvedKey) && !loading) {
+      if (!isPending(resolvedKey)) {
         revalidate(id)
       }
     },
@@ -1476,6 +1476,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     })
   }
 
+  const refreshRequest = () => {
+    revalidate(id)
+  }
+
   return {
     get resetError() {
       thisDeps.error = true
@@ -1555,6 +1559,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       thisDeps.loading = true
       return statusCodes.get(resolvedKey)
     },
+    refresh: refreshRequest,
     get reFetch() {
       thisDeps.loading = true
       return reValidate
@@ -1595,6 +1600,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
      */
     key: resolvedKey
   } as unknown as {
+    refresh(): void
     resetError(): void
     formProps: {
       action: (form: FormData) => Promise<void>
