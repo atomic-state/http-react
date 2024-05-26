@@ -771,4 +771,8 @@ export function useServerMutation<T extends (args: any) => any>(
   })
 }
 
-export const useMutation = useManualFetch
+export const useAction = useServerAction
+
+export const useMutation = useServerMutation
+
+export const useFetchMutation = useManualFetch

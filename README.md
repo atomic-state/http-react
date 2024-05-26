@@ -42,30 +42,26 @@ It also works with Next.js' server functions:
 ```tsx
 // actions.ts
 'use server'
+
 import { actionData } from 'http-react'
 
 export async function getData({ id }: { id: number }) {
-  return actionData(
-    { foo: 'bar' },
-    // The second argument is only necessary if you
-    // want to send something different from 200.
-    {
-      status: 200
-    }
-  )
+  return actionData({
+    foo: 'bar'
+  })
 }
 ```
 
 ```tsx
 // page.tsx
 'use client'
-import { useServerAction } from 'http-react'
+import { useAction } from 'http-react'
 
 import { getData } from '@/actions'
 
 export default function Page() {
   // data has static typing inferred from the action result
-  const { data, isPending, error } = useServerAction(getData, {
+  const { data, isPending, error } = useAction(getData, {
     params: {
       id: 1 // This will show an error if id is not a number
     }

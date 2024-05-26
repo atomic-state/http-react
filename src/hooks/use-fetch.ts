@@ -1195,16 +1195,24 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     const refreshAmount = getMiliseconds(refresh as TimeSpan)
     if (completedAttempts === 0) {
       if (refreshAmount > 0 && canRevalidate) {
-        const tm = setTimeout(reValidate, refreshAmount)
+        const tm = setInterval(reValidate, refreshAmount)
 
         return () => {
-          clearTimeout(tm)
+          clearInterval(tm)
         }
       }
     }
     return () => {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refresh, loading, error, rawJSON, completedAttempts, config])
+  }, [
+    refresh,
+    loading,
+    error,
+    rawJSON,
+    canRevalidate,
+    completedAttempts,
+    config
+  ])
 
   const initializeRevalidation = useCallback(
     async function initializeRevalidation() {
@@ -1332,7 +1340,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
     }
 
-    addFocusListener()
+    if (auto) addFocusListener()
 
     return () => {
       if (windowExists) {

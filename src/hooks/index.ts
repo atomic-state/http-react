@@ -41,5 +41,6 @@ export {
   useDebounceFetch,
   useMutation,
   useServerAction,
+  useAction,
   useServerMutation
 } from './others'

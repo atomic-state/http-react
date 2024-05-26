@@ -51,14 +51,14 @@ export function FetchConfig(props: FetchContextType) {
     })
 
     if (!isDefined(valuesMemory.get(resolvedKey))) {
-      valuesMemory.set(resolvedKey, value[valueKey])
+      valuesMemory.set(resolvedKey, value[valueKey]?.data ?? value[valueKey])
     }
     if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-      fetcherDefaults.set(resolvedKey, value[valueKey])
+      fetcherDefaults.set(resolvedKey, value[valueKey]?.data ?? value[valueKey])
     }
 
     if (!isDefined(cacheProvider.get(resolvedKey))) {
-      cacheProvider.set(resolvedKey, value[valueKey])
+      cacheProvider.set(resolvedKey, value[valueKey]?.data ?? value[valueKey])
     }
   }
 
