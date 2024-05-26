@@ -45,42 +45,55 @@ export function FetchConfig(props: FetchContextType) {
 
   const { cacheProvider = defaultCache } = previousConfig
 
-  for (let valueKey in value) {
-    const resolvedKey = serialize({
-      idString: serialize(valueKey)
-    })
+  async function getAsyncFallbackValues() {
+    for (let valueKey in value) {
+      const resolvedKey = serialize({
+        idString: serialize(valueKey)
+      })
 
-    if (!isDefined(valuesMemory.get(resolvedKey))) {
-      valuesMemory.set(resolvedKey, value[valueKey]?.data ?? value[valueKey])
-    }
-    if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-      fetcherDefaults.set(resolvedKey, value[valueKey]?.data ?? value[valueKey])
-    }
-
-    if (!isDefined(cacheProvider.get(resolvedKey))) {
-      cacheProvider.set(resolvedKey, value[valueKey]?.data ?? value[valueKey])
-    }
-  }
-
-  for (let defaultKey in defaults) {
-    const { id = defaultKey } = defaults[defaultKey]
-    const resolvedKey = serialize({
-      idString: serialize(id)
-    })
-
-    if (isDefined(id)) {
       if (!isDefined(valuesMemory.get(resolvedKey))) {
-        valuesMemory.set(resolvedKey, defaults[defaultKey]?.value)
+        valuesMemory.set(
+          resolvedKey,
+          (await value[valueKey])?.data ?? (await value[valueKey])
+        )
       }
       if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-        fetcherDefaults.set(resolvedKey, defaults[defaultKey]?.value)
+        fetcherDefaults.set(
+          resolvedKey,
+          (await value[valueKey])?.data ?? (await value[valueKey])
+        )
+      }
+
+      if (!isDefined(cacheProvider.get(resolvedKey))) {
+        cacheProvider.set(
+          resolvedKey,
+          (await value[valueKey])?.data ?? (await value[valueKey])
+        )
       }
     }
 
-    if (!isDefined(cacheProvider.get(resolvedKey))) {
-      cacheProvider.set(resolvedKey, defaults[defaultKey]?.value)
+    for (let defaultKey in defaults) {
+      const { id = defaultKey } = defaults[defaultKey]
+      const resolvedKey = serialize({
+        idString: serialize(id)
+      })
+
+      if (isDefined(id)) {
+        if (!isDefined(valuesMemory.get(resolvedKey))) {
+          valuesMemory.set(resolvedKey, await defaults[defaultKey]?.value)
+        }
+        if (!isDefined(fetcherDefaults.get(resolvedKey))) {
+          fetcherDefaults.set(resolvedKey, await defaults[defaultKey]?.value)
+        }
+      }
+
+      if (!isDefined(cacheProvider.get(resolvedKey))) {
+        cacheProvider.set(resolvedKey, await defaults[defaultKey]?.value)
+      }
     }
   }
+
+  getAsyncFallbackValues()
 
   for (let suspenseKey of suspense) {
     const key = serialize({
