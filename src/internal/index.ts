@@ -16,6 +16,7 @@ import {
   REVALIDATE_ON_FOCUS,
   REVALIDATE_ON_MOUNT
 } from './constants'
+import { $context } from './shared'
 
 /**
  * This marks which requests are running
@@ -170,7 +171,8 @@ const defaultContextVaue: FetchContextType = {
   retryOnReconnect: RETRY_ON_RECONNECT,
   revalidateOnMount: REVALIDATE_ON_MOUNT,
   cacheIfError: true,
-  middleware: DEFAULT_MIDDLEWARE
+  middleware: DEFAULT_MIDDLEWARE,
+  ...$context.value
 }
 
 export const FetchContext = createContext<FetchContextType>(defaultContextVaue)
