@@ -696,7 +696,7 @@ export function useServerAction<T extends (args: any) => any>(
 ) {
   let mockServerActionId = config?.id ?? getMockServerActionId(action)
 
-  const $action = useFetch(action.name, {
+  const $action = useFetch(mockServerActionId, {
     fetcher: async function proxied(_, config) {
       const actionParam = actionForms.get(mockServerActionId) ?? config?.params
 
@@ -771,4 +771,8 @@ export function useServerMutation<T extends (args: any) => any>(
   })
 }
 
-export const useMutation = useManualFetch
+export const useAction = useServerAction
+
+export const useMutation = useServerMutation
+
+export const useFetchMutation = useManualFetch

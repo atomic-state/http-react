@@ -51,7 +51,8 @@ export {
   useIsomorphicLayoutEffect,
   useMutation,
   useServerAction,
-  useServerMutation
+  useServerMutation,
+  useAction
 } from './hooks'
 
 export { FetchConfig, SSRSuspense } from './components/server'
