@@ -11,6 +11,7 @@ export type HTTP_METHODS =
   | 'UNLINK'
 
 export type FetchContextType = {
+  clientOnly?: boolean
   fetcher?(
     url: string,
     config: FetchConfigType
