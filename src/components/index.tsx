@@ -39,7 +39,13 @@ export function SSRSuspense({
 }
 
 export function FetchConfig(props: FetchContextType) {
-  const { children, defaults = {}, value = {}, suspense = [] } = props
+  const {
+    children,
+    defaults = {},
+    value = {},
+    suspense = [],
+    clientOnly
+  } = props
 
   const previousConfig = useHRFContext()
 
@@ -93,7 +99,49 @@ export function FetchConfig(props: FetchContextType) {
     }
   }
 
-  getAsyncFallbackValues()
+  if (clientOnly) {
+    for (let valueKey in value) {
+      const resolvedKey = serialize({
+        idString: serialize(valueKey)
+      })
+
+      if (!isDefined(valuesMemory.get(resolvedKey))) {
+        valuesMemory.set(resolvedKey, value[valueKey]?.data ?? value[valueKey])
+      }
+      if (!isDefined(fetcherDefaults.get(resolvedKey))) {
+        fetcherDefaults.set(
+          resolvedKey,
+          value[valueKey]?.data ?? value[valueKey]
+        )
+      }
+
+      if (!isDefined(cacheProvider.get(resolvedKey))) {
+        cacheProvider.set(resolvedKey, value[valueKey]?.data ?? value[valueKey])
+      }
+    }
+
+    for (let defaultKey in defaults) {
+      const { id = defaultKey } = defaults[defaultKey]
+      const resolvedKey = serialize({
+        idString: serialize(id)
+      })
+
+      if (isDefined(id)) {
+        if (!isDefined(valuesMemory.get(resolvedKey))) {
+          valuesMemory.set(resolvedKey, defaults[defaultKey]?.value)
+        }
+        if (!isDefined(fetcherDefaults.get(resolvedKey))) {
+          fetcherDefaults.set(resolvedKey, defaults[defaultKey]?.value)
+        }
+      }
+
+      if (!isDefined(cacheProvider.get(resolvedKey))) {
+        cacheProvider.set(resolvedKey, defaults[defaultKey]?.value)
+      }
+    }
+  } else {
+    getAsyncFallbackValues()
+  }
 
   for (let suspenseKey of suspense) {
     const key = serialize({
