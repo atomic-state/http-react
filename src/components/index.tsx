@@ -68,7 +68,8 @@ export function FetchConfig(props: FetchContextType) {
 
     if (dataChunk instanceof Promise) {
       try {
-        parsedChunk = JSON.parse((dataChunk as any).value)
+        const parsedChunkValue = JSON.parse((dataChunk as any).value)
+        parsedChunk = parsedChunkValue?.data ?? parsedChunkValue
       } catch {
         parsedChunk = dataChunk
       }
