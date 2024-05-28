@@ -51,96 +51,62 @@ export function FetchConfig(props: FetchContextType) {
 
   const { cacheProvider = defaultCache } = previousConfig
 
-  async function getAsyncFallbackValues() {
-    for (let valueKey in value) {
-      const resolvedKey = serialize({
-        idString: serialize(valueKey)
-      })
+  for (let valueKey in value) {
+    const resolvedKey = serialize({
+      idString: serialize(valueKey)
+    })
 
-      if (!isDefined(valuesMemory.get(resolvedKey))) {
-        valuesMemory.set(
-          resolvedKey,
-          (await value[valueKey])?.data ?? (await value[valueKey])
-        )
-      }
-      if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-        fetcherDefaults.set(
-          resolvedKey,
-          (await value[valueKey])?.data ?? (await value[valueKey])
-        )
-      }
+    /**
+     *
+     * When promises are passed in nextjs, they are sent as chunks, so here
+     * we try to parse their values
+     */
 
-      if (!isDefined(cacheProvider.get(resolvedKey))) {
-        cacheProvider.set(
-          resolvedKey,
-          (await value[valueKey])?.data ?? (await value[valueKey])
-        )
+    let parsedChunk
+
+    const dataChunk = value[valueKey]?.data ?? value[valueKey]
+
+    if (dataChunk instanceof Promise) {
+      try {
+        const parsedChunkValue = JSON.parse((dataChunk as any).value)
+        parsedChunk = parsedChunkValue?.data ?? parsedChunkValue
+      } catch {
+        parsedChunk = dataChunk
       }
+    } else {
+      parsedChunk = dataChunk
     }
 
-    for (let defaultKey in defaults) {
-      const { id = defaultKey } = defaults[defaultKey]
-      const resolvedKey = serialize({
-        idString: serialize(id)
-      })
+    if (!isDefined(valuesMemory.get(resolvedKey))) {
+      valuesMemory.set(resolvedKey, parsedChunk)
+    }
+    if (!isDefined(fetcherDefaults.get(resolvedKey))) {
+      fetcherDefaults.set(resolvedKey, parsedChunk)
+    }
 
-      if (isDefined(id)) {
-        if (!isDefined(valuesMemory.get(resolvedKey))) {
-          valuesMemory.set(resolvedKey, await defaults[defaultKey]?.value)
-        }
-        if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-          fetcherDefaults.set(resolvedKey, await defaults[defaultKey]?.value)
-        }
-      }
-
-      if (!isDefined(cacheProvider.get(resolvedKey))) {
-        cacheProvider.set(resolvedKey, await defaults[defaultKey]?.value)
-      }
+    if (!isDefined(cacheProvider.get(resolvedKey))) {
+      cacheProvider.set(resolvedKey, parsedChunk)
     }
   }
 
-  if (clientOnly) {
-    for (let valueKey in value) {
-      const resolvedKey = serialize({
-        idString: serialize(valueKey)
-      })
+  for (let defaultKey in defaults) {
+    const { id = defaultKey } = defaults[defaultKey]
+    const resolvedKey = serialize({
+      idString: serialize(id)
+    })
 
+    if (isDefined(id)) {
       if (!isDefined(valuesMemory.get(resolvedKey))) {
-        valuesMemory.set(resolvedKey, value[valueKey]?.data ?? value[valueKey])
+        valuesMemory.set(resolvedKey, defaults[defaultKey]?.value)
       }
       if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-        fetcherDefaults.set(
-          resolvedKey,
-          value[valueKey]?.data ?? value[valueKey]
-        )
-      }
-
-      if (!isDefined(cacheProvider.get(resolvedKey))) {
-        cacheProvider.set(resolvedKey, value[valueKey]?.data ?? value[valueKey])
+        fetcherDefaults.set(resolvedKey, defaults[defaultKey]?.value)
       }
     }
 
-    for (let defaultKey in defaults) {
-      const { id = defaultKey } = defaults[defaultKey]
-      const resolvedKey = serialize({
-        idString: serialize(id)
-      })
-
-      if (isDefined(id)) {
-        if (!isDefined(valuesMemory.get(resolvedKey))) {
-          valuesMemory.set(resolvedKey, defaults[defaultKey]?.value)
-        }
-        if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-          fetcherDefaults.set(resolvedKey, defaults[defaultKey]?.value)
-        }
-      }
-
-      if (!isDefined(cacheProvider.get(resolvedKey))) {
-        cacheProvider.set(resolvedKey, defaults[defaultKey]?.value)
-      }
+    if (!isDefined(cacheProvider.get(resolvedKey))) {
+      cacheProvider.set(resolvedKey, defaults[defaultKey]?.value)
     }
-  } else {
-    getAsyncFallbackValues()
   }
 
   for (let suspenseKey of suspense) {

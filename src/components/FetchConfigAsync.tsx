@@ -19,24 +19,19 @@ export async function FetchConfigAsync(props: FetchContextType) {
       idString: serialize(valueKey)
     })
 
+    const $value = await value[valueKey]
+
+    const $data = $value.data ?? $value
+
     if (!isDefined(valuesMemory.get(resolvedKey))) {
-      valuesMemory.set(
-        resolvedKey,
-        (await value[valueKey])?.data ?? (await value[valueKey])
-      )
+      valuesMemory.set(resolvedKey, $data)
     }
     if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-      fetcherDefaults.set(
-        resolvedKey,
-        (await value[valueKey])?.data ?? (await value[valueKey])
-      )
+      fetcherDefaults.set(resolvedKey, $data)
     }
 
     if (!isDefined(cacheProvider.get(resolvedKey))) {
-      cacheProvider.set(
-        resolvedKey,
-        (await value[valueKey])?.data ?? (await value[valueKey])
-      )
+      cacheProvider.set(resolvedKey, $data)
     }
   }
 
