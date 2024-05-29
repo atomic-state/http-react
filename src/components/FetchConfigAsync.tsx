@@ -23,16 +23,11 @@ export async function FetchConfigAsync(props: FetchContextType) {
 
     const $data = $value.data ?? $value
 
-    if (!isDefined(valuesMemory.get(resolvedKey))) {
-      valuesMemory.set(resolvedKey, $data)
-    }
-    if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-      fetcherDefaults.set(resolvedKey, $data)
-    }
+    valuesMemory.set(resolvedKey, $data)
 
-    if (!isDefined(cacheProvider.get(resolvedKey))) {
-      cacheProvider.set(resolvedKey, $data)
-    }
+    fetcherDefaults.set(resolvedKey, $data)
+
+    cacheProvider.set(resolvedKey, $data)
   }
 
   for (let defaultKey in defaults) {
@@ -42,15 +37,8 @@ export async function FetchConfigAsync(props: FetchContextType) {
     })
 
     if (isDefined(id)) {
-      if (!isDefined(valuesMemory.get(resolvedKey))) {
-        valuesMemory.set(resolvedKey, await defaults[defaultKey]?.value)
-      }
-      if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-        fetcherDefaults.set(resolvedKey, await defaults[defaultKey]?.value)
-      }
-    }
-
-    if (!isDefined(cacheProvider.get(resolvedKey))) {
+      valuesMemory.set(resolvedKey, await defaults[defaultKey]?.value)
+      fetcherDefaults.set(resolvedKey, await defaults[defaultKey]?.value)
       cacheProvider.set(resolvedKey, await defaults[defaultKey]?.value)
     }
   }
