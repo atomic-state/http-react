@@ -77,16 +77,11 @@ export function FetchConfig(props: FetchContextType) {
       parsedChunk = dataChunk
     }
 
-    if (!isDefined(valuesMemory.get(resolvedKey))) {
-      valuesMemory.set(resolvedKey, parsedChunk)
-    }
-    if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-      fetcherDefaults.set(resolvedKey, parsedChunk)
-    }
+    valuesMemory.set(resolvedKey, parsedChunk)
 
-    if (!isDefined(cacheProvider.get(resolvedKey))) {
-      cacheProvider.set(resolvedKey, parsedChunk)
-    }
+    fetcherDefaults.set(resolvedKey, parsedChunk)
+
+    cacheProvider.set(resolvedKey, parsedChunk)
   }
 
   for (let defaultKey in defaults) {
@@ -96,15 +91,8 @@ export function FetchConfig(props: FetchContextType) {
     })
 
     if (isDefined(id)) {
-      if (!isDefined(valuesMemory.get(resolvedKey))) {
-        valuesMemory.set(resolvedKey, defaults[defaultKey]?.value)
-      }
-      if (!isDefined(fetcherDefaults.get(resolvedKey))) {
-        fetcherDefaults.set(resolvedKey, defaults[defaultKey]?.value)
-      }
-    }
-
-    if (!isDefined(cacheProvider.get(resolvedKey))) {
+      valuesMemory.set(resolvedKey, defaults[defaultKey]?.value)
+      fetcherDefaults.set(resolvedKey, defaults[defaultKey]?.value)
       cacheProvider.set(resolvedKey, defaults[defaultKey]?.value)
     }
   }
