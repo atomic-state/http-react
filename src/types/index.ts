@@ -138,7 +138,7 @@ export type RequestWithBody = <R = any, BodyType = any>(
   data: R
   config: RequestInit
   status: number
-  res: CustomResponse<R>
+  res: CustomResponse<R> | null
 }>
 
 export type TimeSpan =

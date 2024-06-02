@@ -232,7 +232,8 @@ export function createRequestFn(
       if (req?.status >= 400) {
         onError(true as any)
         return {
-          res: req,
+          // @ts-ignore
+          res: null,
           data: def,
           error: true,
           status: req?.status,
@@ -246,7 +247,7 @@ export function createRequestFn(
       } else {
         onResolve(data, req)
         return {
-          res: req,
+          res: null,
           data: data,
           error: false,
           status: req?.status,
@@ -261,7 +262,7 @@ export function createRequestFn(
     } catch (err) {
       onError(err as any)
       return {
-        res: r,
+        res: null,
         data: def,
         error: true,
         status: r?.status,
