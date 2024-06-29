@@ -8,6 +8,7 @@ import {
   fetcherDefaults,
   hasErrors,
   isPending,
+  gettingAttempts,
   lastResponses,
   previousConfig,
   previousProps,
@@ -126,7 +127,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     onSubmit,
     onAbort,
     refresh = isDefined(ctx.refresh) ? ctx.refresh : 0,
-    attempts = ctx.attempts,
+    attempts: $attempts = ctx.attempts,
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus,
     suspense: $suspense,
@@ -204,6 +205,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   )
 
   const resolvedKey = serialize({ idString })
+
+  if (!statusCodes.has(resolvedKey)) {
+    statusCodes.set(resolvedKey, null)
+  }
 
   const resolvedDataKey = serialize({ idString, reqQuery, reqParams })
 
@@ -645,6 +650,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               : incoming
 
             if (code >= 200 && code < 400) {
+              gettingAttempts.set(resolvedKey, true)
+
               hasData.set(resolvedDataKey, true)
               hasData.set(resolvedKey, true)
 
@@ -859,6 +866,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               }
             }
           } finally {
+            if (rpc.error) {
+              gettingAttempts.set(resolvedKey, false)
+            }
             temporaryFormData.delete(resolvedKey)
             runningRequests.set(resolvedKey, false)
             suspenseInitialized.set(resolvedKey, true)
@@ -1156,11 +1166,33 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }, [requestCallId, resolvedKey, revalidateOnMount, suspense])
 
+  if (!gettingAttempts.has(resolvedKey)) {
+    gettingAttempts.set(resolvedKey, false)
+  }
+
   useEffect(() => {
     // Attempts will be made after a request fails
-    if ((attempts as number) > 0) {
-      const tm = setTimeout(() => {
-        if (error) {
+
+    // if ((attempts as number) > 0) {
+    const tm = setTimeout(() => {
+      if (!gettingAttempts.get(resolvedKey)) {
+        gettingAttempts.set(resolvedKey, true)
+        const attempts =
+          typeof $attempts === 'function'
+            ? $attempts({
+                status:
+                  statusCodes.get(resolvedKey) ||
+                  statusCodes.get(resolvedDataKey),
+                res: lastResponses.get(resolvedKey),
+                error:
+                  hasErrors.get(resolvedKey) ||
+                  hasErrors.get(resolvedDataKey) ||
+                  (error as any),
+                completedAttempts
+              })
+            : $attempts
+
+        if ((attempts as number) > 0) {
           if (completedAttempts < (attempts as number)) {
             reValidate()
             setCompletedAttempts((previousAttempts: number) => {
@@ -1182,14 +1214,23 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             if (inDeps('online')) setOnline(false)
           }
         }
-      }, getMiliseconds(attemptInterval as TimeSpan))
-
-      return () => {
-        clearTimeout(tm)
       }
+    }, getMiliseconds(attemptInterval as TimeSpan))
+    // }
+    return () => {
+      clearTimeout(tm)
     }
-    return () => {}
-  }, [error, attempts, rawJSON, attemptInterval, completedAttempts])
+  }, [
+    error,
+    $attempts,
+    reValidate,
+    // loading,
+    // rawJSON,
+    fetchState,
+    attemptInterval,
+    resolvedKey,
+    completedAttempts
+  ])
 
   useEffect(() => {
     const refreshAmount = getMiliseconds(refresh as TimeSpan)
