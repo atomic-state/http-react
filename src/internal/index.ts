@@ -95,6 +95,11 @@ export const maxPaginationAges = new Map()
 export const hasErrors = new Map()
 
 /**
+ * Keep track of initialized attempts
+ */
+export const gettingAttempts = new Map()
+
+/**
  * Suspense calls that resolved
  */
 export const suspenseInitialized = new Map()

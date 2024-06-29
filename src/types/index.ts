@@ -256,7 +256,14 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
    * The ammount of attempts if request fails
    * @default 1
    */
-  attempts?: number
+  attempts?:
+    | number
+    | ((q: {
+        status: number
+        res: Response
+        error: Error
+        completedAttempts: number
+      }) => number | undefined | void)
   /**
    * The interval at which to run attempts on request fail
    * @default 0
