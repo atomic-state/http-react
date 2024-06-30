@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import useFetch from '../../'
+import useFetch, { jsonCompare } from '../../'
 import mocks from '../mocks'
 
 test('DELETE data in JSON', async () => {
@@ -21,9 +21,10 @@ test('DELETE data in JSON', async () => {
       })
     )
 
-    if (result.current?.data)
+    if (result.current?.data) {
       expect(result.current.data).toEqual({
         careers: ['Designer UI/UX', 'Security Analist']
       })
+    }
   })
 })
