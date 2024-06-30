@@ -26,7 +26,24 @@ export function hasBaseUrl(target: string) {
 }
 
 export function jsonCompare(a: any, b: any) {
-  return JSON.stringify(a) === JSON.stringify(b)
+  // Just parse arrays
+  if (Array.isArray(a)) {
+    return JSON.stringify(a) === JSON.stringify(b)
+  }
+
+  const bProps = Object.keys(b)
+
+  let aMock: any = {
+    ...a
+  }
+
+  // Making sure keys are in the same order
+  for (let prop of bProps) {
+    delete aMock[prop]
+    aMock[prop] = a[prop]
+  }
+
+  return JSON.stringify(aMock) === JSON.stringify(b)
 }
 
 /**
