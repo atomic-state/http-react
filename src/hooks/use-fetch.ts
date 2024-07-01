@@ -334,8 +334,14 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     loading: auto
       ? isPending(resolvedKey) ||
         (revalidateOnMount
-          ? previousConfig.get(resolvedKey) !== serialize(optionsConfig)
-          : previousConfig.get(resolvedKey) !== serialize(optionsConfig))
+          ? !jsonCompare(
+              JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+              optionsConfig
+            )
+          : !jsonCompare(
+              JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+              optionsConfig
+            ))
       : false,
     error: (hasErrors.get(resolvedDataKey) || false) as boolean,
     completedAttempts: 0
@@ -499,7 +505,12 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         urlWithParams +
         (urlWithParams.includes('?') ? (c?.query !== '' ? `&` : '') : '')
 
-      if (previousConfig.get(resolvedKey) !== serialize(optionsConfig)) {
+      if (
+        !jsonCompare(
+          JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+          optionsConfig
+        )
+      ) {
         previousProps.set(resolvedKey, optionsConfig)
         queue(() => {
           if (url !== '') {
@@ -979,16 +990,23 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         if (!willSuspend.get(resolvedKey)) {
           queue(() => {
             if (inDeps('data')) {
-              setData($data)
+              if (!jsonCompare(data, cacheProvider.get(resolvedDataKey))) {
+                setData(cacheProvider.get(resolvedKey))
+              }
             }
             if (inDeps('online')) {
               setOnline(online)
             }
             if (inDeps('loading')) {
-              setLoading(loading)
+              const newPendingState = isPending(resolvedKey)
+              if (newPendingState !== fetchState.loading) {
+                setLoading(newPendingState)
+              }
             }
             if (inDeps('error')) {
-              setError($error)
+              if (fetchState.error !== $error) {
+                setError($error)
+              }
             }
             if (inDeps('completedAttempts')) {
               setCompletedAttempts(completedAttempts)
@@ -1296,7 +1314,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  useIsomorphicLayoutEffect(() => {
+  useMemo(() => {
     if (url !== '') {
       if (!jsonCompare(previousProps.get(resolvedKey), optionsConfig)) {
         abortControllers.get(resolvedKey)?.abort()
@@ -1305,7 +1323,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         }
       }
     }
-  }, [serialize(optionsConfig), thisDeps])
+  }, [serialize(optionsConfig), thisDeps, fetchState])
 
   if (suspense) {
     if (auto) {
@@ -1328,11 +1346,16 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  useIsomorphicLayoutEffect(() => {
+  useMemo(() => {
     if (!runningRequests.get(resolvedKey) && isExpired) {
       if (windowExists) {
         if (canRevalidate && url !== '') {
-          if (!jsonCompare(previousConfig.get(resolvedKey), optionsConfig)) {
+          if (
+            !jsonCompare(
+              JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+              optionsConfig
+            )
+          ) {
             if (!isPending(resolvedKey)) {
               if (inDeps('data')) {
                 initializeRevalidation()
@@ -1349,7 +1372,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   useIsomorphicLayoutEffect(() => {
     const revalidateAfterUnmount = revalidateOnMount
       ? true
-      : previousConfig.get(resolvedKey) !== serialize(optionsConfig)
+      : !jsonCompare(
+          JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+          optionsConfig
+        )
 
     function revalidate() {
       if (!debounce && !canDebounce.get(resolvedKey)) {

@@ -40,6 +40,8 @@ export const previousProps = new Map()
 
 export const valuesMemory = new Map()
 
+export const willStartFetch = new Map()
+
 /**
  * Online / offline
  */
