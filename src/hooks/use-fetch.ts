@@ -1,5 +1,12 @@
 'use client'
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  useLayoutEffect
+} from 'react'
 
 import {
   abortControllers,
@@ -998,10 +1005,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               setOnline(online)
             }
             if (inDeps('loading')) {
-              const newPendingState = isPending(resolvedKey)
-              if (newPendingState !== fetchState.loading) {
-                setLoading(newPendingState)
-              }
+              setLoading(loading)
             }
             if (inDeps('error')) {
               if (fetchState.error !== $error) {
@@ -1314,7 +1318,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  useMemo(() => {
+  useLayoutEffect(() => {
     if (url !== '') {
       if (!jsonCompare(previousProps.get(resolvedKey), optionsConfig)) {
         abortControllers.get(resolvedKey)?.abort()
@@ -1346,7 +1350,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  useMemo(() => {
+  useLayoutEffect(() => {
     if (!runningRequests.get(resolvedKey) && isExpired) {
       if (windowExists) {
         if (canRevalidate && url !== '') {
