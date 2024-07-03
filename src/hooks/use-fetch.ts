@@ -667,6 +667,20 @@ export function useFetch<FetchDataType = any, BodyType = any>(
               ? await middleware!(incoming as any, thisCache)
               : incoming
 
+            let __data = isGqlRequest
+              ? {
+                  ..._data,
+                  variables: (optionsConfig as any)?.variables,
+                  errors: _data?.errors ? _data.errors : undefined
+                }
+              : _data
+
+            cacheProvider.set(resolvedDataKey, __data)
+            cacheProvider.set(resolvedKey, __data)
+            valuesMemory.set(resolvedKey, __data)
+            $$data = __data
+            cacheForMutation.set(idString, __data)
+
             if (code >= 200 && code < 400) {
               gettingAttempts.set(resolvedKey, true)
 
@@ -680,14 +694,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
               const dataExpirationTime = Date.now() + maxAge
               cacheProvider.set(ageKey, dataExpirationTime)
-
-              let __data = isGqlRequest
-                ? {
-                    ..._data,
-                    variables: (optionsConfig as any)?.variables,
-                    errors: _data?.errors ? _data.errors : undefined
-                  }
-                : _data
 
               if (_data?.errors && isGqlRequest) {
                 hasErrors.set(resolvedDataKey, true)
@@ -703,9 +709,6 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                   }
                 }
               }
-              cacheProvider.set(resolvedDataKey, __data)
-              cacheProvider.set(resolvedKey, __data)
-              valuesMemory.set(resolvedKey, __data)
 
               rpc = {
                 ...rpc,
@@ -997,23 +1000,33 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         if (!willSuspend.get(resolvedKey)) {
           queue(() => {
             if (inDeps('data')) {
-              if (!jsonCompare(data, cacheProvider.get(resolvedDataKey))) {
-                setData(cacheProvider.get(resolvedKey))
+              if (isDefined(data)) {
+                if (!jsonCompare(data, cacheProvider.get(resolvedDataKey))) {
+                  setData(cacheProvider.get(resolvedKey))
+                }
               }
             }
             if (inDeps('online')) {
-              setOnline(online)
+              if (isDefined(online)) {
+                setOnline(online)
+              }
             }
             if (inDeps('loading')) {
-              setLoading(loading)
+              if (isDefined(loading)) {
+                setLoading(loading)
+              }
             }
             if (inDeps('error')) {
-              if (fetchState.error !== $error) {
-                setError($error)
+              if (isDefined($error)) {
+                if (fetchState.error !== $error) {
+                  setError($error)
+                }
               }
             }
             if (inDeps('completedAttempts')) {
-              setCompletedAttempts(completedAttempts)
+              if (isDefined(completedAttempts)) {
+                setCompletedAttempts(completedAttempts)
+              }
             }
           })
         }
@@ -1318,7 +1331,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (url !== '') {
       if (!jsonCompare(previousProps.get(resolvedKey), optionsConfig)) {
         abortControllers.get(resolvedKey)?.abort()
@@ -1350,7 +1363,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!runningRequests.get(resolvedKey) && isExpired) {
       if (windowExists) {
         if (canRevalidate && url !== '') {

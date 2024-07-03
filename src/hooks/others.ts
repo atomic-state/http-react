@@ -699,6 +699,7 @@ export function useServerAction<T extends (args: any) => any>(
   const $action = useFetch(mockServerActionId, {
     fetcher: async function proxied(_, config) {
       const actionParam = actionForms.get(mockServerActionId) ?? config?.params
+      $action.resetError()
 
       const actionResult = await action(actionParam)
       /**
