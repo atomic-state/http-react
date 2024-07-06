@@ -1000,7 +1000,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         if (!willSuspend.get(resolvedKey)) {
           queue(() => {
             if (inDeps('data')) {
-              if (isDefined(data)) {
+              if (isDefined($data)) {
                 if (!jsonCompare(data, cacheProvider.get(resolvedDataKey))) {
                   setData(cacheProvider.get(resolvedKey))
                 }
