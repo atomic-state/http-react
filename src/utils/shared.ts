@@ -185,6 +185,29 @@ export function $form<T = any>(form: FormData) {
   return Object.fromEntries(form.entries()) as T
 }
 
+export const $formData = $form
+
+export function $searchParams<T = any>(input: string) {
+  const searchParams = new URL(input).searchParams
+
+  const allKeys = searchParams.keys()
+
+  const parsedParams = new Map()
+
+  // @ts-expect-error
+  for (let key of allKeys) {
+    const allValues = searchParams.getAll(key)
+
+    if (allValues.length > 1) {
+      parsedParams.set(key, allValues)
+    } else {
+      parsedParams.set(key, allValues[0])
+    }
+  }
+
+  return Object.fromEntries(parsedParams.entries()) as T
+}
+
 /**
  * Creates a new request function. This is for usage with fetcher and fetcher.extend
  */
