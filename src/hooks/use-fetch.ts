@@ -62,6 +62,7 @@ import {
   getRequestHeaders,
   hasBaseUrl,
   isDefined,
+  isFormData,
   isFunction,
   jsonCompare,
   notNull,
@@ -1542,18 +1543,23 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const submit = useCallback(
     (form: FormData) => {
-      if (formRef.current) {
-        if (onSubmit) {
-          if (onSubmit !== 'reset') {
-            onSubmit(formRef.current, form)
-          } else {
-            if (formRef.current) {
-              formRef.current.reset()
+      if (isFormData(form)) {
+        if (formRef.current) {
+          if (onSubmit) {
+            if (onSubmit !== 'reset') {
+              onSubmit(formRef.current, form)
+            } else {
+              if (formRef.current) {
+                formRef.current.reset()
+              }
             }
           }
         }
       }
-      temporaryFormData.set(resolvedKey, form)
+      temporaryFormData.set(
+        resolvedKey,
+        isFormData(form) ? form : serialize(form)
+      )
       reValidate()
     },
     [resolvedKey, formRef.current, reValidate]

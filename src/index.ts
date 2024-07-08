@@ -82,6 +82,9 @@ export {
   actionResult,
   actionData,
   $form,
+  $formData,
+  $searchParams,
   jsonCompare,
-  windowExists
+  windowExists,
+  queue
 } from './utils/shared'
