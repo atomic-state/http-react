@@ -660,9 +660,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             // @ts-ignore - 'data' is priority because 'fetcher' can return it
             const incoming = json?.['data'] ?? (await (resolver as any)(json))
 
-            const actionError =
-              // @ts-ignore Errors could be returned
-              fetcher?.name === 'proxied' ? json?.['error'] : undefined
+            // @ts-expect-error
+            const actionError = json?.['error']
 
             const _data = isFunction(middleware)
               ? await middleware!(incoming as any, thisCache)
