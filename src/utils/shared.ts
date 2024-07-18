@@ -194,7 +194,6 @@ export function $searchParams<T = any>(input: string) {
 
   const parsedParams = new Map()
 
-  // @ts-expect-error
   for (let key of allKeys) {
     const allValues = searchParams.getAll(key)
 

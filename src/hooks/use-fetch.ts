@@ -980,8 +980,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
       if (isMutating) {
         if (serialize($data) !== serialize(cacheForMutation.get(resolvedKey))) {
-          cacheForMutation.set(idString, data)
+          cacheForMutation.set(idString, $data)
           if (isMutating) {
+            forceMutate($data)
             if (handleMutate) {
               if (url === '') {
                 ;(onMutate as any)($data, imperativeFetch)
