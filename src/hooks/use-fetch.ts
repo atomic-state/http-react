@@ -1333,14 +1333,22 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   useIsomorphicLayoutEffect(() => {
-    if (url !== '') {
-      if (!jsonCompare(previousProps.get(resolvedKey), optionsConfig)) {
-        abortControllers.get(resolvedKey)?.abort()
-        if (inDeps('data')) {
-          queue(initializeRevalidation)
+    const fn = () => {
+      if (url !== '') {
+        if (!jsonCompare(previousProps.get(resolvedKey), optionsConfig)) {
+          abortControllers.get(resolvedKey)?.abort()
+          if (inDeps('data')) {
+            queue(initializeRevalidation)
+          }
         }
       }
     }
+    if (debounce) {
+      const tm = setTimeout(fn, debounce)
+      return () => clearTimeout(tm)
+    }
+    fn()
+    return () => {}
   }, [serialize(optionsConfig), thisDeps, fetchState])
 
   if (suspense) {
@@ -1365,26 +1373,36 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   }
 
   useIsomorphicLayoutEffect(() => {
-    if (!runningRequests.get(resolvedKey) && isExpired) {
-      if (windowExists) {
-        if (canRevalidate && url !== '') {
-          if (
-            !jsonCompare(
-              JSON.parse(previousConfig.get(resolvedKey) || '{}'),
-              optionsConfig
-            )
-          ) {
-            if (!isPending(resolvedKey)) {
-              if (inDeps('data')) {
-                initializeRevalidation()
+    const fn = () => {
+      if (!runningRequests.get(resolvedKey) && canRevalidate) {
+        if (windowExists) {
+          if (canRevalidate && url !== '') {
+            if (
+              !jsonCompare(
+                JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+                optionsConfig
+              )
+            ) {
+              if (!isPending(resolvedKey)) {
+                if (inDeps('data')) {
+                  initializeRevalidation()
+                }
+              } else {
+                setLoading(true)
               }
-            } else {
-              setLoading(true)
             }
           }
         }
       }
     }
+
+    if (debounce) {
+      const tm = setTimeout(fn, debounce)
+      return () => clearTimeout(tm)
+    }
+    fn()
+
+    return () => {}
   }, [resolvedKey, serialize(optionsConfig), canRevalidate, thisDeps])
 
   useIsomorphicLayoutEffect(() => {
@@ -1403,15 +1421,25 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       }
     }
 
-    if (revalidateAfterUnmount) {
-      if (suspense) {
-        if (suspenseInitialized.get(resolvedKey)) {
+    const fn = () => {
+      if (revalidateAfterUnmount) {
+        if (suspense) {
+          if (suspenseInitialized.get(resolvedKey)) {
+            revalidate()
+          }
+        } else {
           revalidate()
         }
-      } else {
-        revalidate()
       }
     }
+
+    if (debounce) {
+      const tm = setTimeout(fn, debounce)
+      return () => clearTimeout(tm)
+    }
+    fn()
+
+    return () => {}
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serialize(optionsConfig), thisDeps])
