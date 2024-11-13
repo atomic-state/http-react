@@ -185,6 +185,22 @@ export function $form<T = any>(form: FormData) {
   return Object.fromEntries(form.entries()) as T
 }
 
+export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
+  let query = (args as any)[0][0]
+
+  const returnObj = {
+    value: query as T,
+    variables: {} as VT,
+    baseUrl: undefined as unknown as string,
+    graphqlPath: undefined as unknown as string,
+    headers: {} as {
+      [key: string]: any
+    }
+  }
+
+  return returnObj
+}
+
 export const $formData = $form
 
 export function $searchParams<T = any>(input: string) {

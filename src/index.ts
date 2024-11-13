@@ -58,7 +58,6 @@ export {
 export { FetchConfig, SSRSuspense } from './components/server'
 
 export {
-  gql,
   queryProvider,
   mutateData,
   revalidate,
@@ -86,5 +85,7 @@ export {
   $searchParams,
   jsonCompare,
   windowExists,
-  queue
+  queue,
+  gql,
+  getRequestHeaders as $headers
 } from './utils/shared'

@@ -24,6 +24,7 @@ import {
   TimeSpan
 } from '../types'
 import {
+  gql,
   hasBaseUrl,
   isDefined,
   isFunction,
@@ -182,22 +183,6 @@ export function cancelRequest(id: any | any[]) {
       }
     }
   }
-}
-
-export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
-  let query = (args as any)[0][0]
-
-  const returnObj = {
-    value: query as T,
-    variables: {} as VT,
-    baseUrl: undefined as unknown as string,
-    graphqlPath: undefined as unknown as string,
-    headers: {} as {
-      [key: string]: any
-    }
-  }
-
-  return returnObj
 }
 
 /**
