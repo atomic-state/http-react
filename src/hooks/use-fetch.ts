@@ -1353,21 +1353,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   if (suspense) {
     if (auto) {
-      if (windowExists) {
-        if (!suspenseInitialized.get(resolvedKey)) {
-          if (!suspenseRevalidationStarted.get(resolvedKey)) {
-            suspenseRevalidationStarted.set(
-              resolvedKey,
-              initializeRevalidation()
-            )
-          }
-          throw suspenseRevalidationStarted.get(resolvedKey)
+      if (!suspenseInitialized.get(resolvedKey)) {
+        if (!suspenseRevalidationStarted.get(resolvedKey)) {
+          suspenseRevalidationStarted.set(resolvedKey, initializeRevalidation())
         }
-      } else {
-        throw {
-          message:
-            "Use 'SSRSuspense' instead of 'Suspense' when using SSR and suspense"
-        }
+        throw suspenseRevalidationStarted.get(resolvedKey)
       }
     }
   }
