@@ -56,6 +56,7 @@ export {
 } from './hooks'
 
 export { FetchConfig, SSRSuspense } from './components/server'
+export { SSRSuspense as Suspense } from './components/server'
 
 export {
   queryProvider,
