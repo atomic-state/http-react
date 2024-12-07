@@ -121,13 +121,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           ...options
         }
       : isRequest
-        ? {
-            url: init.url,
-            method: init.method,
-            init,
-            ...options
-          }
-        : (init as FetchConfigType<FetchDataType, BodyType>)
+      ? {
+          url: init.url,
+          method: init.method,
+          init,
+          ...options
+        }
+      : (init as FetchConfigType<FetchDataType, BodyType>)
 
   const {
     onOnline = ctx.onOnline,
@@ -162,7 +162,11 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     middleware = ctx.middleware
   } = optionsConfig
 
-  const $fetch = isFunction(fetcher) ? fetcher : fetch
+  const $fetch = isFunction(fetcher)
+    ? fetcher
+    : windowExists
+    ? fetch
+    : () => new Response(serialize(initialDataValue))
 
   const config = {
     query,
@@ -194,8 +198,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     optionsConfig.auto === false
       ? false
       : isDefined(optionsConfig.retryOnReconnect)
-        ? optionsConfig.retryOnReconnect
-        : ctx.retryOnReconnect
+      ? optionsConfig.retryOnReconnect
+      : ctx.retryOnReconnect
 
   const reqQuery = {
     ...ctx.query,
@@ -211,10 +215,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     (hasBaseUrl(url)
       ? ''
       : !isDefined(config.baseUrl)
-        ? !isDefined(ctx.baseUrl)
-          ? ''
-          : ctx.baseUrl
-        : config.baseUrl) + url
+      ? !isDefined(ctx.baseUrl)
+        ? ''
+        : ctx.baseUrl
+      : config.baseUrl) + url
 
   const defaultId = [method, url].join(' ')
 
@@ -350,6 +354,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   const requestCache = cacheProvider.get(resolvedDataKey)
 
   const initialDataValue = valuesMemory.get(resolvedKey) ?? requestCache ?? def
+
+  const hasInitialOrFallbackData = isDefined(initialDataValue)
 
   const [fetchState, setFetchState] = useState({
     data: initialDataValue,
@@ -517,10 +523,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         (hasBaseUrl(url)
           ? ''
           : !isDefined(config.baseUrl)
-            ? !isDefined(ctx.baseUrl)
-              ? ''
-              : ctx.baseUrl
-            : config.baseUrl) + url
+          ? !isDefined(ctx.baseUrl)
+            ? ''
+            : ctx.baseUrl
+          : config.baseUrl) + url
 
       const urlWithParams = setURLParams(rawUrl, c.params)
 
@@ -634,8 +640,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 (realUrl.includes('?')
                   ? c.query
                   : c.query
-                    ? '?' + c.query
-                    : c.query)
+                  ? '?' + c.query
+                  : c.query)
               ).replace('?&', '?'),
               newRequestConfig
             )
@@ -1225,51 +1231,48 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     // Attempts will be made after a request fails
 
     // if ((attempts as number) > 0) {
-    const tm = setTimeout(
-      () => {
-        if (!gettingAttempts.get(resolvedKey)) {
-          gettingAttempts.set(resolvedKey, true)
-          const attempts =
-            typeof $attempts === 'function'
-              ? $attempts({
-                  status:
-                    statusCodes.get(resolvedKey) ||
-                    statusCodes.get(resolvedDataKey),
-                  res: lastResponses.get(resolvedKey),
-                  error:
-                    hasErrors.get(resolvedKey) ||
-                    hasErrors.get(resolvedDataKey) ||
-                    (error as any),
-                  completedAttempts
-                })
-              : $attempts
-
-          if ((attempts as number) > 0) {
-            if (completedAttempts < (attempts as number)) {
-              reValidate()
-              setCompletedAttempts((previousAttempts: number) => {
-                let newAttemptsValue = previousAttempts + 1
-
-                requestsProvider.emit(resolvedKey, {
-                  requestCallId,
-                  completedAttempts: newAttemptsValue
-                })
-
-                return newAttemptsValue
+    const tm = setTimeout(() => {
+      if (!gettingAttempts.get(resolvedKey)) {
+        gettingAttempts.set(resolvedKey, true)
+        const attempts =
+          typeof $attempts === 'function'
+            ? $attempts({
+                status:
+                  statusCodes.get(resolvedKey) ||
+                  statusCodes.get(resolvedDataKey),
+                res: lastResponses.get(resolvedKey),
+                error:
+                  hasErrors.get(resolvedKey) ||
+                  hasErrors.get(resolvedDataKey) ||
+                  (error as any),
+                completedAttempts
               })
-            } else if (completedAttempts === attempts) {
+            : $attempts
+
+        if ((attempts as number) > 0) {
+          if (completedAttempts < (attempts as number)) {
+            reValidate()
+            setCompletedAttempts((previousAttempts: number) => {
+              let newAttemptsValue = previousAttempts + 1
+
               requestsProvider.emit(resolvedKey, {
                 requestCallId,
-                online: false,
-                error: true
+                completedAttempts: newAttemptsValue
               })
-              if (inDeps('online')) setOnline(false)
-            }
+
+              return newAttemptsValue
+            })
+          } else if (completedAttempts === attempts) {
+            requestsProvider.emit(resolvedKey, {
+              requestCallId,
+              online: false,
+              error: true
+            })
+            if (inDeps('online')) setOnline(false)
           }
         }
-      },
-      getMiliseconds(attemptInterval as TimeSpan)
-    )
+      }
+    }, getMiliseconds(attemptInterval as TimeSpan))
     // }
     return () => {
       clearTimeout(tm)
@@ -1310,37 +1313,44 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   ])
 
   const initializeRevalidation = useCallback(
-    async function initializeRevalidation() {
-      let d = undefined
-      if (canRevalidate) {
-        if (url !== '') {
-          d = await fetchData({
-            query: Object.keys(reqQuery)
-              .map(q =>
-                Array.isArray(reqQuery[q])
-                  ? reqQuery[q]
-                      .map((queryItem: any) => [q, queryItem].join('='))
-                      .join('&')
-                  : [q, reqQuery[q]].join('=')
-              )
-              .join('&'),
-            params: reqParams
-          })
-        } else {
-          d = def
-          // It means a url is not passed
-          setFetchState(prev => ({
-            ...prev,
-            loading: false,
-            error: hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey),
-            completedAttempts: prev.completedAttempts
-          }))
+    windowExists
+      ? async function initializeRevalidation() {
+          let d = undefined
+          if (canRevalidate) {
+            if (url !== '') {
+              d = await fetchData({
+                query: Object.keys(reqQuery)
+                  .map(q =>
+                    Array.isArray(reqQuery[q])
+                      ? reqQuery[q]
+                          .map((queryItem: any) => [q, queryItem].join('='))
+                          .join('&')
+                      : [q, reqQuery[q]].join('=')
+                  )
+                  .join('&'),
+                params: reqParams
+              })
+            } else {
+              d = def
+              // It means a url is not passed
+              setFetchState(prev => ({
+                ...prev,
+                loading: false,
+                error:
+                  hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey),
+                completedAttempts: prev.completedAttempts
+              }))
+            }
+          } else {
+            d = def
+          }
+          return d
         }
-      } else {
-        d = def
-      }
-      return d
-    },
+      : () => {
+          return new Promise((resolve, reject) => {
+            queue(() => resolve(initialDataValue))
+          })
+        },
     [serialize(serialize(optionsConfig)), fetchState, thisDeps]
   )
 
@@ -1371,17 +1381,23 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   if (suspense) {
     if (auto) {
-      if (!suspenseInitialized.get(resolvedKey)) {
-        if (!suspenseRevalidationStarted.get(resolvedKey)) {
-          suspenseRevalidationStarted.set(resolvedKey, initializeRevalidation())
+      if (windowExists) {
+        if (!suspenseInitialized.get(resolvedKey)) {
+          if (!suspenseRevalidationStarted.get(resolvedKey)) {
+            suspenseRevalidationStarted.set(
+              resolvedKey,
+              initializeRevalidation()
+            )
+          }
+
+          throw suspenseRevalidationStarted.get(resolvedKey)
         }
+      }
 
-        const w = suspenseRevalidationStarted.get(resolvedKey)
-
-        suspenseInitialized.set(resolvedKey, false)
-        suspenseRevalidationStarted.delete(resolvedKey)
-
-        throw w
+      if (!hasInitialOrFallbackData) {
+        throw new Error(
+          `Request with id "${id}" uses suspense but no SSF fallback data was provided. See https://httpr.vercel.app/docs/fetch_config/defaults`
+        )
       }
     }
   }
@@ -1564,10 +1580,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       ? $requestEnd
       : null
     : maxAge === 0
-      ? null
-      : notNull(cacheProvider.get('expiration' + resolvedDataKey))
-        ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
-        : null
+    ? null
+    : notNull(cacheProvider.get('expiration' + resolvedDataKey))
+    ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
+    : null
 
   const isFailed =
     hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey) || error
