@@ -1396,7 +1396,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
       if (!hasInitialOrFallbackData) {
         throw new Error(
-          `Request with id "${id}" uses suspense but no SSF fallback data was provided. See https://httpr.vercel.app/docs/fetch_config/defaults`
+          `Request with id "${id}" uses suspense but no fallback data was provided for SSR. See https://httpr.vercel.app/docs/fetch_config/defaults`
         )
       }
     }
