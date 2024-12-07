@@ -45,6 +45,7 @@ import {
   CustomResponse,
   FetchConfigType,
   FetchConfigTypeNoUrl,
+  FetchContextType,
   HTTP_METHODS,
   ImperativeFetch,
   TimeSpan
@@ -71,6 +72,7 @@ import {
   setURLParams,
   windowExists
 } from '../utils/shared'
+import { $context } from '../internal/shared'
 
 /**
  * Passing `undefined` to `new Date()` returns `Invalid Date {}`, so return null instead
@@ -91,7 +93,20 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   init: FetchConfigType<FetchDataType, BodyType> | string | Request,
   options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
 ) {
-  const ctx = useHRFContext()
+  const $ctx = useHRFContext()
+
+  const ctx: FetchContextType = {
+    ...$context.value,
+    ...$ctx,
+    query: {
+      ...$context?.value?.query,
+      ...$ctx?.query
+    },
+    headers: {
+      ...$context.value?.headers,
+      ...$ctx?.headers
+    }
+  }
 
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -106,13 +121,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           ...options
         }
       : isRequest
-      ? {
-          url: init.url,
-          method: init.method,
-          init,
-          ...options
-        }
-      : (init as FetchConfigType<FetchDataType, BodyType>)
+        ? {
+            url: init.url,
+            method: init.method,
+            init,
+            ...options
+          }
+        : (init as FetchConfigType<FetchDataType, BodyType>)
 
   const {
     onOnline = ctx.onOnline,
@@ -179,8 +194,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     optionsConfig.auto === false
       ? false
       : isDefined(optionsConfig.retryOnReconnect)
-      ? optionsConfig.retryOnReconnect
-      : ctx.retryOnReconnect
+        ? optionsConfig.retryOnReconnect
+        : ctx.retryOnReconnect
 
   const reqQuery = {
     ...ctx.query,
@@ -196,10 +211,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     (hasBaseUrl(url)
       ? ''
       : !isDefined(config.baseUrl)
-      ? !isDefined(ctx.baseUrl)
-        ? ''
-        : ctx.baseUrl
-      : config.baseUrl) + url
+        ? !isDefined(ctx.baseUrl)
+          ? ''
+          : ctx.baseUrl
+        : config.baseUrl) + url
 
   const defaultId = [method, url].join(' ')
 
@@ -502,10 +517,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         (hasBaseUrl(url)
           ? ''
           : !isDefined(config.baseUrl)
-          ? !isDefined(ctx.baseUrl)
-            ? ''
-            : ctx.baseUrl
-          : config.baseUrl) + url
+            ? !isDefined(ctx.baseUrl)
+              ? ''
+              : ctx.baseUrl
+            : config.baseUrl) + url
 
       const urlWithParams = setURLParams(rawUrl, c.params)
 
@@ -619,8 +634,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 (realUrl.includes('?')
                   ? c.query
                   : c.query
-                  ? '?' + c.query
-                  : c.query)
+                    ? '?' + c.query
+                    : c.query)
               ).replace('?&', '?'),
               newRequestConfig
             )
@@ -1210,48 +1225,51 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     // Attempts will be made after a request fails
 
     // if ((attempts as number) > 0) {
-    const tm = setTimeout(() => {
-      if (!gettingAttempts.get(resolvedKey)) {
-        gettingAttempts.set(resolvedKey, true)
-        const attempts =
-          typeof $attempts === 'function'
-            ? $attempts({
-                status:
-                  statusCodes.get(resolvedKey) ||
-                  statusCodes.get(resolvedDataKey),
-                res: lastResponses.get(resolvedKey),
-                error:
-                  hasErrors.get(resolvedKey) ||
-                  hasErrors.get(resolvedDataKey) ||
-                  (error as any),
-                completedAttempts
+    const tm = setTimeout(
+      () => {
+        if (!gettingAttempts.get(resolvedKey)) {
+          gettingAttempts.set(resolvedKey, true)
+          const attempts =
+            typeof $attempts === 'function'
+              ? $attempts({
+                  status:
+                    statusCodes.get(resolvedKey) ||
+                    statusCodes.get(resolvedDataKey),
+                  res: lastResponses.get(resolvedKey),
+                  error:
+                    hasErrors.get(resolvedKey) ||
+                    hasErrors.get(resolvedDataKey) ||
+                    (error as any),
+                  completedAttempts
+                })
+              : $attempts
+
+          if ((attempts as number) > 0) {
+            if (completedAttempts < (attempts as number)) {
+              reValidate()
+              setCompletedAttempts((previousAttempts: number) => {
+                let newAttemptsValue = previousAttempts + 1
+
+                requestsProvider.emit(resolvedKey, {
+                  requestCallId,
+                  completedAttempts: newAttemptsValue
+                })
+
+                return newAttemptsValue
               })
-            : $attempts
-
-        if ((attempts as number) > 0) {
-          if (completedAttempts < (attempts as number)) {
-            reValidate()
-            setCompletedAttempts((previousAttempts: number) => {
-              let newAttemptsValue = previousAttempts + 1
-
+            } else if (completedAttempts === attempts) {
               requestsProvider.emit(resolvedKey, {
                 requestCallId,
-                completedAttempts: newAttemptsValue
+                online: false,
+                error: true
               })
-
-              return newAttemptsValue
-            })
-          } else if (completedAttempts === attempts) {
-            requestsProvider.emit(resolvedKey, {
-              requestCallId,
-              online: false,
-              error: true
-            })
-            if (inDeps('online')) setOnline(false)
+              if (inDeps('online')) setOnline(false)
+            }
           }
         }
-      }
-    }, getMiliseconds(attemptInterval as TimeSpan))
+      },
+      getMiliseconds(attemptInterval as TimeSpan)
+    )
     // }
     return () => {
       clearTimeout(tm)
@@ -1357,7 +1375,13 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         if (!suspenseRevalidationStarted.get(resolvedKey)) {
           suspenseRevalidationStarted.set(resolvedKey, initializeRevalidation())
         }
-        throw suspenseRevalidationStarted.get(resolvedKey)
+
+        const w = suspenseRevalidationStarted.get(resolvedKey)
+
+        suspenseInitialized.set(resolvedKey, false)
+        suspenseRevalidationStarted.delete(resolvedKey)
+
+        throw w
       }
     }
   }
@@ -1540,10 +1564,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       ? $requestEnd
       : null
     : maxAge === 0
-    ? null
-    : notNull(cacheProvider.get('expiration' + resolvedDataKey))
-    ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
-    : null
+      ? null
+      : notNull(cacheProvider.get('expiration' + resolvedDataKey))
+        ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
+        : null
 
   const isFailed =
     hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey) || error
