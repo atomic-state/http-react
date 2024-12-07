@@ -1,12 +1,5 @@
 'use client'
-import {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-  useCallback,
-  useLayoutEffect
-} from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import {
   abortControllers,
@@ -1396,7 +1389,15 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
       if (!hasInitialOrFallbackData) {
         throw new Error(
-          `Request with id "${id}" uses suspense but no SSF fallback data was provided. See https://httpr.vercel.app/docs/fetch_config/defaults`
+          `Request with id "${id}" uses suspense but no fallback data was provided for SSR. See https://httpr.vercel.app/docs/fetch_config/defaults.
+
+If you want to use suspense without fallback data, wrap with the <Suspense> component from 'http-react', which renders <React.Suspense> client-side and the fallback ui server-side:
+
+import { Suspense } from "http-react"
+
+Learn more: https://httpr.vercel.app/docs/api#suspense
+
+          `
         )
       }
     }
