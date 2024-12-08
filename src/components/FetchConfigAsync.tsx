@@ -1,53 +1,35 @@
-import { isDefined, serialize } from '../client'
-import {
-  defaultCache,
-  fetcherDefaults,
-  valuesMemory,
-  willSuspend
-} from '../internal'
+import { isDefined } from '../client'
 import { $context } from '../internal/shared'
 import { FetchContextType } from '../types'
+import { FetchConfigSync } from './server'
 
 export async function FetchConfigAsync(props: FetchContextType) {
-  const { children, defaults = {}, value = {}, suspense = [] } = props
+  const { children, defaults = {}, value = {} } = props
+
+  let $values = new Map()
 
   const previousConfig = $context.value as any
-  const { cacheProvider = defaultCache } = previousConfig
 
   for (let valueKey in value) {
-    const resolvedKey = serialize({
-      idString: serialize(valueKey)
-    })
-
     const $value = await value[valueKey]
 
     const $data = $value.data ?? $value
 
-    valuesMemory.set(resolvedKey, $data)
+    $values.set(valueKey, $data)
 
-    fetcherDefaults.set(resolvedKey, $data)
+    // fetcherDefaults.set(resolvedKey, $data)
 
-    cacheProvider.set(resolvedKey, $data)
+    // cacheProvider.set(resolvedKey, $data)
   }
 
   for (let defaultKey in defaults) {
     const { id = defaultKey } = defaults[defaultKey]
-    const resolvedKey = serialize({
-      idString: serialize(id)
-    })
 
     if (isDefined(id)) {
-      valuesMemory.set(resolvedKey, await defaults[defaultKey]?.value)
-      fetcherDefaults.set(resolvedKey, await defaults[defaultKey]?.value)
-      cacheProvider.set(resolvedKey, await defaults[defaultKey]?.value)
+      $values.set(defaultKey, await defaults[defaultKey]?.value)
+      // fetcherDefaults.set(resolvedKey, await defaults[defaultKey]?.value)
+      // cacheProvider.set(resolvedKey, await defaults[defaultKey]?.value)
     }
-  }
-
-  for (let suspenseKey of suspense) {
-    const key = serialize({
-      idString: serialize(suspenseKey)
-    })
-    willSuspend.set(key, true)
   }
 
   let mergedConfig = {
@@ -57,10 +39,9 @@ export async function FetchConfigAsync(props: FetchContextType) {
       ...previousConfig.headers,
       ...props.headers
     },
+    value: Object.fromEntries($values.entries()),
     children: undefined
   }
 
-  $context.value = mergedConfig
-
-  return children
+  return <FetchConfigSync value={mergedConfig}>{children}</FetchConfigSync>
 }

@@ -12,7 +12,7 @@ import {
 
 import { FetchContextType } from '../types'
 
-import { isDefined, serialize } from '../utils/shared'
+import { isDefined, serialize, windowExists } from '../utils/shared'
 
 let isServer: boolean = true
 /**
@@ -39,17 +39,15 @@ export function SSRSuspense({
 }
 
 export function FetchConfig(props: FetchContextType) {
-  const {
-    children,
-    defaults = {},
-    value = {},
-    suspense = [],
-    clientOnly
-  } = props
+  const { children, defaults = {}, value: $val = {}, suspense = [] } = props
+
+  const value = (windowExists ? $val : $val.value) ?? {}
 
   const previousConfig = useHRFContext()
 
   const { cacheProvider = defaultCache } = previousConfig
+
+  const $values = new Map()
 
   for (let valueKey in value) {
     const resolvedKey = serialize({
@@ -77,11 +75,15 @@ export function FetchConfig(props: FetchContextType) {
       parsedChunk = dataChunk
     }
 
-    valuesMemory.set(resolvedKey, parsedChunk)
+    $values.set(resolvedKey, parsedChunk)
 
-    fetcherDefaults.set(resolvedKey, parsedChunk)
+    if (windowExists) {
+      valuesMemory.set(resolvedKey, parsedChunk)
 
-    cacheProvider.set(resolvedKey, parsedChunk)
+      fetcherDefaults.set(resolvedKey, parsedChunk)
+
+      cacheProvider.set(resolvedKey, parsedChunk)
+    }
   }
 
   for (let defaultKey in defaults) {
@@ -91,9 +93,12 @@ export function FetchConfig(props: FetchContextType) {
     })
 
     if (isDefined(id)) {
-      valuesMemory.set(resolvedKey, defaults[defaultKey]?.value)
-      fetcherDefaults.set(resolvedKey, defaults[defaultKey]?.value)
-      cacheProvider.set(resolvedKey, defaults[defaultKey]?.value)
+      $values.set(resolvedKey, defaults[defaultKey]?.value)
+      if (windowExists) {
+        valuesMemory.set(resolvedKey, defaults[defaultKey]?.value)
+        fetcherDefaults.set(resolvedKey, defaults[defaultKey]?.value)
+        cacheProvider.set(resolvedKey, defaults[defaultKey]?.value)
+      }
     }
   }
 
@@ -111,6 +116,7 @@ export function FetchConfig(props: FetchContextType) {
       ...previousConfig.headers,
       ...props.headers
     },
+    value: Object.fromEntries($values.entries()),
     children: undefined
   }
 
