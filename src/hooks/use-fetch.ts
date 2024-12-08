@@ -101,6 +101,8 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     }
   }
 
+  const valueMap = new Map(Object.entries(ctx.value || {}))
+
   const formRef = useRef<HTMLFormElement>(null)
 
   // @ts-ignore
@@ -346,7 +348,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const requestCache = cacheProvider.get(resolvedDataKey)
 
-  const initialDataValue = valuesMemory.get(resolvedKey) ?? requestCache ?? def
+  const defaultFromContext = valueMap.get(resolvedKey)
+
+  const initialDataValue =
+    valuesMemory.get(resolvedKey) ?? requestCache ?? defaultFromContext ?? def
 
   const hasInitialOrFallbackData = isDefined(initialDataValue)
 
