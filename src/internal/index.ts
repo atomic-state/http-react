@@ -1,12 +1,13 @@
-'use client'
-import { createContext, useContext } from 'react'
+"use client"
+import { createContext, useContext } from "react"
 
-import { CacheStoreType, FetchContextType } from '../types'
+import { CacheStoreType, FetchContextType } from "../types"
 import {
   ATTEMPTS,
   ATTEMPT_INTERVAL,
   DEFAULTS,
   DEFAULT_MIDDLEWARE,
+  DEFAULT_TRANSFORM,
   ONLINE,
   ON_OFFLINE,
   ON_ONLINE,
@@ -14,9 +15,9 @@ import {
   QUERY,
   RETRY_ON_RECONNECT,
   REVALIDATE_ON_FOCUS,
-  REVALIDATE_ON_MOUNT
-} from './constants'
-import { $context } from './shared'
+  REVALIDATE_ON_MOUNT,
+} from "./constants"
+import { $context } from "./shared"
 
 /**
  * This marks which requests are running
@@ -134,7 +135,7 @@ export const defaultCache: CacheStoreType = {
   },
   remove(k) {
     resolvedRequests.delete(k)
-  }
+  },
 }
 
 const requestsSubscribers = new Map()
@@ -162,7 +163,7 @@ export const requestsProvider = {
         listener(payload)
       })
     }
-  }
+  },
 }
 
 const defaultContextVaue: FetchContextType = {
@@ -179,7 +180,8 @@ const defaultContextVaue: FetchContextType = {
   revalidateOnMount: REVALIDATE_ON_MOUNT,
   cacheIfError: true,
   middleware: DEFAULT_MIDDLEWARE,
-  ...$context.value
+  transform: DEFAULT_TRANSFORM,
+  ...$context.value,
 }
 
 export const FetchContext = createContext<FetchContextType>(defaultContextVaue)

@@ -1,14 +1,14 @@
 export type HTTP_METHODS =
-  | 'GET'
-  | 'DELETE'
-  | 'HEAD'
-  | 'OPTIONS'
-  | 'POST'
-  | 'PUT'
-  | 'PATCH'
-  | 'PURGE'
-  | 'LINK'
-  | 'UNLINK'
+  | "GET"
+  | "DELETE"
+  | "HEAD"
+  | "OPTIONS"
+  | "POST"
+  | "PUT"
+  | "PATCH"
+  | "PURGE"
+  | "LINK"
+  | "UNLINK"
 
 export type FetchContextType = {
   clientOnly?: boolean
@@ -55,6 +55,7 @@ export type FetchContextType = {
   suspense?: any[]
   resolver?: (r: Response) => any
   middleware?(incomindgData: any, previousData: any): any
+  transform?(fetchData: any): any
   children?: any
   auto?: boolean
   memory?: boolean
@@ -82,7 +83,7 @@ export type FetchContextType = {
     ctx: FetchContextType
   ): void
   maxCacheAge?: TimeSpan
-} & Omit<RequestInit, 'body'>
+} & Omit<RequestInit, "body">
 
 export type CacheStoreType = {
   get(k?: any): any
@@ -90,7 +91,7 @@ export type CacheStoreType = {
   remove?(k?: any): any
 }
 
-export type CustomResponse<T> = Omit<Response, 'json'> & {
+export type CustomResponse<T> = Omit<Response, "json"> & {
   json(): Promise<T>
 }
 
@@ -102,7 +103,7 @@ export type RequestWithBody = <R = any, BodyType = any>(
   /**
    * The request configuration
    */
-  reqConfig?: Omit<RequestInit & FetchConfigType<R, BodyType>, 'suspense'> & {
+  reqConfig?: Omit<RequestInit & FetchConfigType<R, BodyType>, "suspense"> & {
     /**
      * Default value
      */
@@ -143,7 +144,7 @@ export type RequestWithBody = <R = any, BodyType = any>(
 
 export type TimeSpan =
   | number
-  | `${string} ${'ms' | 'sec' | 'min' | 'h' | 'd' | 'we' | 'mo' | 'y'}`
+  | `${string} ${"ms" | "sec" | "min" | "h" | "d" | "we" | "mo" | "y"}`
 
 /**
  * An imperative version of the `useFetch` hook
@@ -164,7 +165,7 @@ export type ImperativeFetch = {
 
 export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
   RequestInit,
-  'body' | 'headers'
+  "body" | "headers"
 > & {
   headers?: any
   /**
@@ -176,6 +177,7 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
     incomindgData: FetchDataType,
     previousData: FetchDataType
   ): FetchDataType
+  transform?(fetchData: FetchDataType): FetchDataType
   fetcher?(
     url: string,
     config: FetchConfigType<FetchDataType, BodyType>
@@ -217,7 +219,7 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
    * @default true
    */
   memory?: boolean
-  onSubmit?: 'reset' | ((form: HTMLFormElement, data: FormData) => void)
+  onSubmit?: "reset" | ((form: HTMLFormElement, data: FormData) => void)
   /**
    * Function to run when request is resolved succesfuly
    */
@@ -335,11 +337,11 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
   /**
    * Will run when the request is sent
    */
-  onFetchStart?: FetchContextType['onFetchStart']
+  onFetchStart?: FetchContextType["onFetchStart"]
   /**
    * Will run when the response is received
    */
-  onFetchEnd?: FetchContextType['onFetchEnd']
+  onFetchEnd?: FetchContextType["onFetchEnd"]
   /**
    * If `true`, the last resolved value be returned as `data` if the request fails. If `false`, the default value will be returned instead
    *
@@ -355,7 +357,7 @@ export type FetchConfigType<FetchDataType = any, BodyType = any> = Omit<
 // If first argument is a string
 export type FetchConfigTypeNoUrl<FetchDataType = any, BodyType = any> = Omit<
   FetchConfigType<FetchDataType, BodyType>,
-  'url'
+  "url"
 >
 
 /**

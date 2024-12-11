@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { FetchConfigAsync } from "../FetchConfigAsync"
+import { FetchConfigAsync } from '../FetchConfigAsync'
 
-import { FetchConfig as FConfig, SSRSuspense } from "../index"
+import { FetchConfig as FConfig, SSRSuspense } from '../index'
 
-const FetchConfig = typeof window === "undefined" ? FetchConfigAsync : FConfig
+const FetchConfig = typeof window === 'undefined' ? FetchConfigAsync : FConfig
 
 export { FetchConfig, SSRSuspense, FConfig as FetchConfigSync }
