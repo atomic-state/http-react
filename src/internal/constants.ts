@@ -9,21 +9,22 @@ const ATTEMPT_INTERVAL = 2
 const REVALIDATE_ON_FOCUS = false
 const RETRY_ON_RECONNECT = true
 const REVALIDATE_ON_MOUNT = true
-const DEFAULT_GRAPHQL_PATH = '/graphql'
+const DEFAULT_GRAPHQL_PATH = "/graphql"
 const DEFAULT_RESOLVER = (e: any) => e.json()
 const DEFAULT_MIDDLEWARE = (incoming: any, previous: any) => incoming
+const DEFAULT_TRANSFORM = (fetchData: any) => fetchData
 
 const METHODS = {
-  GET: 'GET',
-  DELETE: 'DELETE',
-  HEAD: 'HEAD',
-  OPTIONS: 'OPTIONS',
-  POST: 'POST',
-  PUT: 'PUT',
-  PATCH: 'PATCH',
-  PURGE: 'PURGE',
-  LINK: 'LINK',
-  UNLINK: 'UNLINK'
+  GET: "GET",
+  DELETE: "DELETE",
+  HEAD: "HEAD",
+  OPTIONS: "OPTIONS",
+  POST: "POST",
+  PUT: "PUT",
+  PATCH: "PATCH",
+  PURGE: "PURGE",
+  LINK: "LINK",
+  UNLINK: "UNLINK",
 }
 
 const UNITS_MILISECONDS_EQUIVALENTS = {
@@ -34,7 +35,7 @@ const UNITS_MILISECONDS_EQUIVALENTS = {
   d: 86400000,
   we: 604800000,
   mo: 2629800000,
-  y: 31536000000
+  y: 31536000000,
 }
 
 export {
@@ -53,5 +54,6 @@ export {
   DEFAULT_RESOLVER,
   METHODS,
   UNITS_MILISECONDS_EQUIVALENTS,
-  DEFAULT_MIDDLEWARE
+  DEFAULT_MIDDLEWARE,
+  DEFAULT_TRANSFORM,
 }
