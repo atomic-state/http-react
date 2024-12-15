@@ -687,7 +687,7 @@ export function useServerAction<T extends (args: any) => any>(
   > & {
     onSubmit?:
       | 'reset'
-      | ((form: HTMLFormElement, data: Parameters<T>[0]) => void)
+      | ((form: HTMLFormElement, formData: Parameters<T>[0]) => void)
   } & (Parameters<T>[0] extends typeof undefined
       ? {}
       : {
@@ -710,6 +710,7 @@ export function useServerAction<T extends (args: any) => any>(
       return { data, error, status }
     },
     id: mockServerActionId,
+    auto: false,
     ...config,
     onResolve(...c) {
       if (config?.onResolve) config.onResolve(...c)
@@ -759,7 +760,7 @@ export function useServerMutation<T extends (args: any) => any>(
   > & {
     onSubmit?:
       | 'reset'
-      | ((form: HTMLFormElement, data: Parameters<T>[0]) => void)
+      | ((form: HTMLFormElement, formData: Parameters<T>[0]) => void)
   } & (Parameters<T>[0] extends typeof undefined
       ? {}
       : {
