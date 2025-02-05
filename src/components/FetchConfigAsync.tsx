@@ -39,7 +39,10 @@ export async function FetchConfigAsync(props: FetchContextType) {
       ...previousConfig.headers,
       ...props.headers
     },
-    value: Object.fromEntries($values.entries()),
+    value: {
+      ...previousConfig?.value,
+      ...Object.fromEntries($values.entries())
+    },
     children: undefined
   }
 

@@ -109,14 +109,18 @@ export function FetchConfig(props: FetchContextType) {
     willSuspend.set(key, true)
   }
 
-  let mergedConfig = {
+  let mergedConfig: FetchContextType = {
     ...previousConfig,
     ...props,
     headers: {
       ...previousConfig.headers,
       ...props.headers
     },
-    value: Object.fromEntries($values.entries()),
+
+    value: {
+      ...previousConfig?.value,
+      ...Object.fromEntries($values.entries())
+    },
     children: undefined
   }
 
