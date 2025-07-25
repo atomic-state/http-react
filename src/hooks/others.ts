@@ -171,7 +171,7 @@ export function useFetchMutate<T = any>(
   /**
    * The id of the `useFetch` call
    */
-  id: any,
+  id: T extends typeof undefined ? any : FetchInit<T>,
   /**
    * The function to run after mutating
    */
@@ -183,12 +183,13 @@ export function useFetchMutate<T = any>(
     fetcher: ImperativeFetch
   ) => void
 ) {
-  const { mutate } = useFetch({
+  if ('url' in id || 'fetcher' in id)
+    return useFetch({ ...id, onMutate: onMutate ?? id?.onMutate }).mutate
+
+  return useFetch({
     id: id,
     onMutate
-  })
-
-  return mutate
+  }).mutate
 }
 
 export function useOnline(id: any) {
@@ -520,8 +521,10 @@ export function useDebounceFetch<FetchDataType = any, BodyType = any>(
     auto: false
   })
 
-  // @ts-ignore - debounce can be present in the first arg
-  const debounce = getMiliseconds(init?.debounce || options?.debounce || '0 ms')
+  const debounce = getMiliseconds(
+    // @ts-expect-error - debounce can be present in the first arg
+    init?.debounce || options?.debounce || '0 ms'
+  )
 
   useEffect(() => {
     let debounceTimeout: any = null
@@ -713,7 +716,8 @@ export function useServerAction<T extends (args: any) => any>(
     auto: false,
     ...config,
     onResolve(...c) {
-      if (config?.onResolve) config.onResolve(...c)
+      const onResolveFn = config?.onResolve
+      if (onResolveFn) onResolveFn(...c)
       actionForms.delete(mockServerActionId)
     }
   })
@@ -744,7 +748,7 @@ export function useServerAction<T extends (args: any) => any>(
   $action.formProps.action = submit
 
   return $action as Omit<typeof $action, 'submit'> & {
-    submit: (form: Parameters<T>[0]) => void
+    submit: (submitData: Parameters<T>[0]) => void
   }
 }
 
