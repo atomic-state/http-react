@@ -6,11 +6,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-export type { CacheStoreType, FetchInit } from './types'
+export type { CacheStoreType, FetchInit } from "./types";
 
-import { useFetch } from './hooks'
+import { useFetch } from "./hooks";
 
-export default useFetch
+export default useFetch;
 
 export {
   useData,
@@ -52,21 +52,22 @@ export {
   useMutation,
   useServerAction,
   useServerMutation,
-  useAction
-} from './hooks'
+  useAction,
+} from "./hooks";
 
-export { FetchConfig, SSRSuspense } from './components/server'
-export { SSRSuspense as Suspense } from './components/server'
+export { FetchConfig, SSRSuspense } from "./components/server";
+export { SSRSuspense as Suspense } from "./components/server";
 
 export {
   queryProvider,
   mutateData,
   revalidate,
   cancelRequest,
-  getMiliseconds
-} from './utils'
+  getMiliseconds,
+  fetchOptions,
+} from "./utils";
 
-export { defaultCache } from './internal'
+export { defaultCache } from "./internal";
 
 export {
   Client,
@@ -88,5 +89,5 @@ export {
   windowExists,
   queue,
   gql,
-  getRequestHeaders as $headers
-} from './utils/shared'
+  getRequestHeaders as $headers,
+} from "./utils/shared";

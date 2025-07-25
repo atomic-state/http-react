@@ -1,5 +1,5 @@
-'use client'
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+"use client";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 
 import {
   abortControllers,
@@ -29,10 +29,10 @@ import {
   suspenseRevalidationStarted,
   onlineHandled,
   offlineHandled,
-  hasData
-} from '../internal'
+  hasData,
+} from "../internal";
 
-import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
+import { DEFAULT_RESOLVER, METHODS } from "../internal/constants";
 
 import {
   CustomResponse,
@@ -41,16 +41,16 @@ import {
   FetchContextType,
   HTTP_METHODS,
   ImperativeFetch,
-  TimeSpan
-} from '../types'
+  TimeSpan,
+} from "../types";
 
 import {
   createImperativeFetch,
   getMiliseconds,
   getTimePassed,
   revalidate,
-  useIsomorphicLayoutEffect
-} from '../utils'
+  useIsomorphicLayoutEffect,
+} from "../utils";
 import {
   createRequestFn,
   getRequestHeaders,
@@ -63,21 +63,21 @@ import {
   queue,
   serialize,
   setURLParams,
-  windowExists
-} from '../utils/shared'
-import { $context } from '../internal/shared'
+  windowExists,
+} from "../utils/shared";
+import { $context } from "../internal/shared";
 
 /**
  * Passing `undefined` to `new Date()` returns `Invalid Date {}`, so return null instead
  */
 const getDateIfValid = (d: Date | null) =>
   // @ts-ignore - Evals to a Date
-  (d?.toString() === 'Invalid Date' || d === null ? null : d) as Date
+  (d?.toString() === "Invalid Date" || d === null ? null : d) as Date;
 
 /**
  *  Termporary form data is set with the submit method in useFetch and is deleted immediately after resolving (see line #858)
  * */
-const temporaryFormData = new Map()
+const temporaryFormData = new Map();
 
 /**
  * Fetch hook
@@ -86,57 +86,57 @@ export function useFetch<FetchDataType = any, BodyType = any>(
   init: FetchConfigType<FetchDataType, BodyType> | string | Request,
   options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
 ) {
-  const $ctx = useHRFContext()
+  const $ctx = useHRFContext();
 
   const ctx: FetchContextType = {
     ...$context.value,
     ...$ctx,
     query: {
       ...$context?.value?.query,
-      ...$ctx?.query
+      ...$ctx?.query,
     },
     headers: {
       ...$context.value?.headers,
-      ...$ctx?.headers
-    }
-  }
+      ...$ctx?.headers,
+    },
+  };
 
-  const valueMap = new Map(Object.entries(ctx.value ?? {}))
+  const valueMap = new Map(Object.entries(ctx.value ?? {}));
 
-  const formRef = useRef<HTMLFormElement>(null)
+  const formRef = useRef<HTMLFormElement>(null);
 
   // @ts-ignore
-  const isRequest = init instanceof Object && init?.json
+  const isRequest = init instanceof Object && init?.json;
 
   const optionsConfig =
-    typeof init === 'string'
+    typeof init === "string"
       ? {
           // Pass init as the url if init is a string
           url: init,
-          ...options
+          ...options,
         }
       : isRequest
       ? {
           url: init.url,
           method: init.method,
           init,
-          ...options
+          ...options,
         }
-      : (init as FetchConfigType<FetchDataType, BodyType>)
+      : ({ ...init, ...options } as FetchConfigType<FetchDataType, BodyType>);
 
   const {
     onOnline = ctx.onOnline,
     onOffline = ctx.onOffline,
     onMutate,
     revalidateOnMount = ctx.revalidateOnMount,
-    url = '',
+    url = new String(),
     query = {},
     params = {},
     baseUrl = undefined,
     method = isRequest ? init.method : (METHODS.GET as HTTP_METHODS),
     headers = {} as Headers,
     body = undefined as unknown as Body,
-    formatBody = e => JSON.stringify(e),
+    formatBody = (e) => JSON.stringify(e),
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
     auto = isDefined(ctx.auto) ? ctx.auto : true,
@@ -155,14 +155,14 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     maxCacheAge = ctx.maxCacheAge,
     fetcher = ctx.fetcher,
     middleware = ctx.middleware,
-    transform = ctx.transform
-  } = optionsConfig
+    transform = ctx.transform,
+  } = optionsConfig;
 
   const $fetch = isFunction(fetcher)
     ? fetcher
     : windowExists
     ? fetch
-    : () => new Response(serialize(initialDataValue))
+    : () => new Response(serialize(initialDataValue));
 
   const config = {
     query,
@@ -171,86 +171,86 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     method,
     headers,
     body,
-    formatBody
-  }
+    formatBody,
+  };
 
-  const { cacheProvider: $cacheProvider = defaultCache } = ctx
+  const { cacheProvider: $cacheProvider = defaultCache } = ctx;
 
-  const logStart = isFunction(onFetchStart)
-  const logEnd = isFunction(onFetchEnd)
+  const logStart = isFunction(onFetchStart);
+  const logEnd = isFunction(onFetchEnd);
 
-  const { cacheProvider = $cacheProvider } = optionsConfig
+  const { cacheProvider = $cacheProvider } = optionsConfig;
 
-  const requestCallId = useMemo(() => `${Math.random()}`.split('.')[1], [])
+  const requestCallId = useMemo(() => `${Math.random()}`.split(".")[1], []);
 
-  const willResolve = isDefined(onResolve)
-  const handleError = isDefined(onError)
-  const handleOnAbort = isDefined(onAbort)
-  const handleMutate = isDefined(onMutate)
-  const handleOnline = isDefined(onOnline)
-  const handleOffline = isDefined(onOffline)
+  const willResolve = isDefined(onResolve);
+  const handleError = isDefined(onError);
+  const handleOnAbort = isDefined(onAbort);
+  const handleMutate = isDefined(onMutate);
+  const handleOnline = isDefined(onOnline);
+  const handleOffline = isDefined(onOffline);
 
   const retryOnReconnect =
     optionsConfig.auto === false
       ? false
       : isDefined(optionsConfig.retryOnReconnect)
       ? optionsConfig.retryOnReconnect
-      : ctx.retryOnReconnect
+      : ctx.retryOnReconnect;
 
   const reqQuery = {
     ...ctx.query,
-    ...config.query
-  }
+    ...config.query,
+  };
 
   const reqParams = {
     ...ctx.params,
-    ...config.params
-  }
+    ...config.params,
+  };
 
   const rawUrl =
     (hasBaseUrl(url)
-      ? ''
-      : !isDefined(config.baseUrl)
-      ? !isDefined(ctx.baseUrl)
-        ? ''
-        : ctx.baseUrl
-      : config.baseUrl) + url
+      ? ""
+      : !isDefined(config.baseUrl!)
+      ? !isDefined(ctx.baseUrl!)
+        ? ""
+        : ctx.baseUrl!
+      : config.baseUrl!) + url;
 
-  const defaultId = [method, url].join(' ')
+  const defaultId = [method, url].join(" ");
 
-  const { id = defaultId } = optionsConfig
+  const { id = defaultId } = optionsConfig;
 
-  const idString = serialize(id)
+  const idString = serialize(id);
 
   const urlWithParams = useMemo(
     () => setURLParams(rawUrl, reqParams),
     [serialize(reqParams), config.baseUrl, ctx.baseUrl, url]
-  )
+  );
 
-  const resolvedKey = serialize({ idString })
+  const resolvedKey = serialize({ idString });
 
   if (!statusCodes.has(resolvedKey)) {
-    statusCodes.set(resolvedKey, null)
+    statusCodes.set(resolvedKey, null);
   }
 
-  const resolvedDataKey = serialize({ idString, reqQuery, reqParams })
+  const resolvedDataKey = serialize({ idString, reqQuery, reqParams });
 
-  const ageKey = ['max-age', resolvedDataKey].join('-')
+  const ageKey = ["max-age", resolvedDataKey].join("-");
 
-  const paginationCache = cacheProvider.get(resolvedDataKey)
+  const paginationCache = cacheProvider.get(resolvedDataKey);
 
-  const normalCache = cacheProvider.get(resolvedKey)
+  const normalCache = cacheProvider.get(resolvedKey);
 
-  const maxAge = getMiliseconds(maxCacheAge || '0 ms')
+  const maxAge = getMiliseconds(maxCacheAge || "0 ms");
 
   // Revalidates if passed maxCacheAge has changed
 
-  if (!cacheProvider.get('maxAgeValue' + resolvedDataKey)) {
-    cacheProvider.set('maxAgeValue' + resolvedDataKey, maxCacheAge || '0 ms')
+  if (!cacheProvider.get("maxAgeValue" + resolvedDataKey)) {
+    cacheProvider.set("maxAgeValue" + resolvedDataKey, maxCacheAge || "0 ms");
   } else {
-    if (cacheProvider.get('maxAgeValue' + resolvedDataKey) !== maxCacheAge) {
-      cacheProvider.set(ageKey, 0)
-      cacheProvider.set('maxAgeValue' + resolvedDataKey, maxCacheAge)
+    if (cacheProvider.get("maxAgeValue" + resolvedDataKey) !== maxCacheAge) {
+      cacheProvider.set(ageKey, 0);
+      cacheProvider.set("maxAgeValue" + resolvedDataKey, maxCacheAge);
     }
   }
 
@@ -258,45 +258,45 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     !isDefined(cacheProvider.get(ageKey)) ||
     !notNull(cacheProvider.get(ageKey))
   ) {
-    cacheProvider.set(ageKey, maxAge)
+    cacheProvider.set(ageKey, maxAge);
   }
 
-  const isExpired = Date.now() > cacheProvider.get(ageKey)
+  const isExpired = Date.now() > cacheProvider.get(ageKey);
 
   const debounce = optionsConfig.debounce
     ? getMiliseconds(optionsConfig.debounce)
-    : 0
+    : 0;
 
-  const canRevalidate = auto && isExpired
+  const canRevalidate = auto && isExpired;
 
-  const suspense = $suspense || willSuspend.get(resolvedKey)
+  const suspense = $suspense || willSuspend.get(resolvedKey);
 
   if (!suspense) {
-    if (url !== '') {
-      suspenseInitialized.set(resolvedKey, true)
+    if (url !== "") {
+      suspenseInitialized.set(resolvedKey, true);
     }
   }
 
   if (suspense && !willSuspend.get(resolvedKey)) {
     if (!suspenseInitialized.get(resolvedKey)) {
-      willSuspend.set(resolvedKey, true)
+      willSuspend.set(resolvedKey, true);
     }
   }
 
   const realUrl =
     urlWithParams +
-    (urlWithParams.includes('?') ? (optionsConfig?.query ? `&` : '') : '?')
+    (urlWithParams.includes("?") ? (optionsConfig?.query ? `&` : "") : "?");
 
   if (!previousProps.has(resolvedKey)) {
-    if (url !== '') {
-      previousProps.set(resolvedKey, optionsConfig)
+    if (url !== "") {
+      previousProps.set(resolvedKey, optionsConfig);
     }
   }
 
   const configUrl = urls[resolvedKey] || {
     realUrl,
-    rawUrl
-  }
+    rawUrl,
+  };
 
   const stringDeps = serialize(
     Object.assign(
@@ -311,50 +311,50 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       { reqQuery },
       { reqParams }
     )
-  )
+  );
 
   // This helps pass default values to other useFetch calls using the same id
   useEffect(() => {
     if (isDefined(optionsConfig.default)) {
       if (!fetcherDefaults.has(resolvedKey)) {
-        if (url !== '') {
+        if (url !== "") {
           if (!isDefined(cacheProvider.get(resolvedDataKey))) {
-            fetcherDefaults.set(resolvedKey, optionsConfig.default)
+            fetcherDefaults.set(resolvedKey, optionsConfig.default);
           }
         } else {
           if (!isDefined(cacheProvider.get(resolvedDataKey))) {
             requestsProvider.emit(resolvedKey, {
               requestCallId,
-              data: optionsConfig.default
-            })
+              data: optionsConfig.default,
+            });
           }
         }
       }
     } else {
       if (fetcherDefaults.has(resolvedKey)) {
         if (!isDefined(cacheProvider.get(resolvedDataKey))) {
-          setData(fetcherDefaults.get(resolvedKey))
+          setData(fetcherDefaults.get(resolvedKey));
         }
       }
     }
-  }, [resolvedKey])
+  }, [resolvedKey]);
 
-  const def = optionsConfig?.default ?? fetcherDefaults.get(resolvedKey)
+  const def = optionsConfig?.default ?? fetcherDefaults.get(resolvedKey);
 
   useEffect(() => {
     if (!canRevalidate) {
-      runningRequests.set(resolvedKey, false)
+      runningRequests.set(resolvedKey, false);
     }
-  }, [])
+  }, []);
 
-  const requestCache = cacheProvider.get(resolvedDataKey)
+  const requestCache = cacheProvider.get(resolvedDataKey);
 
-  const defaultFromContext = valueMap.get(resolvedKey)
+  const defaultFromContext = valueMap.get(resolvedKey);
 
   const initialDataValue =
-    valuesMemory.get(resolvedKey) ?? requestCache ?? defaultFromContext ?? def
+    valuesMemory.get(resolvedKey) ?? requestCache ?? defaultFromContext ?? def;
 
-  const hasInitialOrFallbackData = isDefined(initialDataValue)
+  const hasInitialOrFallbackData = isDefined(initialDataValue);
 
   const [fetchState, setFetchState] = useState({
     data: initialDataValue,
@@ -363,156 +363,156 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       ? isPending(resolvedKey) ||
         (revalidateOnMount
           ? !jsonCompare(
-              JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+              JSON.parse(previousConfig.get(resolvedKey) || "{}"),
               optionsConfig
             )
           : !jsonCompare(
-              JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+              JSON.parse(previousConfig.get(resolvedKey) || "{}"),
               optionsConfig
             ))
       : false,
     error: (hasErrors.get(resolvedDataKey) || false) as boolean,
-    completedAttempts: 0
-  })
+    completedAttempts: 0,
+  });
 
   const thisDeps = useRef({
     data: false,
     online: false,
     loading: false,
     error: false,
-    completedAttempts: false
-  }).current
+    completedAttempts: false,
+  }).current;
 
   const inDeps = (k: keyof typeof thisDeps) => {
-    return thisDeps[k]
-  }
+    return thisDeps[k];
+  };
 
-  const { data, loading, online, error, completedAttempts } = fetchState
+  const { data, loading, online, error, completedAttempts } = fetchState;
 
-  const isLoading = isExpired ? isPending(resolvedKey) || loading : false
+  const isLoading = isExpired ? isPending(resolvedKey) || loading : false;
 
   const loadingFirst =
-    !(hasData.get(resolvedDataKey) || hasData.get(resolvedKey)) && isLoading
+    !(hasData.get(resolvedDataKey) || hasData.get(resolvedKey)) && isLoading;
 
   if (!isExpired) {
     if (error) {
-      setError(false)
+      setError(false);
     }
   }
 
   function setData(v: any) {
-    setFetchState(p => {
+    setFetchState((p) => {
       if (isFunction(v)) {
-        const newVal = v(p.data)
+        const newVal = v(p.data);
         if (!jsonCompare(p.data, newVal)) {
           return {
             ...p,
-            data: newVal
-          }
+            data: newVal,
+          };
         }
       } else {
         if (!jsonCompare(p.data, v)) {
           return {
             ...p,
-            data: v
-          }
+            data: v,
+          };
         }
       }
-      return p
-    })
+      return p;
+    });
   }
 
-  const thisCache = paginationCache ?? normalCache ?? data ?? def ?? null
+  const thisCache = paginationCache ?? normalCache ?? data ?? def ?? null;
   // Used JSON as deppendency instead of directly using a reference to data
-  const rawJSON = serialize(data)
+  const rawJSON = serialize(data);
 
   function setOnline(v: any) {
-    setFetchState(p => {
+    setFetchState((p) => {
       if (online !== p.online) {
         return {
           ...p,
-          online: v
-        }
+          online: v,
+        };
       }
-      return p
-    })
+      return p;
+    });
   }
 
   const requestHeaders = {
     ...ctx.headers,
-    ...config.headers
-  }
+    ...config.headers,
+  };
 
   function setError(v: any) {
-    setFetchState(p => {
+    setFetchState((p) => {
       if (isFunction(v)) {
-        const newErroValue = v(p.error)
+        const newErroValue = v(p.error);
         if (newErroValue !== p.error) {
           return {
             ...p,
-            error: newErroValue
-          }
+            error: newErroValue,
+          };
         }
       } else {
         if (v !== p.error) {
           return {
             ...p,
-            error: v
-          }
+            error: v,
+          };
         }
       }
-      return p
-    })
+      return p;
+    });
   }
 
   function setLoading(v: any) {
-    setFetchState(p => {
+    setFetchState((p) => {
       if (isFunction(v)) {
-        const newLoadingValue = v(p.loading)
+        const newLoadingValue = v(p.loading);
         if (newLoadingValue !== p.loading) {
           return {
             ...p,
-            loading: newLoadingValue
-          }
+            loading: newLoadingValue,
+          };
         }
       } else {
         if (v !== p.loading) {
           return {
             ...p,
-            loading: v
-          }
+            loading: v,
+          };
         }
       }
-      return p
-    })
+      return p;
+    });
   }
 
   function setCompletedAttempts(v: any) {
-    setFetchState(p => {
+    setFetchState((p) => {
       if (isFunction(v)) {
-        const newCompletedAttempts = v(p.completedAttempts)
+        const newCompletedAttempts = v(p.completedAttempts);
         if (newCompletedAttempts !== p.completedAttempts) {
           return {
             ...p,
-            completedAttempts: newCompletedAttempts
-          }
+            completedAttempts: newCompletedAttempts,
+          };
         }
       } else {
         if (v !== p.completedAttempts) {
           return {
             ...p,
-            completedAttempts: v
-          }
+            completedAttempts: v,
+          };
         }
       }
-      return p
-    })
+      return p;
+    });
   }
 
   const requestAbortController: AbortController =
-    abortControllers.get(resolvedKey) ?? new AbortController()
+    abortControllers.get(resolvedKey) ?? new AbortController();
 
-  const isGqlRequest = isDefined((optionsConfig as any)['__gql'])
+  const isGqlRequest = isDefined((optionsConfig as any)["__gql"]);
 
   const fetchData = useCallback(
     async function fetchData(
@@ -520,78 +520,78 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     ) {
       const rawUrl =
         (hasBaseUrl(url)
-          ? ''
-          : !isDefined(config.baseUrl)
-          ? !isDefined(ctx.baseUrl)
-            ? ''
-            : ctx.baseUrl
-          : config.baseUrl) + url
+          ? ""
+          : !isDefined(config.baseUrl!)
+          ? !isDefined(ctx.baseUrl!)
+            ? ""
+            : ctx.baseUrl!
+          : config.baseUrl!) + url;
 
-      const urlWithParams = setURLParams(rawUrl, c.params)
+      const urlWithParams = setURLParams(rawUrl, c.params);
 
       const realUrl =
         urlWithParams +
-        (urlWithParams.includes('?') ? (c?.query !== '' ? `&` : '') : '')
+        (urlWithParams.includes("?") ? (c?.query !== "" ? `&` : "") : "");
 
       if (
         !jsonCompare(
-          JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+          JSON.parse(previousConfig.get(resolvedKey) || "{}"),
           optionsConfig
         )
       ) {
-        previousProps.set(resolvedKey, optionsConfig)
+        previousProps.set(resolvedKey, optionsConfig);
         queue(() => {
-          if (url !== '') {
+          if (url !== "") {
             const newUrls = {
               realUrl,
-              rawUrl
-            }
+              rawUrl,
+            };
 
-            urls[resolvedKey] = newUrls
+            urls[resolvedKey] = newUrls;
           }
-        })
+        });
         if (!isPending(resolvedKey)) {
-          runningRequests.set(resolvedKey, auto)
-          hasErrors.set(resolvedDataKey, false)
-          hasErrors.set(resolvedKey, false)
+          runningRequests.set(resolvedKey, auto);
+          hasErrors.set(resolvedDataKey, false);
+          hasErrors.set(resolvedKey, false);
 
-          resolvedOnErrorCalls.set(resolvedKey, false)
-          resolvedHookCalls.set(resolvedKey, false)
+          resolvedOnErrorCalls.set(resolvedKey, false);
+          resolvedHookCalls.set(resolvedKey, false);
 
-          previousConfig.set(resolvedKey, serialize(optionsConfig))
+          previousConfig.set(resolvedKey, serialize(optionsConfig));
 
-          let newAbortController = new AbortController()
+          let newAbortController = new AbortController();
 
-          cacheProvider.set(ageKey, Date.now() - 1)
+          cacheProvider.set(ageKey, Date.now() - 1);
 
           requestsProvider.emit(resolvedKey, {
             requestCallId: loadingFirst ? requestCallId : undefined,
             loading: true,
             requestAbortController: newAbortController,
-            error: false
-          })
+            error: false,
+          });
 
-          abortControllers.set(resolvedKey, newAbortController)
+          abortControllers.set(resolvedKey, newAbortController);
 
-          let $$data: any
+          let $$data: any;
 
-          let rpc: any = {}
+          let rpc: any = {};
 
           try {
-            let reqConfig = {}
+            let reqConfig = {};
 
             // @ts-ignore
-            let _headers = isRequest ? getRequestHeaders(init) : {}
+            let _headers = isRequest ? getRequestHeaders(init) : {};
 
             if (isRequest) {
               for (let k in init) {
                 // @ts-ignore Getting keys from Request init
-                reqConfig[k] = init[k]
+                reqConfig[k] = init[k];
               }
             }
 
-            cacheProvider.set('requestStart' + resolvedDataKey, Date.now())
-            requestInitialTimes.set(resolvedDataKey, Date.now())
+            cacheProvider.set("requestStart" + resolvedDataKey, Date.now());
+            requestInitialTimes.set(resolvedDataKey, Date.now());
 
             const newRequestConfig = (
               isRequest
@@ -600,21 +600,21 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                     ...reqConfig,
                     ...optionsConfig,
                     signal: (() => {
-                      return newAbortController.signal
+                      return newAbortController.signal;
                     })(),
                     headers: {
-                      'Content-Type': 'application/json',
+                      "Content-Type": "application/json",
                       ...ctx.headers,
                       ..._headers,
                       ...config.headers,
-                      ...c.headers
-                    }
+                      ...c.headers,
+                    },
                   }
                 : {
                     ...ctx,
                     ...optionsConfig,
                     signal: (() => {
-                      return newAbortController.signal
+                      return newAbortController.signal;
                     })(),
                     body:
                       temporaryFormData.get(resolvedKey) ??
@@ -625,107 +625,107 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                     headers: {
                       ...(temporaryFormData.get(resolvedKey)
                         ? {}
-                        : { 'Content-Type': 'application/json' }),
+                        : { "Content-Type": "application/json" }),
                       ...ctx.headers,
                       ...config.headers,
-                      ...c.headers
-                    }
+                      ...c.headers,
+                    },
                   }
-            ) as any
+            ) as any;
 
             const r = new Request(
               (
                 realUrl +
-                (realUrl.includes('?')
+                (realUrl.includes("?")
                   ? c.query
                   : c.query
-                  ? '?' + c.query
+                  ? "?" + c.query
                   : c.query)
-              ).replace('?&', '?'),
+              ).replace("?&", "?"),
               newRequestConfig
-            )
+            );
 
             if (logStart) {
-              ;(onFetchStart as any)(r, optionsConfig, ctx)
+              (onFetchStart as any)(r, optionsConfig, ctx);
             }
 
             // @ts-ignore - This could use 'axios' or something similar
-            const json = await $fetch(r.url, newRequestConfig)
+            const json = await $fetch(r.url, newRequestConfig);
 
-            const resolvedDate = Date.now()
+            const resolvedDate = Date.now();
 
             cacheProvider.set(
-              'expiration' + resolvedDataKey,
+              "expiration" + resolvedDataKey,
               resolvedDate + maxAge
-            )
+            );
 
-            cacheProvider.set('requestEnds' + resolvedDataKey, resolvedDate)
+            cacheProvider.set("requestEnds" + resolvedDataKey, resolvedDate);
             requestResponseTimes.set(
               resolvedDataKey,
               getTimePassed(resolvedDataKey)
-            )
+            );
 
-            lastResponses.set(resolvedKey, json)
+            lastResponses.set(resolvedKey, json);
 
-            const code = json.status as number
-            statusCodes.set(resolvedKey, code)
+            const code = json.status as number;
+            statusCodes.set(resolvedKey, code);
 
             rpc = {
               ...rpc,
               response: json,
               error: false,
-              code
-            }
+              code,
+            };
 
             // @ts-ignore - 'data' is priority because 'fetcher' can return it
-            const incoming = json?.['data'] ?? (await (resolver as any)(json))
+            const incoming = json?.["data"] ?? (await (resolver as any)(json));
 
             // @ts-ignore
-            const actionError = json?.['error']
+            const actionError = json?.["error"];
 
             const _data = isFunction(middleware)
               ? await middleware!(incoming as any, thisCache)
-              : incoming
+              : incoming;
 
             let __data = isGqlRequest
               ? {
                   ..._data,
                   variables: (optionsConfig as any)?.variables,
-                  errors: _data?.errors ? _data.errors : undefined
+                  errors: _data?.errors ? _data.errors : undefined,
                 }
-              : _data
+              : _data;
 
-            cacheProvider.set(resolvedDataKey, __data)
-            cacheProvider.set(resolvedKey, __data)
-            valuesMemory.set(resolvedKey, __data)
-            $$data = __data
-            cacheForMutation.set(idString, __data)
+            cacheProvider.set(resolvedDataKey, __data);
+            cacheProvider.set(resolvedKey, __data);
+            valuesMemory.set(resolvedKey, __data);
+            $$data = __data;
+            cacheForMutation.set(idString, __data);
 
             if (code >= 200 && code < 400) {
-              gettingAttempts.set(resolvedKey, true)
+              gettingAttempts.set(resolvedKey, true);
 
-              hasData.set(resolvedDataKey, true)
-              hasData.set(resolvedKey, true)
+              hasData.set(resolvedDataKey, true);
+              hasData.set(resolvedKey, true);
 
               rpc = {
                 ...rpc,
-                error: false
-              }
+                error: false,
+              };
 
-              const dataExpirationTime = Date.now() + maxAge
-              cacheProvider.set(ageKey, dataExpirationTime)
+              const dataExpirationTime = Date.now() + maxAge;
+              cacheProvider.set(ageKey, dataExpirationTime);
 
               if (_data?.errors && isGqlRequest) {
-                hasErrors.set(resolvedDataKey, true)
-                hasErrors.set(resolvedKey, true)
+                hasErrors.set(resolvedDataKey, true);
+                hasErrors.set(resolvedKey, true);
                 rpc = {
                   ...rpc,
-                  error: true
-                }
+                  error: true,
+                };
                 if (handleError) {
                   if (!resolvedOnErrorCalls.get(resolvedKey)) {
-                    resolvedOnErrorCalls.set(resolvedKey, true)
-                    ;(onError as any)(true)
+                    resolvedOnErrorCalls.set(resolvedKey, true);
+                    (onError as any)(true);
                   }
                 }
               }
@@ -738,181 +738,181 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 variables: isGqlRequest
                   ? (optionsConfig as any)?.variables || {}
                   : undefined,
-                completedAttempts: 0
-              }
+                completedAttempts: 0,
+              };
 
-              $$data = __data
-              cacheForMutation.set(idString, __data)
+              $$data = __data;
+              cacheForMutation.set(idString, __data);
 
               if (!_data?.errors && isGqlRequest) {
                 rpc = {
                   ...rpc,
-                  error: false
-                }
+                  error: false,
+                };
 
-                hasErrors.set(resolvedDataKey, false)
-                hasErrors.set(resolvedKey, false)
+                hasErrors.set(resolvedDataKey, false);
+                hasErrors.set(resolvedKey, false);
               }
 
               if (willResolve) {
                 if (!resolvedHookCalls.get(resolvedKey)) {
-                  ;(onResolve as any)(__data, lastResponses.get(resolvedKey))
+                  (onResolve as any)(__data, lastResponses.get(resolvedKey));
 
-                  resolvedHookCalls.set(resolvedKey, true)
+                  resolvedHookCalls.set(resolvedKey, true);
                 }
               }
-              runningRequests.set(resolvedKey, false)
+              runningRequests.set(resolvedKey, false);
               // If a request completes succesfuly, reset the error attempts to 0
 
               queue(() => {
-                cacheForMutation.set(resolvedKey, __data)
-              })
+                cacheForMutation.set(resolvedKey, __data);
+              });
             } else {
               rpc = {
                 ...rpc,
-                error: actionError ?? true
-              }
+                error: actionError ?? true,
+              };
               if (!cacheIfError) {
-                hasData.set(resolvedDataKey, false)
-                hasData.set(resolvedKey, false)
+                hasData.set(resolvedDataKey, false);
+                hasData.set(resolvedKey, false);
               }
               if (_data.errors && isGqlRequest) {
                 if (!cacheIfError) {
-                  hasData.set(resolvedDataKey, false)
-                  hasData.set(resolvedKey, false)
+                  hasData.set(resolvedDataKey, false);
+                  hasData.set(resolvedKey, false);
                 }
-                setFetchState(previous => {
+                setFetchState((previous) => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
-                    errors: _data.errors
-                  } as any
+                    errors: _data.errors,
+                  } as any;
 
-                  $$data = newData
+                  $$data = newData;
 
-                  cacheForMutation.set(idString, newData)
+                  cacheForMutation.set(idString, newData);
 
                   rpc = {
                     ...rpc,
                     data: newData,
-                    error: actionError ?? true
-                  }
+                    error: actionError ?? true,
+                  };
 
-                  cacheProvider.set(resolvedDataKey, newData)
-                  cacheProvider.set(resolvedKey, newData)
+                  cacheProvider.set(resolvedDataKey, newData);
+                  cacheProvider.set(resolvedKey, newData);
 
-                  return previous
-                })
+                  return previous;
+                });
                 if (handleError) {
                   if (!resolvedOnErrorCalls.get(resolvedKey)) {
-                    resolvedOnErrorCalls.set(resolvedKey, actionError ?? true)
-                    ;(onError as any)(actionError ?? true, json)
+                    resolvedOnErrorCalls.set(resolvedKey, actionError ?? true);
+                    (onError as any)(actionError ?? true, json);
                   }
                 }
               } else {
                 if (def) {
-                  $$data = thisCache
-                  cacheForMutation.set(idString, def)
+                  $$data = thisCache;
+                  cacheForMutation.set(idString, def);
 
                   rpc = {
                     ...rpc,
-                    data: def
-                  }
+                    data: def,
+                  };
                 }
                 if (handleError) {
                   if (!resolvedOnErrorCalls.get(resolvedKey)) {
-                    resolvedOnErrorCalls.set(resolvedKey, actionError ?? true)
-                    ;(onError as any)(_data, json)
+                    resolvedOnErrorCalls.set(resolvedKey, actionError ?? true);
+                    (onError as any)(_data, json);
                   }
                 }
               }
 
-              hasErrors.set(resolvedDataKey, actionError ?? true)
-              hasErrors.set(resolvedKey, actionError ?? true)
-              runningRequests.set(resolvedKey, false)
+              hasErrors.set(resolvedDataKey, actionError ?? true);
+              hasErrors.set(resolvedKey, actionError ?? true);
+              runningRequests.set(resolvedKey, false);
             }
             if (logEnd) {
-              ;(onFetchEnd as any)(
+              (onFetchEnd as any)(
                 lastResponses.get(resolvedKey),
                 optionsConfig,
                 ctx
-              )
+              );
             }
           } catch (err) {
-            const errorString = err?.toString()
+            const errorString = err?.toString();
             // Only set error if no abort
             // @ts-ignore
             if (!/abort/i.test(errorString)) {
               if (!cacheIfError) {
-                hasData.set(resolvedDataKey, false)
-                hasData.set(resolvedKey, false)
+                hasData.set(resolvedDataKey, false);
+                hasData.set(resolvedKey, false);
               }
 
               rpc = {
                 ...rpc,
-                error: err ?? true
-              }
+                error: err ?? true,
+              };
 
               if (cacheIfError) {
                 if (notNull(thisCache) && isDefined(thisCache)) {
-                  $$data = thisCache
-                  cacheForMutation.set(idString, thisCache)
+                  $$data = thisCache;
+                  cacheForMutation.set(idString, thisCache);
 
                   rpc = {
                     ...rpc,
-                    data: thisCache
-                  }
+                    data: thisCache,
+                  };
                 }
               } else {
-                $$data = def
+                $$data = def;
 
                 rpc = {
                   ...rpc,
-                  data: def
-                }
+                  data: def,
+                };
 
-                cacheForMutation.set(idString, def)
+                cacheForMutation.set(idString, def);
               }
 
               rpc = {
                 ...rpc,
-                error: err ?? true
-              }
+                error: err ?? true,
+              };
 
-              hasErrors.set(resolvedDataKey, err ?? true)
-              hasErrors.set(resolvedKey, err ?? true)
+              hasErrors.set(resolvedDataKey, err ?? true);
+              hasErrors.set(resolvedKey, err ?? true);
               if (handleError) {
                 if (!resolvedOnErrorCalls.get(resolvedKey)) {
-                  resolvedOnErrorCalls.set(resolvedKey, true)
-                  ;(onError as any)(err as any)
+                  resolvedOnErrorCalls.set(resolvedKey, true);
+                  (onError as any)(err as any);
                 }
               }
             } else {
               rpc = {
                 ...rpc,
-                loading: true
-              }
+                loading: true,
+              };
               if (!isPending(resolvedKey)) {
                 if (!isDefined(cacheProvider.get(resolvedDataKey))) {
                   if (isDefined(def)) {
-                    $$data = def
-                    cacheForMutation.set(idString, def)
+                    $$data = def;
+                    cacheForMutation.set(idString, def);
                   }
                   rpc = {
                     ...rpc,
                     data: def,
-                    loading: true
-                  }
+                    loading: true,
+                  };
                 }
               }
             }
           } finally {
             if (rpc.error) {
-              gettingAttempts.set(resolvedKey, false)
+              gettingAttempts.set(resolvedKey, false);
             }
-            temporaryFormData.delete(resolvedKey)
-            runningRequests.set(resolvedKey, false)
-            suspenseInitialized.set(resolvedKey, true)
+            temporaryFormData.delete(resolvedKey);
+            runningRequests.set(resolvedKey, false);
+            suspenseInitialized.set(resolvedKey, true);
 
             requestsProvider.emit(resolvedKey, {
               error:
@@ -920,14 +920,14 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                 hasErrors.get(resolvedDataKey) ||
                 false,
               ...rpc,
-              loading: false
-            })
+              loading: false,
+            });
 
-            willSuspend.set(resolvedKey, false)
+            willSuspend.set(resolvedKey, false);
             queue(() => {
-              canDebounce.set(resolvedKey, true)
-            }, debounce)
-            return $$data
+              canDebounce.set(resolvedKey, true);
+            }, debounce);
+            return $$data;
           }
         }
       }
@@ -945,47 +945,47 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       requestCallId,
       memory,
       def,
-      loadingFirst
+      loadingFirst,
     ]
-  )
+  );
 
   useEffect(() => {
-    const { signal } = requestAbortController || {}
+    const { signal } = requestAbortController || {};
     // Run onAbort callback
     const abortCallback = () => {
       if (loading) {
         if (isPending(resolvedKey)) {
           if (handleOnAbort) {
-            ;(onAbort as any)()
+            (onAbort as any)();
           }
         }
       }
-    }
-    signal?.addEventListener('abort', abortCallback)
+    };
+    signal?.addEventListener("abort", abortCallback);
     return () => {
-      signal?.removeEventListener('abort', abortCallback)
-    }
-  }, [requestAbortController, resolvedKey, onAbort, loading])
+      signal?.removeEventListener("abort", abortCallback);
+    };
+  }, [requestAbortController, resolvedKey, onAbort, loading]);
 
   const imperativeFetch = useMemo(() => {
     const __headers = {
       ...ctx.headers,
-      ...config.headers
-    }
+      ...config.headers,
+    };
 
     const __params = {
       ...ctx.params,
-      ...config.params
-    }
+      ...config.params,
+    };
 
-    const __baseUrl = isDefined(config.baseUrl) ? config.baseUrl : ctx.baseUrl
+    const __baseUrl = isDefined(config.baseUrl) ? config.baseUrl : ctx.baseUrl;
     return createImperativeFetch({
       ...ctx,
       headers: __headers,
       baseUrl: __baseUrl,
-      params: __params
-    })
-  }, [serialize(ctx)])
+      params: __params,
+    });
+  }, [serialize(ctx)]);
 
   useEffect(() => {
     async function waitFormUpdates(v: any) {
@@ -995,21 +995,21 @@ export function useFetch<FetchDataType = any, BodyType = any>(
         error: $error,
         online,
         loading,
-        completedAttempts
-      } = v || {}
+        completedAttempts,
+      } = v || {};
 
       if (isMutating) {
         if (serialize($data) !== serialize(cacheForMutation.get(resolvedKey))) {
-          cacheForMutation.set(idString, $data)
+          cacheForMutation.set(idString, $data);
           if (isMutating) {
-            forceMutate($data)
+            forceMutate($data);
             if (handleMutate) {
-              if (url === '') {
-                ;(onMutate as any)($data, imperativeFetch)
+              if (url === "") {
+                (onMutate as any)($data, imperativeFetch);
               } else {
                 if (!runningMutate.get(resolvedKey)) {
-                  runningMutate.set(resolvedKey, true)
-                  ;(onMutate as any)($data, imperativeFetch)
+                  runningMutate.set(resolvedKey, true);
+                  (onMutate as any)($data, imperativeFetch);
                 }
               }
             }
@@ -1020,89 +1020,89 @@ export function useFetch<FetchDataType = any, BodyType = any>(
       if (v.requestCallId !== requestCallId) {
         if (!willSuspend.get(resolvedKey)) {
           queue(() => {
-            if (inDeps('data')) {
+            if (inDeps("data")) {
               if (isDefined($data)) {
                 if (!jsonCompare(data, cacheProvider.get(resolvedDataKey))) {
-                  setData(cacheProvider.get(resolvedKey))
+                  setData(cacheProvider.get(resolvedKey));
                 }
               }
             }
-            if (inDeps('online')) {
+            if (inDeps("online")) {
               if (isDefined(online)) {
-                setOnline(online)
+                setOnline(online);
               }
             }
-            if (inDeps('loading')) {
+            if (inDeps("loading")) {
               if (isDefined(loading)) {
-                setLoading(loading)
+                setLoading(loading);
               }
             }
-            if (inDeps('error')) {
+            if (inDeps("error")) {
               if (isDefined($error)) {
                 if (fetchState.error !== $error) {
-                  setError($error)
+                  setError($error);
                 }
               }
             }
-            if (inDeps('completedAttempts')) {
+            if (inDeps("completedAttempts")) {
               if (isDefined(completedAttempts)) {
-                setCompletedAttempts(completedAttempts)
+                setCompletedAttempts(completedAttempts);
               }
             }
-          })
+          });
         }
       }
     }
 
-    requestsProvider.addListener(resolvedKey, waitFormUpdates)
+    requestsProvider.addListener(resolvedKey, waitFormUpdates);
 
     return () => {
-      requestsProvider.removeListener(resolvedKey, waitFormUpdates)
-    }
+      requestsProvider.removeListener(resolvedKey, waitFormUpdates);
+    };
   }, [
     thisDeps,
     JSON.stringify(optionsConfig),
     resolvedKey,
     resolvedDataKey,
     requestCallId,
-    fetchState
-  ])
+    fetchState,
+  ]);
 
   const reValidate = useCallback(
     async function reValidate() {
       if (!isPending(resolvedKey)) {
-        revalidate(id)
+        revalidate(id);
       }
     },
     [serialize(id), loading]
-  )
+  );
 
   useEffect(() => {
     function forceRefresh() {
       if (!isPending(resolvedKey)) {
         // preventing revalidation where only need updates about
         // 'loading', 'error' and 'data' because the url can be ommited.
-        if (url !== '') {
+        if (url !== "") {
           fetchData({
             query: Object.keys(reqQuery)
-              .map(q =>
+              .map((q) =>
                 Array.isArray(reqQuery[q])
                   ? reqQuery[q]
-                      .map((queryItem: any) => [q, queryItem].join('='))
-                      .join('&')
-                  : [q, reqQuery[q]].join('=')
+                      .map((queryItem: any) => [q, queryItem].join("="))
+                      .join("&")
+                  : [q, reqQuery[q]].join("=")
               )
-              .join('&'),
-            params: reqParams
-          })
+              .join("&"),
+            params: reqParams,
+          });
         }
       }
     }
-    let idString = serialize(id)
-    requestsProvider.addListener(idString, forceRefresh)
+    let idString = serialize(id);
+    requestsProvider.addListener(idString, forceRefresh);
     return () => {
-      requestsProvider.removeListener(idString, forceRefresh)
-    }
+      requestsProvider.removeListener(idString, forceRefresh);
+    };
   }, [
     fetchState,
     resolvedKey,
@@ -1114,116 +1114,116 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     ctx.auto,
     idString,
     fetchState,
-    id
-  ])
+    id,
+  ]);
 
   useEffect(() => {
     function backOnline() {
-      let willCancel = false
+      let willCancel = false;
       function cancelReconectionAttempt() {
-        willCancel = true
+        willCancel = true;
       }
       requestsProvider.emit(resolvedKey, {
         requestCallId,
-        online: true
-      })
-      setOnline(true)
-      offlineHandled.set(resolvedKey, false)
+        online: true,
+      });
+      setOnline(true);
+      offlineHandled.set(resolvedKey, false);
       if (handleOnline) {
         if (!onlineHandled.get(resolvedKey)) {
-          onlineHandled.set(resolvedKey, true)
-          ;(onOnline as any)({ cancel: cancelReconectionAttempt })
+          onlineHandled.set(resolvedKey, true);
+          (onOnline as any)({ cancel: cancelReconectionAttempt });
         }
       }
       if (!willCancel) {
-        reValidate()
+        reValidate();
       }
     }
 
     function addOnlineListener() {
       if (windowExists) {
-        if ('addEventListener' in window) {
+        if ("addEventListener" in window) {
           if (retryOnReconnect) {
-            window.addEventListener('online', backOnline)
+            window.addEventListener("online", backOnline);
           }
         }
       }
     }
 
-    addOnlineListener()
+    addOnlineListener();
 
     return () => {
       if (windowExists) {
-        if ('addEventListener' in window) {
-          window.removeEventListener('online', backOnline)
+        if ("addEventListener" in window) {
+          window.removeEventListener("online", backOnline);
         }
       }
-    }
-  }, [onOnline, reValidate, requestCallId, resolvedKey, retryOnReconnect])
+    };
+  }, [onOnline, reValidate, requestCallId, resolvedKey, retryOnReconnect]);
 
   useEffect(() => {
     function wentOffline() {
-      runningRequests.set(resolvedKey, false)
-      setOnline(false)
+      runningRequests.set(resolvedKey, false);
+      setOnline(false);
       requestsProvider.emit(resolvedKey, {
         requestCallId,
-        online: false
-      })
-      onlineHandled.set(resolvedKey, false)
+        online: false,
+      });
+      onlineHandled.set(resolvedKey, false);
       if (handleOffline) {
         if (!offlineHandled.get(resolvedKey)) {
-          offlineHandled.set(resolvedKey, true)
-          ;(onOffline as any)()
+          offlineHandled.set(resolvedKey, true);
+          (onOffline as any)();
         }
       }
     }
 
     function addOfflineListener() {
       if (windowExists) {
-        if ('addEventListener' in window) {
-          window.addEventListener('offline', wentOffline)
+        if ("addEventListener" in window) {
+          window.addEventListener("offline", wentOffline);
         }
       }
     }
 
-    addOfflineListener()
+    addOfflineListener();
 
     return () => {
       if (windowExists) {
-        if ('addEventListener' in window) {
-          window.removeEventListener('offline', wentOffline)
+        if ("addEventListener" in window) {
+          window.removeEventListener("offline", wentOffline);
         }
       }
-    }
-  }, [onOffline, reValidate, requestCallId, resolvedKey, retryOnReconnect])
+    };
+  }, [onOffline, reValidate, requestCallId, resolvedKey, retryOnReconnect]);
 
   useEffect(() => {
     return () => {
       if (revalidateOnMount) {
         if (canRevalidate) {
-          if (url !== '') {
+          if (url !== "") {
             if (suspenseInitialized.get(resolvedKey)) {
               queue(() => {
-                previousConfig.set(resolvedKey, undefined)
-                hasErrors.set(resolvedKey, false)
-                hasErrors.set(resolvedDataKey, false)
-                runningRequests.set(resolvedKey, false)
+                previousConfig.set(resolvedKey, undefined);
+                hasErrors.set(resolvedKey, false);
+                hasErrors.set(resolvedDataKey, false);
+                runningRequests.set(resolvedKey, false);
                 // Wait for 100ms after suspense unmount
-              }, 100)
+              }, 100);
             } else {
-              previousConfig.set(resolvedKey, undefined)
-              hasErrors.set(resolvedKey, false)
-              hasErrors.set(resolvedDataKey, false)
-              runningRequests.set(resolvedKey, false)
+              previousConfig.set(resolvedKey, undefined);
+              hasErrors.set(resolvedKey, false);
+              hasErrors.set(resolvedDataKey, false);
+              runningRequests.set(resolvedKey, false);
             }
           }
         }
       }
-    }
-  }, [requestCallId, resolvedKey, revalidateOnMount, suspense])
+    };
+  }, [requestCallId, resolvedKey, revalidateOnMount, suspense]);
 
   if (!gettingAttempts.has(resolvedKey)) {
-    gettingAttempts.set(resolvedKey, false)
+    gettingAttempts.set(resolvedKey, false);
   }
 
   useEffect(() => {
@@ -1232,9 +1232,9 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     // if ((attempts as number) > 0) {
     const tm = setTimeout(() => {
       if (!gettingAttempts.get(resolvedKey)) {
-        gettingAttempts.set(resolvedKey, true)
+        gettingAttempts.set(resolvedKey, true);
         const attempts =
-          typeof $attempts === 'function'
+          typeof $attempts === "function"
             ? $attempts({
                 status:
                   statusCodes.get(resolvedKey) ||
@@ -1244,38 +1244,38 @@ export function useFetch<FetchDataType = any, BodyType = any>(
                   hasErrors.get(resolvedKey) ||
                   hasErrors.get(resolvedDataKey) ||
                   (error as any),
-                completedAttempts
+                completedAttempts,
               })
-            : $attempts
+            : $attempts;
 
         if ((attempts as number) > 0) {
           if (completedAttempts < (attempts as number)) {
-            reValidate()
+            reValidate();
             setCompletedAttempts((previousAttempts: number) => {
-              let newAttemptsValue = previousAttempts + 1
+              let newAttemptsValue = previousAttempts + 1;
 
               requestsProvider.emit(resolvedKey, {
                 requestCallId,
-                completedAttempts: newAttemptsValue
-              })
+                completedAttempts: newAttemptsValue,
+              });
 
-              return newAttemptsValue
-            })
+              return newAttemptsValue;
+            });
           } else if (completedAttempts === attempts) {
             requestsProvider.emit(resolvedKey, {
               requestCallId,
               online: false,
-              error: true
-            })
-            if (inDeps('online')) setOnline(false)
+              error: true,
+            });
+            if (inDeps("online")) setOnline(false);
           }
         }
       }
-    }, getMiliseconds(attemptInterval as TimeSpan))
+    }, getMiliseconds(attemptInterval as TimeSpan));
     // }
     return () => {
-      clearTimeout(tm)
-    }
+      clearTimeout(tm);
+    };
   }, [
     error,
     $attempts,
@@ -1285,21 +1285,21 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     fetchState,
     attemptInterval,
     resolvedKey,
-    completedAttempts
-  ])
+    completedAttempts,
+  ]);
 
   useEffect(() => {
-    const refreshAmount = getMiliseconds(refresh as TimeSpan)
+    const refreshAmount = getMiliseconds(refresh as TimeSpan);
     if (completedAttempts === 0) {
       if (refreshAmount > 0 && canRevalidate) {
-        const tm = setInterval(reValidate, refreshAmount)
+        const tm = setInterval(reValidate, refreshAmount);
 
         return () => {
-          clearInterval(tm)
-        }
+          clearInterval(tm);
+        };
       }
     }
-    return () => {}
+    return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     refresh,
@@ -1308,75 +1308,75 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     rawJSON,
     canRevalidate,
     completedAttempts,
-    config
-  ])
+    config,
+  ]);
 
   const initializeRevalidation = useCallback(
     windowExists
       ? async function initializeRevalidation() {
-          let d = undefined
+          let d = undefined;
           if (canRevalidate) {
-            if (url !== '') {
+            if (url !== "") {
               d = await fetchData({
                 query: Object.keys(reqQuery)
-                  .map(q =>
+                  .map((q) =>
                     Array.isArray(reqQuery[q])
                       ? reqQuery[q]
-                          .map((queryItem: any) => [q, queryItem].join('='))
-                          .join('&')
-                      : [q, reqQuery[q]].join('=')
+                          .map((queryItem: any) => [q, queryItem].join("="))
+                          .join("&")
+                      : [q, reqQuery[q]].join("=")
                   )
-                  .join('&'),
-                params: reqParams
-              })
+                  .join("&"),
+                params: reqParams,
+              });
             } else {
-              d = def
+              d = def;
               // It means a url is not passed
-              setFetchState(prev => ({
+              setFetchState((prev) => ({
                 ...prev,
                 loading: false,
                 error:
                   hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey),
-                completedAttempts: prev.completedAttempts
-              }))
+                completedAttempts: prev.completedAttempts,
+              }));
             }
           } else {
-            d = def
+            d = def;
           }
-          return d
+          return d;
         }
       : () => {
           return new Promise((resolve, reject) => {
-            queue(() => resolve(initialDataValue))
-          })
+            queue(() => resolve(initialDataValue));
+          });
         },
     [serialize(serialize(optionsConfig)), fetchState, thisDeps]
-  )
+  );
 
   if (!suspense) {
-    if (url !== '') {
-      suspenseInitialized.set(resolvedKey, true)
+    if (url !== "") {
+      suspenseInitialized.set(resolvedKey, true);
     }
   }
 
   useIsomorphicLayoutEffect(() => {
     const fn = () => {
-      if (url !== '') {
+      if (url !== "") {
         if (!jsonCompare(previousProps.get(resolvedKey), optionsConfig)) {
-          abortControllers.get(resolvedKey)?.abort()
-          if (inDeps('data')) {
-            queue(initializeRevalidation)
+          abortControllers.get(resolvedKey)?.abort();
+          if (inDeps("data")) {
+            queue(initializeRevalidation);
           }
         }
       }
-    }
+    };
     if (debounce) {
-      const tm = setTimeout(fn, debounce)
-      return () => clearTimeout(tm)
+      const tm = setTimeout(fn, debounce);
+      return () => clearTimeout(tm);
     }
-    fn()
-    return () => {}
-  }, [serialize(optionsConfig), thisDeps, fetchState])
+    fn();
+    return () => {};
+  }, [serialize(optionsConfig), thisDeps, fetchState]);
 
   if (suspense) {
     if (auto) {
@@ -1386,10 +1386,10 @@ export function useFetch<FetchDataType = any, BodyType = any>(
             suspenseRevalidationStarted.set(
               resolvedKey,
               initializeRevalidation()
-            )
+            );
           }
 
-          throw suspenseRevalidationStarted.get(resolvedKey)
+          throw suspenseRevalidationStarted.get(resolvedKey);
         }
       }
 
@@ -1404,7 +1404,7 @@ import { Suspense } from "http-react"
 Learn more: https://httpr.vercel.app/docs/api#suspense
 
           `
-        )
+        );
       }
     }
   }
@@ -1413,47 +1413,47 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
     const fn = () => {
       if (!runningRequests.get(resolvedKey) && canRevalidate) {
         if (windowExists) {
-          if (canRevalidate && url !== '') {
+          if (canRevalidate && url !== "") {
             if (
               !jsonCompare(
-                JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+                JSON.parse(previousConfig.get(resolvedKey) || "{}"),
                 optionsConfig
               )
             ) {
               if (!isPending(resolvedKey)) {
-                if (inDeps('data')) {
-                  initializeRevalidation()
+                if (inDeps("data")) {
+                  initializeRevalidation();
                 }
               } else {
-                setLoading(true)
+                setLoading(true);
               }
             }
           }
         }
       }
-    }
+    };
 
     if (debounce) {
-      const tm = setTimeout(fn, debounce)
-      return () => clearTimeout(tm)
+      const tm = setTimeout(fn, debounce);
+      return () => clearTimeout(tm);
     }
-    fn()
+    fn();
 
-    return () => {}
-  }, [resolvedKey, serialize(optionsConfig), canRevalidate, thisDeps])
+    return () => {};
+  }, [resolvedKey, serialize(optionsConfig), canRevalidate, thisDeps]);
 
   useIsomorphicLayoutEffect(() => {
     const revalidateAfterUnmount = revalidateOnMount
       ? true
       : !jsonCompare(
-          JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+          JSON.parse(previousConfig.get(resolvedKey) || "{}"),
           optionsConfig
-        )
+        );
 
     function revalidate() {
       if (!debounce && !canDebounce.get(resolvedKey)) {
-        if (inDeps('data')) {
-          initializeRevalidation()
+        if (inDeps("data")) {
+          initializeRevalidation();
         }
       }
     }
@@ -1462,43 +1462,43 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
       if (revalidateAfterUnmount) {
         if (suspense) {
           if (suspenseInitialized.get(resolvedKey)) {
-            revalidate()
+            revalidate();
           }
         } else {
-          revalidate()
+          revalidate();
         }
       }
-    }
+    };
 
     if (debounce) {
-      const tm = setTimeout(fn, debounce)
-      return () => clearTimeout(tm)
+      const tm = setTimeout(fn, debounce);
+      return () => clearTimeout(tm);
     }
-    fn()
+    fn();
 
-    return () => {}
+    return () => {};
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serialize(optionsConfig), thisDeps])
+  }, [serialize(optionsConfig), thisDeps]);
 
   useEffect(() => {
     function addFocusListener() {
       if (revalidateOnFocus && windowExists) {
-        if ('addEventListener' in window) {
-          window.addEventListener('focus', reValidate as any)
+        if ("addEventListener" in window) {
+          window.addEventListener("focus", reValidate as any);
         }
       }
     }
 
-    if (auto) addFocusListener()
+    if (auto) addFocusListener();
 
     return () => {
       if (windowExists) {
-        if ('addEventListener' in window) {
-          window.removeEventListener('focus', reValidate as any)
+        if ("addEventListener" in window) {
+          window.removeEventListener("focus", reValidate as any);
         }
       }
-    }
+    };
   }, [
     requestCallId,
     url,
@@ -1507,8 +1507,8 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
     loading,
     reValidate,
     refresh,
-    serialize(config)
-  ])
+    serialize(config),
+  ]);
 
   const __config = {
     ...config,
@@ -1516,21 +1516,21 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
     ...previousProps.get(resolvedKey),
     params: {
       ...reqParams,
-      ...previousProps.get(resolvedKey)?.params
+      ...previousProps.get(resolvedKey)?.params,
     },
     headers: {
       ...requestHeaders,
-      ...previousProps.get(resolvedKey)?.headers
+      ...previousProps.get(resolvedKey)?.headers,
     },
     body: config.body,
     baseUrl: ctx.baseUrl || config.baseUrl,
-    url: configUrl?.realUrl?.replace('?', ''),
+    url: configUrl?.realUrl?.replace("?", ""),
     rawUrl: configUrl?.rawUrl,
     query: {
       ...reqQuery,
-      ...previousProps.get(resolvedKey)?.query
-    }
-  }
+      ...previousProps.get(resolvedKey)?.query,
+    },
+  };
 
   function forceMutate(
     newValue: FetchDataType | ((prev: FetchDataType) => FetchDataType),
@@ -1540,47 +1540,47 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
       if (
         serialize(cacheProvider.get(resolvedDataKey)) !== serialize(newValue)
       ) {
-        callback(newValue as any, imperativeFetch)
-        cacheProvider.set(resolvedDataKey, newValue)
-        cacheProvider.set(resolvedKey, newValue)
-        valuesMemory.set(resolvedKey, newValue)
-        cacheForMutation.set(idString, newValue)
-        runningMutate.set(resolvedKey, false)
+        callback(newValue as any, imperativeFetch);
+        cacheProvider.set(resolvedDataKey, newValue);
+        cacheProvider.set(resolvedKey, newValue);
+        valuesMemory.set(resolvedKey, newValue);
+        cacheForMutation.set(idString, newValue);
+        runningMutate.set(resolvedKey, false);
         requestsProvider.emit(resolvedKey, {
           requestCallId,
           isMutating: true,
-          data: newValue
-        })
-        setData(newValue as any)
+          data: newValue,
+        });
+        setData(newValue as any);
       }
     } else {
-      let newVal = (newValue as any)(data)
+      let newVal = (newValue as any)(data);
       if (serialize(cacheProvider.get(resolvedDataKey)) !== serialize(newVal)) {
-        callback(newVal, imperativeFetch)
-        cacheProvider.set(resolvedDataKey, newVal)
-        cacheProvider.set(resolvedKey, newVal)
-        valuesMemory.set(resolvedKey, newVal)
-        cacheForMutation.set(idString, newVal)
-        runningMutate.set(resolvedKey, false)
+        callback(newVal, imperativeFetch);
+        cacheProvider.set(resolvedDataKey, newVal);
+        cacheProvider.set(resolvedKey, newVal);
+        valuesMemory.set(resolvedKey, newVal);
+        cacheForMutation.set(idString, newVal);
+        runningMutate.set(resolvedKey, false);
         requestsProvider.emit(resolvedKey, {
           requestCallId,
           isMutating: true,
-          data: newVal
-        })
+          data: newVal,
+        });
 
-        setData(newVal)
+        setData(newVal);
       }
     }
   }
 
   const [$requestStart, $requestEnd] = [
-    notNull(cacheProvider.get('requestStart' + resolvedDataKey))
-      ? new Date(cacheProvider.get('requestStart' + resolvedDataKey))
+    notNull(cacheProvider.get("requestStart" + resolvedDataKey))
+      ? new Date(cacheProvider.get("requestStart" + resolvedDataKey))
       : null,
-    notNull(cacheProvider.get('requestEnds' + resolvedDataKey))
-      ? new Date(cacheProvider.get('requestEnds' + resolvedDataKey))
-      : null
-  ]
+    notNull(cacheProvider.get("requestEnds" + resolvedDataKey))
+      ? new Date(cacheProvider.get("requestEnds" + resolvedDataKey))
+      : null,
+  ];
 
   const expirationDate = error
     ? notNull($requestEnd)
@@ -1588,38 +1588,40 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
       : null
     : maxAge === 0
     ? null
-    : notNull(cacheProvider.get('expiration' + resolvedDataKey))
-    ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
-    : null
+    : notNull(cacheProvider.get("expiration" + resolvedDataKey))
+    ? new Date(cacheProvider.get("expiration" + resolvedDataKey))
+    : null;
 
   const isFailed =
-    hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey) || error
+    hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey) || error;
 
   const dataCandidate =
-    (error && isFailed ? (cacheIfError ? thisCache : null) : thisCache) ?? def
+    (error && isFailed ? (cacheIfError ? thisCache : null) : thisCache) ?? def;
 
   const responseData = isDefined(dataCandidate)
     ? transform!(dataCandidate)
-    : dataCandidate
+    : dataCandidate;
 
-  const isSuccess = !isLoading && !isFailed
+  const isSuccess = !isLoading && !isFailed;
 
   const oneRequestResolved =
     !loadingFirst &&
     (hasData.get(resolvedDataKey) ||
       hasData.get(resolvedKey) ||
-      (cacheIfError ? isDefined(responseData) && notNull(responseData) : false))
+      (cacheIfError
+        ? isDefined(responseData) && notNull(responseData)
+        : false));
 
   const submit = useCallback(
     (form: FormData) => {
       if (isFormData(form)) {
         if (formRef.current) {
           if (onSubmit) {
-            if (onSubmit !== 'reset') {
-              onSubmit(formRef.current, form)
+            if (onSubmit !== "reset") {
+              onSubmit(formRef.current, form);
             } else {
               if (formRef.current) {
-                formRef.current.reset()
+                formRef.current.reset();
               }
             }
           }
@@ -1628,200 +1630,200 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
       temporaryFormData.set(
         resolvedKey,
         isFormData(form) ? form : serialize(form)
-      )
-      reValidate()
+      );
+      reValidate();
     },
     [resolvedKey, formRef.current, reValidate]
-  )
+  );
 
   function resetError() {
-    hasErrors.set(resolvedKey, false)
-    hasErrors.set(resolvedDataKey, false)
+    hasErrors.set(resolvedKey, false);
+    hasErrors.set(resolvedDataKey, false);
 
     requestsProvider.emit(resolvedKey, {
-      error: false
-    })
+      error: false,
+    });
   }
 
   const refreshRequest = () => {
-    revalidate(id)
-  }
+    revalidate(id);
+  };
 
   return {
     get resetError() {
-      thisDeps.error = true
-      return resetError
+      thisDeps.error = true;
+      return resetError;
     },
     formProps: {
       action: submit,
-      ref: formRef
+      ref: formRef,
     },
     formRef,
     get revalidating() {
-      thisDeps.loading = true
-      return oneRequestResolved && isLoading
+      thisDeps.loading = true;
+      return oneRequestResolved && isLoading;
     },
     get isRevalidating() {
-      thisDeps.loading = true
-      return oneRequestResolved && isLoading
+      thisDeps.loading = true;
+      return oneRequestResolved && isLoading;
     },
     get hasData() {
-      thisDeps.data = true
-      return oneRequestResolved
+      thisDeps.data = true;
+      return oneRequestResolved;
     },
     get success() {
-      thisDeps.loading = true
-      thisDeps.error = true
-      return isSuccess
+      thisDeps.loading = true;
+      thisDeps.error = true;
+      return isSuccess;
     },
     get loadingFirst() {
-      thisDeps.loading = true
-      return loadingFirst
+      thisDeps.loading = true;
+      return loadingFirst;
     },
     get isLoadingFirst() {
-      thisDeps.loading = true
-      return loadingFirst
+      thisDeps.loading = true;
+      return loadingFirst;
     },
     get requestStart() {
-      thisDeps.loading = true
-      return getDateIfValid($requestStart)
+      thisDeps.loading = true;
+      return getDateIfValid($requestStart);
     },
     get requestEnd() {
-      thisDeps.loading = true
-      return getDateIfValid($requestEnd)
+      thisDeps.loading = true;
+      return getDateIfValid($requestEnd);
     },
     get expiration() {
-      thisDeps.loading = true
-      return getDateIfValid(isFailed ? null : expirationDate)
+      thisDeps.loading = true;
+      return getDateIfValid(isFailed ? null : expirationDate);
     },
     get responseTime() {
-      thisDeps.loading = true
-      return requestResponseTimes.get(resolvedDataKey) ?? null
+      thisDeps.loading = true;
+      return requestResponseTimes.get(resolvedDataKey) ?? null;
     },
     get data() {
-      thisDeps.data = true
-      return responseData
+      thisDeps.data = true;
+      return responseData;
     },
     get loading() {
-      thisDeps.loading = true
-      return isLoading
+      thisDeps.loading = true;
+      return isLoading;
     },
     get isLoading() {
-      thisDeps.loading = true
-      return isLoading
+      thisDeps.loading = true;
+      return isLoading;
     },
     get isPending() {
-      thisDeps.loading = true
-      return isLoading
+      thisDeps.loading = true;
+      return isLoading;
     },
     get error() {
-      thisDeps.error = true
-      return isFailed || false
+      thisDeps.error = true;
+      return isFailed || false;
     },
     get online() {
-      thisDeps.online = true
-      return online
+      thisDeps.online = true;
+      return online;
     },
     get code() {
-      thisDeps.loading = true
-      return statusCodes.get(resolvedKey)
+      thisDeps.loading = true;
+      return statusCodes.get(resolvedKey);
     },
     refresh: refreshRequest,
     get reFetch() {
-      thisDeps.loading = true
-      return reValidate
+      thisDeps.loading = true;
+      return reValidate;
     },
     submit,
     get mutate() {
-      thisDeps.data = true
-      return forceMutate
+      thisDeps.data = true;
+      return forceMutate;
     },
     get fetcher() {
-      return imperativeFetch
+      return imperativeFetch;
     },
     get abort() {
       return () => {
-        abortControllers.get(resolvedKey)?.abort()
+        abortControllers.get(resolvedKey)?.abort();
         if (loading) {
-          setError(false)
-          hasErrors.set(resolvedDataKey, false)
-          setLoading(false)
-          setData(requestCache)
+          setError(false);
+          hasErrors.set(resolvedDataKey, false);
+          setLoading(false);
+          setData(requestCache);
           requestsProvider.emit(resolvedKey, {
             requestCallId,
             error: false,
             loading: false,
-            data: requestCache
-          })
+            data: requestCache,
+          });
         }
-      }
+      };
     },
     config: __config,
     get response() {
-      thisDeps.loading = true
-      return lastResponses.get(resolvedKey)
+      thisDeps.loading = true;
+      return lastResponses.get(resolvedKey);
     },
     id,
     /**
      * The request key
      */
-    key: resolvedKey
+    key: resolvedKey,
   } as unknown as {
-    refresh(): void
-    resetError(): void
+    refresh(): void;
+    resetError(): void;
     formProps: {
-      action: (form: FormData) => Promise<void>
-      ref: typeof formRef
-    }
-    formRef: typeof formRef
-    hasData: boolean
+      action: (form: FormData) => Promise<void>;
+      ref: typeof formRef;
+    };
+    formRef: typeof formRef;
+    hasData: boolean;
     /**
      * Revalidating means that at least one request has finished succesfuly and a new request is being sent
      */
-    revalidating: boolean
-    success: boolean
-    loadingFirst: boolean
-    isLoadingFirst: boolean
-    expiration: Date
-    data: FetchDataType
-    isPending?: boolean
-    loading: boolean
-    isLoading: boolean
-    isRevalidating: boolean
-    error: any
-    online: boolean
-    code: number
-    reFetch: () => Promise<void>
-    submit: (form: any) => Promise<void>
+    revalidating: boolean;
+    success: boolean;
+    loadingFirst: boolean;
+    isLoadingFirst: boolean;
+    expiration: Date;
+    data: FetchDataType;
+    isPending?: boolean;
+    loading: boolean;
+    isLoading: boolean;
+    isRevalidating: boolean;
+    error: any;
+    online: boolean;
+    code: number;
+    reFetch: () => Promise<void>;
+    submit: (submitData: any) => Promise<void>;
     mutate: (
       update: FetchDataType | ((prev: FetchDataType) => FetchDataType),
       callback?: (data: FetchDataType, fetcher: ImperativeFetch) => void
-    ) => FetchDataType
-    fetcher: ImperativeFetch
-    abort: () => void
+    ) => FetchDataType;
+    fetcher: ImperativeFetch;
+    abort: () => void;
     config: FetchConfigType<FetchDataType, BodyType> & {
-      baseUrl: string
-      url: string
-      rawUrl: string
-    }
-    response: CustomResponse<FetchDataType>
-    id: any
-    key: string
-    responseTime: number
-    requestStart: Date
-    requestEnd: Date
-  }
+      baseUrl: string;
+      url: string;
+      rawUrl: string;
+    };
+    response: CustomResponse<FetchDataType>;
+    id: any;
+    key: string;
+    responseTime: number;
+    requestStart: Date;
+    requestEnd: Date;
+  };
 }
 
-useFetch.get = createRequestFn('GET', '', {})
-useFetch.delete = createRequestFn('DELETE', '', {})
-useFetch.head = createRequestFn('HEAD', '', {})
-useFetch.options = createRequestFn('OPTIONS', '', {})
-useFetch.post = createRequestFn('POST', '', {})
-useFetch.put = createRequestFn('PUT', '', {})
-useFetch.patch = createRequestFn('PATCH', '', {})
-useFetch.purge = createRequestFn('PURGE', '', {})
-useFetch.link = createRequestFn('LINK', '', {})
-useFetch.unlink = createRequestFn('UNLINK', '', {})
+useFetch.get = createRequestFn("GET", "", {});
+useFetch.delete = createRequestFn("DELETE", "", {});
+useFetch.head = createRequestFn("HEAD", "", {});
+useFetch.options = createRequestFn("OPTIONS", "", {});
+useFetch.post = createRequestFn("POST", "", {});
+useFetch.put = createRequestFn("PUT", "", {});
+useFetch.patch = createRequestFn("PATCH", "", {});
+useFetch.purge = createRequestFn("PURGE", "", {});
+useFetch.link = createRequestFn("LINK", "", {});
+useFetch.unlink = createRequestFn("UNLINK", "", {});
 
-useFetch.extend = createImperativeFetch
+useFetch.extend = createImperativeFetch;

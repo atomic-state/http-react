@@ -1,7 +1,7 @@
-'use client'
-import { useLayoutEffect, useEffect, useMemo } from 'react'
-import { useGql } from '../hooks/others'
-import { useFetch } from '../hooks/use-fetch'
+"use client";
+import { useLayoutEffect, useEffect, useMemo } from "react";
+import { useGql } from "../hooks/others";
+import { useFetch } from "../hooks/use-fetch";
 
 import {
   abortControllers,
@@ -11,18 +11,18 @@ import {
   requestInitialTimes,
   requestsProvider,
   runningMutate,
-  valuesMemory
-} from '../internal'
+  valuesMemory,
+} from "../internal";
 
-import { UNITS_MILISECONDS_EQUIVALENTS } from '../internal/constants'
+import { UNITS_MILISECONDS_EQUIVALENTS } from "../internal/constants";
 
 import {
   CacheStoreType,
   FetchContextType,
   ImperativeFetch,
   FetchInit,
-  TimeSpan
-} from '../types'
+  TimeSpan,
+} from "../types";
 import {
   gql,
   hasBaseUrl,
@@ -30,119 +30,119 @@ import {
   isFunction,
   queue,
   serialize,
-  windowExists
-} from './shared'
+  windowExists,
+} from "./shared";
 
 export function getMiliseconds(v: TimeSpan): number {
-  if (typeof v === 'number') return v
+  if (typeof v === "number") return v;
 
-  const [amount, unit] = (v as string).split(' ')
+  const [amount, unit] = (v as string).split(" ");
 
-  const amountNumber = parseFloat(amount)
+  const amountNumber = parseFloat(amount);
 
   if (!(unit in UNITS_MILISECONDS_EQUIVALENTS)) {
-    return amountNumber
+    return amountNumber;
   }
   // @ts-ignore - This should return the value in miliseconds
-  return amountNumber * UNITS_MILISECONDS_EQUIVALENTS[unit]
+  return amountNumber * UNITS_MILISECONDS_EQUIVALENTS[unit];
 }
 
 export function getTimePassed(key: any) {
   return (
     Date.now() -
     (isDefined(requestInitialTimes.get(key)) ? requestInitialTimes.get(key) : 0)
-  )
+  );
 }
 
 export const createImperativeFetch = (ctx: FetchContextType) => {
   const keys = [
-    'GET',
-    'DELETE',
-    'HEAD',
-    'OPTIONS',
-    'POST',
-    'PUT',
-    'PATCH',
-    'PURGE',
-    'LINK',
-    'UNLINK'
-  ]
+    "GET",
+    "DELETE",
+    "HEAD",
+    "OPTIONS",
+    "POST",
+    "PUT",
+    "PATCH",
+    "PURGE",
+    "LINK",
+    "UNLINK",
+  ];
 
-  const { baseUrl } = ctx
+  const { baseUrl } = ctx;
 
   return {
     ...Object.fromEntries(
       new Map(
-        keys.map(k => [
+        keys.map((k) => [
           k.toLowerCase(),
           (url, config = {}) =>
             (useFetch as any)[k.toLowerCase()](
               hasBaseUrl(url) ? url : baseUrl + url,
               {
                 ...ctx,
-                ...config
+                ...config,
               }
-            )
+            ),
         ])
       )
     ),
-    config: ctx
-  } as ImperativeFetch
-}
+    config: ctx,
+  } as ImperativeFetch;
+};
 
 export const useIsomorphicLayoutEffect = windowExists
   ? useLayoutEffect
-  : useEffect
+  : useEffect;
 
 /**
  * Revalidate requests that match an id or ids
  */
 export function revalidate(id: any | any[], __reval__ = true) {
   if (Array.isArray(id)) {
-    id.map(reqId => {
+    id.map((reqId) => {
       if (isDefined(reqId)) {
-        const key = serialize(reqId)
+        const key = serialize(reqId);
 
-        const resolveKey = serialize({ idString: key })
+        const resolveKey = serialize({ idString: key });
 
         if (__reval__) {
-          previousConfig.set(resolveKey, undefined)
+          previousConfig.set(resolveKey, undefined);
         }
 
-        abortControllers.get(resolveKey)?.abort()
+        abortControllers.get(resolveKey)?.abort();
 
         if (__reval__) {
           if (!isPending(key)) {
             queue(() => {
               requestsProvider.emit(key, {
                 loading: true,
-                error: false
-              })
-            })
+                error: false,
+              });
+            });
           }
         }
       }
-    })
+    });
   } else {
     if (isDefined(id)) {
-      const key = serialize(id)
+      const key = serialize(id);
 
-      const resolveKey = serialize({ idString: key })
+      const resolveKey = serialize({ idString: key });
 
       if (__reval__) {
-        previousConfig.set(resolveKey, undefined)
+        previousConfig.set(resolveKey, undefined);
       }
 
-      abortControllers.get(resolveKey)?.abort()
+      abortControllers.get(resolveKey)?.abort();
 
       if (__reval__) {
         if (!isPending(key)) {
           queue(() => {
             requestsProvider.emit(key, {
               loading: true,
-              error: false
-            })
-          })
+              error: false,
+            });
+          });
         }
       }
     }
@@ -151,35 +151,35 @@ export function revalidate(id: any | any[], __reval__ = true) {
 
 export function cancelRequest(id: any | any[]) {
   if (Array.isArray(id)) {
-    id.map(reqId => {
+    id.map((reqId) => {
       if (isDefined(reqId)) {
         const key = serialize({
-          idString: serialize(reqId)
-        })
+          idString: serialize(reqId),
+        });
         if (isPending(key)) {
-          revalidate(reqId, false)
+          revalidate(reqId, false);
           queue(() => {
             requestsProvider.emit(key, {
               loading: false,
-              error: false
-            })
-          })
+              error: false,
+            });
+          });
         }
       }
-    })
+    });
   } else {
     if (isDefined(id)) {
       const key = serialize({
-        idString: serialize(id)
-      })
+        idString: serialize(id),
+      });
       if (isPending(key)) {
-        revalidate(id, false)
+        revalidate(id, false);
         queue(() => {
           requestsProvider.emit(key, {
             loading: false,
-            error: false
-          })
-        })
+            error: false,
+          });
+        });
       }
     }
   }
@@ -192,63 +192,63 @@ export function cancelRequest(id: any | any[]) {
  */
 export function queryProvider<R>(
   queries: {
-    [e in keyof R]: R[e]
+    [e in keyof R]: R[e];
   },
   providerConfig?: {
     defaults?: {
-      [key in keyof R]?: Partial<ReturnType<typeof gql<R[key]>>['value']>
-    }
+      [key in keyof R]?: Partial<ReturnType<typeof gql<R[key]>>["value"]>;
+    };
     config?: {
       /**
        * The base url
        */
-      baseUrl?: string
+      baseUrl?: string;
       /**
        * Any aditional headers
        */
       headers?: {
-        [key: string]: any
-      }
+        [key: string]: any;
+      };
       /**
        * The caching mechanism
        */
-      cacheProvider?: CacheStoreType
-    }
+      cacheProvider?: CacheStoreType;
+    };
   }
 ) {
-  type QuerysType = typeof queries
+  type QuerysType = typeof queries;
 
   return function useQuery<P extends keyof R>(
     queryName: P,
     otherConfig?: Omit<
       FetchInit<
         QuerysType[P] extends ReturnType<typeof gql>
-          ? QuerysType[P]['value']
+          ? QuerysType[P]["value"]
           : any
       >,
-      'url'
+      "url"
     > & {
       default?: QuerysType[P] extends ReturnType<typeof gql>
-        ? QuerysType[P]['value']
-        : any
+        ? QuerysType[P]["value"]
+        : any;
       variables?: QuerysType[P] extends ReturnType<typeof gql>
-        ? QuerysType[P]['variables']
-        : any
-      graphqlPath?: string
+        ? QuerysType[P]["variables"]
+        : any;
+      graphqlPath?: string;
     }
   ) {
-    const { defaults } = providerConfig || {}
+    const { defaults } = providerConfig || {};
 
-    const thisDefaults = (defaults || ({} as any))?.[queryName]
+    const thisDefaults = (defaults || ({} as any))?.[queryName];
 
     const queryVariables = {
       ...thisDefaults?.variables,
-      ...(otherConfig as any)?.variables
-    }
+      ...(otherConfig as any)?.variables,
+    };
 
-    const { config = {} } = providerConfig || {}
+    const { config = {} } = providerConfig || {};
 
-    const { cacheProvider, ...others } = config
+    const { cacheProvider, ...others } = config;
 
     const g = useGql(queries[queryName] as any, {
       cacheProvider: config?.cacheProvider,
@@ -270,7 +270,7 @@ export function queryProvider<R>(
       headers: {
         ...others?.headers,
         ...thisDefaults?.headers,
-        ...otherConfig?.headers
+        ...otherConfig?.headers,
       },
       ...{ __fromProvider: true },
       default: {
@@ -281,38 +281,38 @@ export function queryProvider<R>(
              * 'value' property (when using the `gql` function)
              */
             // @ts-ignore
-            otherConfig?.default) as R[P]['value']
+            otherConfig?.default) as R[P]["value"],
       },
-      variables: queryVariables
-    })
+      variables: queryVariables,
+    });
 
     const thisData = useMemo(
       () => ({
         ...g?.data,
-        variables: queryVariables
+        variables: queryVariables,
       }),
       [serialize({ data: g?.data, queryVariables })]
-    )
+    );
 
     return {
       ...g,
       config: {
         ...g?.config,
-        config: undefined
+        config: undefined,
       },
-      data: thisData
-    } as Omit<typeof g, 'data'> & {
+      data: thisData,
+    } as Omit<typeof g, "data"> & {
       data: {
         data: QuerysType[P] extends ReturnType<typeof gql>
-          ? QuerysType[P]['value']
-          : any
-        errors?: any[]
+          ? QuerysType[P]["value"]
+          : any;
+        errors?: any[];
         variables: QuerysType[P] extends ReturnType<typeof gql>
-          ? QuerysType[P]['variables']
-          : any
-      }
-    }
-  }
+          ? QuerysType[P]["variables"]
+          : any;
+      };
+    };
+  };
 }
 
 /**
@@ -323,41 +323,45 @@ export function mutateData(
 ) {
   for (let pair of pairs) {
     try {
-      const [k, v, _revalidate] = pair
-      const key = serialize({ idString: serialize(k) })
-      const requestCallId = ''
+      const [k, v, _revalidate] = pair;
+      const key = serialize({ idString: serialize(k) });
+      const requestCallId = "";
       if (isFunction(v)) {
-        let newVal = v(cacheForMutation.get(key))
-        runningMutate.set(key, undefined)
+        let newVal = v(cacheForMutation.get(key));
+        runningMutate.set(key, undefined);
         requestsProvider.emit(key, {
           data: newVal,
           isMutating: true,
-          requestCallId
-        })
+          requestCallId,
+        });
         if (_revalidate) {
-          previousConfig.set(key, undefined)
-          requestsProvider.emit(serialize(k), {})
+          previousConfig.set(key, undefined);
+          requestsProvider.emit(serialize(k), {});
         }
         queue(() => {
-          valuesMemory.set(key, newVal)
-          cacheForMutation.set(key, newVal)
-        })
+          valuesMemory.set(key, newVal);
+          cacheForMutation.set(key, newVal);
+        });
       } else {
-        runningMutate.set(key, undefined)
+        runningMutate.set(key, undefined);
         requestsProvider.emit(key, {
           requestCallId,
           isMutating: true,
-          data: v
-        })
+          data: v,
+        });
         if (_revalidate) {
-          previousConfig.set(key, undefined)
-          requestsProvider.emit(serialize(k), {})
+          previousConfig.set(key, undefined);
+          requestsProvider.emit(serialize(k), {});
         }
         queue(() => {
-          valuesMemory.set(key, v)
-          cacheForMutation.set(key, v)
-        })
+          valuesMemory.set(key, v);
+          cacheForMutation.set(key, v);
+        });
       }
     } catch (err) {}
   }
+}
+
+export function fetchOptions<T>(options: FetchInit<T>) {
+  return options;
 }

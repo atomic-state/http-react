@@ -1,52 +1,52 @@
-import { DEFAULT_RESOLVER, METHODS } from '../internal/constants'
+import { DEFAULT_RESOLVER, METHODS } from "../internal/constants";
 
-import { FetchContextType, ImperativeFetch, RequestWithBody } from '../types'
+import { FetchContextType, ImperativeFetch, RequestWithBody } from "../types";
 
-export const windowExists = typeof window !== 'undefined'
+export const windowExists = typeof window !== "undefined";
 
 export function notNull(target: any) {
-  return target !== null
+  return target !== null;
 }
 
 export function getRequestHeaders(req: Request) {
   // @ts-ignore Gets the request headers
-  return Object.fromEntries(new Headers(req.headers).entries())
+  return Object.fromEntries(new Headers(req.headers).entries());
 }
 
 export function isDefined(target: any) {
-  return typeof target !== 'undefined'
+  return typeof target !== "undefined";
 }
 
 export function isFunction(target: any) {
-  return typeof target === 'function'
+  return typeof target === "function";
 }
 
-export function hasBaseUrl(target: string) {
-  return target.startsWith('http://') || target.startsWith('https://')
+export function hasBaseUrl(target: string | String) {
+  return target.startsWith("http://") || target.startsWith("https://");
 }
 
 export function jsonCompare(a: any, b: any) {
   // Just parse arrays
   if (Array.isArray(a)) {
-    return JSON.stringify(a) === JSON.stringify(b)
+    return JSON.stringify(a) === JSON.stringify(b);
   }
 
   try {
-    const bProps = Object.keys(b)
+    const bProps = Object.keys(b);
 
     let aMock: any = {
-      ...a
-    }
+      ...a,
+    };
 
     // Making sure keys are in the same order
     for (let prop of bProps) {
-      delete aMock[prop]
-      aMock[prop] = a[prop]
+      delete aMock[prop];
+      aMock[prop] = a[prop];
     }
 
-    return JSON.stringify(aMock) === JSON.stringify(b)
+    return JSON.stringify(aMock) === JSON.stringify(b);
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -54,26 +54,26 @@ export function jsonCompare(a: any, b: any) {
  * A serialize function that returns a JSON string
  */
 export function serialize(input: any, replacer?: any, space?: any) {
-  return JSON.stringify(input, replacer, space)
+  return JSON.stringify(input, replacer, space);
 }
 
 export const isFormData = (target: any) => {
-  if (typeof FormData !== 'undefined') {
-    return target instanceof FormData
-  } else return false
-}
+  if (typeof FormData !== "undefined") {
+    return target instanceof FormData;
+  } else return false;
+};
 
 function canHaveBody(method: keyof typeof METHODS) {
-  return /(POST|PUT|DELETE|PATCH)/.test(method)
+  return /(POST|PUT|DELETE|PATCH)/.test(method);
 }
 
 export function queue(callback: any, time: number = 0) {
   const tm = setTimeout(() => {
-    callback()
-    clearTimeout(tm)
-  }, time)
+    callback();
+    clearTimeout(tm);
+  }, time);
 
-  return tm
+  return tm;
 }
 
 /**
@@ -85,108 +85,108 @@ export function queue(callback: any, time: number = 0) {
  *
  * URL search params will not be affected
  */
-export function setURLParams(str: string = '', $params: any = {}) {
-  const hasQuery = str.includes('?')
+export function setURLParams(str: string = "", $params: any = {}) {
+  const hasQuery = str.includes("?");
 
   const queryString =
-    '?' +
+    "?" +
     str
-      .split('?')
+      .split("?")
       .filter((_, i) => i > 0)
-      .join('?')
+      .join("?");
 
   return (
     str
-      .split('/')
-      .map($segment => {
-        const [segment] = $segment.split('?')
-        if (segment.startsWith('[') && segment.endsWith(']')) {
-          const paramName = segment.replace(/\[|\]/g, '')
+      .split("/")
+      .map(($segment) => {
+        const [segment] = $segment.split("?");
+        if (segment.startsWith("[") && segment.endsWith("]")) {
+          const paramName = segment.replace(/\[|\]/g, "");
           if (!(paramName in $params)) {
             console.warn(
               `Param '${paramName}' does not exist in params configuration for '${str}'`
-            )
-            return paramName
+            );
+            return paramName;
           }
 
-          return $params[segment.replace(/\[|\]/g, '')]
-        } else if (segment.startsWith(':')) {
-          const paramName = segment.split('').slice(1).join('')
+          return $params[segment.replace(/\[|\]/g, "")];
+        } else if (segment.startsWith(":")) {
+          const paramName = segment.split("").slice(1).join("");
           if (!(paramName in $params)) {
             console.warn(
               `Param '${paramName}' does not exist in params configuration for '${str}'`
-            )
-            return paramName
+            );
+            return paramName;
           }
-          return $params[paramName]
+          return $params[paramName];
         } else {
-          return segment
+          return segment;
         }
       })
-      .join('/') + (hasQuery ? queryString : '')
-  )
+      .join("/") + (hasQuery ? queryString : "")
+  );
 }
 
 export function setQueryParams(url: string, params: any = {}) {
   const paramsString = Object.keys(params)
-    .map(paramName => {
+    .map((paramName) => {
       if (Array.isArray(params[paramName])) {
         return params[paramName]
           .map((p: any) =>
-            typeof p === 'undefined'
-              ? ''
+            typeof p === "undefined"
+              ? ""
               : `${paramName}=${encodeURIComponent(p)}`
           )
           .filter(Boolean)
-          .join('&')
+          .join("&");
       } else {
-        if (typeof params[paramName] === 'undefined') return ''
-        return `${paramName}=${encodeURIComponent(params[paramName])}`
+        if (typeof params[paramName] === "undefined") return "";
+        return `${paramName}=${encodeURIComponent(params[paramName])}`;
       }
     })
     .filter(Boolean)
-    .join('&')
+    .join("&");
 
   return (
     url +
     (paramsString.length
-      ? (url.includes('?') ? (url.endsWith('?') ? '' : '&') : '?') +
+      ? (url.includes("?") ? (url.endsWith("?") ? "" : "&") : "?") +
         paramsString
-      : '')
-  )
+      : "")
+  );
 }
 
 export function setParamsAndQuery(
   url: string,
   p: { params?: any; query?: any } = {
     params: {},
-    query: {}
+    query: {},
   }
 ) {
-  return setURLParams(setQueryParams(url, p.query), p.params)
+  return setURLParams(setQueryParams(url, p.query), p.params);
 }
 
 export function actionResult<T>(
   data: T,
   config?: {
-    status?: number
-    error?: any
+    status?: number;
+    error?: any;
   }
 ) {
   return {
     data,
-    ...config
-  }
+    ...config,
+  };
 }
 
-export const actionData = actionResult
+export const actionData = actionResult;
 
 export function $form<T = any>(form: FormData) {
-  return Object.fromEntries(form.entries()) as T
+  return Object.fromEntries(form.entries()) as T;
 }
 
 export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
-  let query = (args as any)[0][0]
+  let query = (args as any)[0][0];
 
   const returnObj = {
     value: query as T,
@@ -194,33 +194,33 @@ export function gql<T = any, VT = { [k: string]: any }>(...args: any) {
     baseUrl: undefined as unknown as string,
     graphqlPath: undefined as unknown as string,
     headers: {} as {
-      [key: string]: any
-    }
-  }
+      [key: string]: any;
+    },
+  };
 
-  return returnObj
+  return returnObj;
 }
 
-export const $formData = $form
+export const $formData = $form;
 
 export function $searchParams<T = any>(input: string) {
-  const searchParams = new URL(input).searchParams
+  const searchParams = new URL(input).searchParams;
 
-  const allKeys = searchParams.keys()
+  const allKeys = searchParams.keys();
 
-  const parsedParams = new Map()
+  const parsedParams = new Map();
 
   for (let key of allKeys) {
-    const allValues = searchParams.getAll(key)
+    const allValues = searchParams.getAll(key);
 
     if (allValues.length > 1) {
-      parsedParams.set(key, allValues)
+      parsedParams.set(key, allValues);
     } else {
-      parsedParams.set(key, allValues[0])
+      parsedParams.set(key, allValues[0]);
     }
   }
 
-  return Object.fromEntries(parsedParams.entries()) as T
+  return Object.fromEntries(parsedParams.entries()) as T;
 }
 
 /**
@@ -242,54 +242,54 @@ export function createRequestFn(
       formatBody,
       resolver = DEFAULT_RESOLVER,
       onResolve = () => {},
-      onError = () => {}
-    } = init
+      onError = () => {},
+    } = init;
 
-    const rawUrl = setURLParams(url, params)
+    const rawUrl = setURLParams(url, params);
 
     const reqQueryString = Object.keys(query)
-      .map(q =>
+      .map((q) =>
         Array.isArray(query[q])
-          ? query[q].map((queryItem: any) => [q, queryItem].join('=')).join('&')
-          : [q, query[q]].join('=')
+          ? query[q].map((queryItem: any) => [q, queryItem].join("=")).join("&")
+          : [q, query[q]].join("=")
       )
-      .join('&')
+      .join("&");
 
     const reqConfig = {
       method: $method,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...$headers,
-        ...headers
+        ...headers,
       },
       body: canHaveBody(method as any)
         ? isFunction(formatBody)
           ? (formatBody as any)(body)
           : body
-        : undefined
-    }
+        : undefined,
+    };
 
-    let r = undefined as any
+    let r = undefined as any;
 
     const requestUrl = [
-      baseUrl || '',
+      baseUrl || "",
       rawUrl,
       reqQueryString
-        ? (rawUrl.includes('?') ? (rawUrl.endsWith('?') ? '' : '&') : '?') +
+        ? (rawUrl.includes("?") ? (rawUrl.endsWith("?") ? "" : "&") : "?") +
           reqQueryString
-        : ''
-    ].join('')
+        : "",
+    ].join("");
 
     try {
       const req = await fetch(requestUrl, {
         ...init,
-        ...reqConfig
-      })
-      r = req
+        ...reqConfig,
+      });
+      r = req;
 
-      const data = await resolver(req)
+      const data = await resolver(req);
       if (req?.status >= 400) {
-        onError(true as any)
+        onError(true as any);
         return {
           res: req,
           data: def,
@@ -297,13 +297,13 @@ export function createRequestFn(
           status: req?.status,
           config: {
             ...init,
-            url: `${baseUrl || ''}${rawUrl}`,
+            url: `${baseUrl || ""}${rawUrl}`,
             ...reqConfig,
-            query
-          }
-        }
+            query,
+          },
+        };
       } else {
-        onResolve(data, req)
+        onResolve(data, req);
         return {
           res: req,
           data: data,
@@ -311,14 +311,14 @@ export function createRequestFn(
           status: req?.status,
           config: {
             ...init,
-            url: `${baseUrl || ''}${rawUrl}`,
+            url: `${baseUrl || ""}${rawUrl}`,
             ...reqConfig,
-            query
-          }
-        }
+            query,
+          },
+        };
       }
     } catch (err) {
-      onError(err as any)
+      onError(err as any);
       return {
         res: r,
         data: def,
@@ -327,64 +327,64 @@ export function createRequestFn(
         config: {
           ...init,
           url: requestUrl,
-          ...reqConfig
-        }
-      }
+          ...reqConfig,
+        },
+      };
     }
-  } as RequestWithBody
+  } as RequestWithBody;
 }
 
 const createImperativeFetch = (ctx: FetchContextType) => {
   const keys = [
-    'GET',
-    'DELETE',
-    'HEAD',
-    'OPTIONS',
-    'POST',
-    'PUT',
-    'PATCH',
-    'PURGE',
-    'LINK',
-    'UNLINK'
-  ]
+    "GET",
+    "DELETE",
+    "HEAD",
+    "OPTIONS",
+    "POST",
+    "PUT",
+    "PATCH",
+    "PURGE",
+    "LINK",
+    "UNLINK",
+  ];
 
-  const { baseUrl } = ctx
+  const { baseUrl } = ctx;
 
   return {
     ...Object.fromEntries(
       new Map(
-        keys.map(k => [
+        keys.map((k) => [
           k.toLowerCase(),
           (url: string, config = {}) =>
             (Client as any)[k.toLowerCase()](
               hasBaseUrl(url) ? url : baseUrl + url,
               {
                 ...ctx,
-                ...config
+                ...config,
               }
-            )
+            ),
         ])
       )
     ),
-    config: ctx
-  } as ImperativeFetch
-}
+    config: ctx,
+  } as ImperativeFetch;
+};
 
 /**
  * An Client for making HTTP Requests
  */
 const Client = {
-  get: createRequestFn('GET', '', {}),
-  delete: createRequestFn('DELETE', '', {}),
-  head: createRequestFn('HEAD', '', {}),
-  options: createRequestFn('OPTIONS', '', {}),
-  post: createRequestFn('POST', '', {}),
-  put: createRequestFn('PUT', '', {}),
-  patch: createRequestFn('PATCH', '', {}),
-  purge: createRequestFn('PURGE', '', {}),
-  link: createRequestFn('LINK', '', {}),
-  unlink: createRequestFn('UNLINK', '', {}),
-  extend: createImperativeFetch
-}
+  get: createRequestFn("GET", "", {}),
+  delete: createRequestFn("DELETE", "", {}),
+  head: createRequestFn("HEAD", "", {}),
+  options: createRequestFn("OPTIONS", "", {}),
+  post: createRequestFn("POST", "", {}),
+  put: createRequestFn("PUT", "", {}),
+  patch: createRequestFn("PATCH", "", {}),
+  purge: createRequestFn("PURGE", "", {}),
+  link: createRequestFn("LINK", "", {}),
+  unlink: createRequestFn("UNLINK", "", {}),
+  extend: createImperativeFetch,
+};
 
-export { Client }
+export { Client };
