@@ -41,9 +41,9 @@ export function useFetchConfig(id?: unknown) {
   return thisConfig as FetchInit & FetchContextType
 }
 
-export function useFetchSuspense<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function useFetchSuspense<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   let o =
     typeof init === 'string'
@@ -224,13 +224,13 @@ export function useSuccess(id: any) {
  * @deprecated - Use the useFetch hook instead
  * Get everything from a `useFetch` call using its id
  */
-export function useFetchId<ResponseType = any, BodyType = any>(id: any) {
+export function useFetchId<ResponseType = any>(id: any) {
   const defaultsKey = serialize({
     idString: serialize(id)
   })
   const def = fetcherDefaults.get(defaultsKey)
 
-  return useFetch<ResponseType, BodyType>({
+  return useFetch<ResponseType>({
     id,
     default: def
   })
@@ -289,9 +289,9 @@ export function useResolve<ResponseType = any, VT = any>(
 /**
  * User a `GET` request
  */
-export function useGET<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function useGET<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -302,9 +302,9 @@ export function useGET<FetchDataType = any, BodyType = any>(
 /**
  * Use a `DELETE` request
  */
-export function useDELETE<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function useDELETE<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -315,9 +315,9 @@ export function useDELETE<FetchDataType = any, BodyType = any>(
 /**
  * Use a `HEAD` request
  */
-export function useHEAD<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function useHEAD<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -328,9 +328,9 @@ export function useHEAD<FetchDataType = any, BodyType = any>(
 /**
  * Use an `OPTIONS` request
  */
-export function useOPTIONS<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function useOPTIONS<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -342,9 +342,9 @@ export function useOPTIONS<FetchDataType = any, BodyType = any>(
 /**
  * Use a `POST` request
  */
-export function usePOST<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function usePOST<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -355,9 +355,9 @@ export function usePOST<FetchDataType = any, BodyType = any>(
 /**
  * Use a `PUT` request
  */
-export function usePUT<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function usePUT<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -368,9 +368,9 @@ export function usePUT<FetchDataType = any, BodyType = any>(
 /**
  * Use a `PATCH` request
  */
-export function usePATCH<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function usePATCH<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -381,9 +381,9 @@ export function usePATCH<FetchDataType = any, BodyType = any>(
 /**
  * Use a `PURGE` request
  */
-export function usePURGE<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function usePURGE<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -394,9 +394,9 @@ export function usePURGE<FetchDataType = any, BodyType = any>(
 /**
  * Use a `LINK` request
  */
-export function useLINK<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function useLINK<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -407,9 +407,9 @@ export function useLINK<FetchDataType = any, BodyType = any>(
 /**
  * Use an `UNLINK` request
  */
-export function useUNLINK<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function useUNLINK<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -420,9 +420,9 @@ export function useUNLINK<FetchDataType = any, BodyType = any>(
 /**
  * Use a request without making it automatically
  */
-export function useManualFetch<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function useManualFetch<FetchDataType = any>(
+  init: FetchConfigType<FetchDataType> | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType>
 ) {
   return useFetch(init, {
     ...options,
@@ -433,15 +433,13 @@ export function useManualFetch<FetchDataType = any, BodyType = any>(
 /**
  * Get a blob of the response. You can pass an `objectURL` property that will convet that blob into a string using `URL.createObjectURL`
  */
-export function useFetchBlob<FetchDataType = string, BodyType = any>(
-  init:
-    | (FetchConfigType<FetchDataType, BodyType> & { objectURL?: boolean })
-    | string,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType> & {
+export function useFetchBlob<FetchDataType = string>(
+  init: (FetchConfigType<FetchDataType> & { objectURL?: boolean }) | string,
+  options?: FetchConfigTypeNoUrl<FetchDataType> & {
     objectURL?: boolean
   }
 ) {
-  return useFetch<FetchDataType, BodyType>(init, {
+  return useFetch<FetchDataType>(init, {
     ...options,
     async resolver(res) {
       const blob = await res.blob()
@@ -463,11 +461,11 @@ export function useFetchBlob<FetchDataType = string, BodyType = any>(
 /**
  * Get a text of the response
  */
-export function useFetchText<FetchDataType = string, BodyType = any>(
-  init: FetchConfigType<string, BodyType> | string,
-  options?: FetchConfigTypeNoUrl<string, BodyType>
+export function useFetchText<FetchDataType = string>(
+  init: FetchConfigType<string> | string,
+  options?: FetchConfigTypeNoUrl<string>
 ) {
-  return useFetch<string, BodyType>(init, {
+  return useFetch<string>(init, {
     ...options,
     async resolver(res) {
       const text = await res.text()
@@ -503,21 +501,21 @@ export function useRequestEnd(id: any) {
 /**
  * Debounce a fetch by the time given
  */
-export function useDebounceFetch<FetchDataType = any, BodyType = any>(
+export function useDebounceFetch<FetchDataType = any>(
   init:
-    | (Omit<FetchConfigType<FetchDataType, BodyType>, 'debounce'> & {
+    | (Omit<FetchConfigType<FetchDataType>, 'debounce'> & {
         debounce?: TimeSpan
       })
     | string
     | Request,
-  options?: Omit<FetchConfigTypeNoUrl<FetchDataType, BodyType>, 'debounce'> & {
+  options?: Omit<FetchConfigTypeNoUrl<FetchDataType>, 'debounce'> & {
     debounce?: TimeSpan
   }
 ) {
   // @ts-ignore - auto can be present in the first arg
   const canDebounce = init?.auto ?? options?.auto ?? true
 
-  const res = useFetch<FetchDataType, BodyType>(init, {
+  const res = useFetch<FetchDataType>(init, {
     ...options,
     auto: false
   })
@@ -550,7 +548,7 @@ export function useGql<T = any, VT = { [k: string]: any }>(
         value: T
         variables: VT
       },
-  cfg: FetchConfigTypeNoUrl<T, any> & {
+  cfg: FetchConfigTypeNoUrl<T> & {
     /**
      * GraphQL variables
      */
