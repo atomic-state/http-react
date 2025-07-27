@@ -221,6 +221,7 @@ export function useSuccess(id: any) {
 }
 
 /**
+ * @deprecated - Use the useFetch hook instead
  * Get everything from a `useFetch` call using its id
  */
 export function useFetchId<ResponseType = any, BodyType = any>(id: any) {
