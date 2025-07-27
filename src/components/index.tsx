@@ -35,7 +35,7 @@ export function SSRSuspense({
   // This will render the fallback in the server
   return (
     ssr ? fallback : <Suspense fallback={fallback}>{children}</Suspense>
-  ) as JSX.Element
+  ) as React.JSX.Element
 }
 
 export function FetchConfig(props: FetchContextType) {

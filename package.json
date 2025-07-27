@@ -1,6 +1,6 @@
 {
   "name": "http-react",
-  "version": "3.7.7",
+  "version": "3.7.8",
   "description": "React hooks for data fetching",
   "main": "dist/index.js",
   "scripts": {
