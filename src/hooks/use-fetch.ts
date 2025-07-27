@@ -82,9 +82,9 @@ const temporaryFormData = new Map()
 /**
  * Fetch hook
  */
-export function useFetch<FetchDataType = any, BodyType = any>(
-  init: FetchConfigType<FetchDataType, BodyType> | string | Request,
-  options?: FetchConfigTypeNoUrl<FetchDataType, BodyType>
+export function useFetch<FetchDataType = any, TransformData = any>(
+  init: FetchConfigType<FetchDataType, TransformData> | string | Request,
+  options?: FetchConfigTypeNoUrl<FetchDataType, TransformData>
 ) {
   const $ctx = useHRFContext()
 
@@ -129,7 +129,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
           ...options,
           // @ts-expect-error
           id: init?.id ?? init?.key
-        } as FetchConfigType<FetchDataType, BodyType>)
+        } as Required<FetchConfigType<FetchDataType, TransformData>>)
 
   const {
     onOnline = ctx.onOnline,
@@ -143,7 +143,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
     method = isRequest ? init.method : (METHODS.GET as HTTP_METHODS),
     headers = {} as Headers,
     body = undefined as unknown as Body,
-    formatBody = e => JSON.stringify(e),
+    formatBody = (e: any) => JSON.stringify(e),
     resolver = isFunction(ctx.resolver) ? ctx.resolver : DEFAULT_RESOLVER,
     onError,
     auto = isDefined(ctx.auto) ? ctx.auto : true,
@@ -523,7 +523,7 @@ export function useFetch<FetchDataType = any, BodyType = any>(
 
   const fetchData = useCallback(
     async function fetchData(
-      c: { headers?: any; body?: BodyType; query?: any; params?: any } = {}
+      c: { headers?: any; body?: any; query?: any; params?: any } = {}
     ) {
       const rawUrl =
         (hasBaseUrl(url)
@@ -1790,7 +1790,7 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
     loadingFirst: boolean
     isLoadingFirst: boolean
     expiration: Date
-    data: FetchDataType
+    data: 0 extends 1 & TransformData ? FetchDataType : TransformData
     isPending?: boolean
     loading: boolean
     isLoading: boolean
@@ -1806,7 +1806,7 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
     ) => FetchDataType
     fetcher: ImperativeFetch
     abort: () => void
-    config: FetchConfigType<FetchDataType, BodyType> & {
+    config: Required<FetchConfigType<FetchDataType, TransformData>> & {
       baseUrl: string
       url: string
       rawUrl: string
