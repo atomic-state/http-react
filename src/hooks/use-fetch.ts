@@ -75,7 +75,7 @@ const getDateIfValid = (d: Date | null) =>
   (d?.toString() === 'Invalid Date' || d === null ? null : d) as Date
 
 /**
- * Termporary form data is set with the submit method in useFetch and is deleted immediately after resolving (see line #928)
+ * Termporary form data is set with the submit method in useFetch and is deleted immediately after resolving (see line #858)
  * */
 const temporaryFormData = new Map()
 
@@ -320,6 +320,28 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     )
   )
 
+  const setData = useCallback((v: any) => {
+    setFetchState(p => {
+      if (isFunction(v)) {
+        const newVal = v(p.data)
+        if (!jsonCompare(p.data, newVal)) {
+          return {
+            ...p,
+            data: newVal
+          }
+        }
+      } else {
+        if (!jsonCompare(p.data, v)) {
+          return {
+            ...p,
+            data: v
+          }
+        }
+      }
+      return p
+    })
+  }, [])
+
   // This helps pass default values to other useFetch calls using the same id
   useEffect(() => {
     if (isDefined(optionsConfig.default)) {
@@ -344,7 +366,14 @@ export function useFetch<FetchDataType = any, TransformData = any>(
         }
       }
     }
-  }, [resolvedKey])
+  }, [
+    resolvedKey,
+    resolvedDataKey,
+    optionsConfig.default,
+    url,
+    requestCallId,
+    setData
+  ])
 
   const def = optionsConfig?.default ?? fetcherDefaults.get(resolvedKey)
 
@@ -352,7 +381,7 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     if (!canRevalidate) {
       runningRequests.set(resolvedKey, false)
     }
-  }, [])
+  }, [canRevalidate, resolvedKey])
 
   const requestCache = cacheProvider.get(resolvedDataKey)
 
@@ -400,38 +429,6 @@ export function useFetch<FetchDataType = any, TransformData = any>(
 
   const loadingFirst =
     !(hasData.get(resolvedDataKey) || hasData.get(resolvedKey)) && isLoading
-
-  const setData = useCallback((v: any) => {
-    setFetchState(p => {
-      if (isFunction(v)) {
-        const newVal = v(p.data)
-        if (!jsonCompare(p.data, newVal)) {
-          return {
-            ...p,
-            data: newVal
-          }
-        }
-      } else {
-        if (!jsonCompare(p.data, v)) {
-          return {
-            ...p,
-            data: v
-          }
-        }
-      }
-      return p
-    })
-  }, [])
-
-  if (!isExpired) {
-    if (error) {
-      // setError(false); // This was causing issues, stable setter is below
-    }
-  }
-
-  const thisCache = paginationCache ?? normalCache ?? data ?? def ?? null
-  // Used JSON as deppendency instead of directly using a reference to data
-  const rawJSON = serialize(data)
 
   const setOnline = useCallback((v: any) => {
     setFetchState(p => {
@@ -550,21 +547,11 @@ export function useFetch<FetchDataType = any, TransformData = any>(
           optionsConfig
         )
       ) {
-        // FIX: Directly set loading to true and clear previous errors
         setError(false)
         setLoading(true)
 
         previousProps.set(resolvedKey, optionsConfig)
-        queue(() => {
-          if (url !== '') {
-            const newUrls = {
-              realUrl,
-              rawUrl
-            }
 
-            urls[resolvedKey] = newUrls
-          }
-        })
         if (!isPending(resolvedKey)) {
           runningRequests.set(resolvedKey, auto)
           hasErrors.set(resolvedDataKey, false)
@@ -580,7 +567,7 @@ export function useFetch<FetchDataType = any, TransformData = any>(
           cacheProvider.set(ageKey, Date.now() - 1)
 
           requestsProvider.emit(resolvedKey, {
-            requestCallId: loadingFirst ? requestCallId : undefined,
+            requestCallId,
             loading: true,
             requestAbortController: newAbortController,
             error: false
@@ -699,7 +686,7 @@ export function useFetch<FetchDataType = any, TransformData = any>(
             const actionError = json?.['error']
 
             const _data = isFunction(middleware)
-              ? await middleware!(incoming as any, thisCache)
+              ? await middleware!(incoming as any, data)
               : incoming
 
             let __data = isGqlRequest
@@ -826,7 +813,7 @@ export function useFetch<FetchDataType = any, TransformData = any>(
                 }
               } else {
                 if (def) {
-                  $$data = thisCache
+                  $$data = data
                   cacheForMutation.set(idString, def)
 
                   rpc = {
@@ -869,13 +856,13 @@ export function useFetch<FetchDataType = any, TransformData = any>(
               }
 
               if (cacheIfError) {
-                if (notNull(thisCache) && isDefined(thisCache)) {
-                  $$data = thisCache
-                  cacheForMutation.set(idString, thisCache)
+                if (notNull(data) && isDefined(data)) {
+                  $$data = data
+                  cacheForMutation.set(idString, data)
 
                   rpc = {
                     ...rpc,
-                    data: thisCache
+                    data: data
                   }
                 }
               } else {
@@ -948,8 +935,7 @@ export function useFetch<FetchDataType = any, TransformData = any>(
       }
     },
     [
-      formRef.current,
-      thisDeps,
+      // No longer depends on data
       canRevalidate,
       ctx.auto,
       stringDeps,
@@ -1012,46 +998,32 @@ export function useFetch<FetchDataType = any, TransformData = any>(
         fetcher: ImperativeFetch
       ) => void = () => {}
     ) => {
-      if (!isFunction(newValue)) {
-        if (
-          serialize(cacheProvider.get(resolvedDataKey)) !== serialize(newValue)
-        ) {
-          callback(newValue as any, imperativeFetch)
-          cacheProvider.set(resolvedDataKey, newValue)
-          cacheProvider.set(resolvedKey, newValue)
-          valuesMemory.set(resolvedKey, newValue)
-          cacheForMutation.set(idString, newValue)
-          runningMutate.set(resolvedKey, false)
-          requestsProvider.emit(resolvedKey, {
-            requestCallId,
-            isMutating: true,
-            data: newValue
-          })
-          setData(newValue as any)
-        }
-      } else {
-        let newVal = (newValue as any)(data)
-        if (
-          serialize(cacheProvider.get(resolvedDataKey)) !== serialize(newVal)
-        ) {
-          callback(newVal, imperativeFetch)
-          cacheProvider.set(resolvedDataKey, newVal)
-          cacheProvider.set(resolvedKey, newVal)
-          valuesMemory.set(resolvedKey, newVal)
-          cacheForMutation.set(idString, newVal)
-          runningMutate.set(resolvedKey, false)
-          requestsProvider.emit(resolvedKey, {
-            requestCallId,
-            isMutating: true,
-            data: newVal
-          })
+      const updater = (prevData: FetchDataType) => {
+        const dataToSet = isFunction(newValue)
+          ? // @ts-expect-error
+            newValue(prevData)
+          : (newValue as FetchDataType)
 
-          setData(newVal)
+        if (
+          serialize(cacheProvider.get(resolvedDataKey)) !== serialize(dataToSet)
+        ) {
+          callback(dataToSet, imperativeFetch)
+          cacheProvider.set(resolvedDataKey, dataToSet)
+          cacheProvider.set(resolvedKey, dataToSet)
+          valuesMemory.set(resolvedKey, dataToSet)
+          cacheForMutation.set(idString, dataToSet)
+          runningMutate.set(resolvedKey, false)
+          requestsProvider.emit(resolvedKey, {
+            requestCallId,
+            isMutating: true,
+            data: dataToSet
+          })
         }
+        return dataToSet
       }
+      setData(updater)
     },
     [
-      data,
       imperativeFetch,
       resolvedDataKey,
       resolvedKey,
@@ -1062,7 +1034,7 @@ export function useFetch<FetchDataType = any, TransformData = any>(
   )
 
   useEffect(() => {
-    async function waitFormUpdates(v: any) {
+    function waitFormUpdates(v: any) {
       const {
         isMutating,
         data: $data,
@@ -1093,37 +1065,21 @@ export function useFetch<FetchDataType = any, TransformData = any>(
 
       if (v.requestCallId !== requestCallId) {
         if (!willSuspend.get(resolvedKey)) {
-          queue(() => {
-            if (inDeps('data')) {
-              if (isDefined($data)) {
-                if (!jsonCompare(data, cacheProvider.get(resolvedDataKey))) {
-                  setData(cacheProvider.get(resolvedKey))
-                }
-              }
-            }
-            if (inDeps('online')) {
-              if (isDefined(online)) {
-                setOnline(online)
-              }
-            }
-            if (inDeps('loading')) {
-              if (isDefined(loading)) {
-                setLoading(loading)
-              }
-            }
-            if (inDeps('error')) {
-              if (isDefined($error)) {
-                if (fetchState.error !== $error) {
-                  setError($error)
-                }
-              }
-            }
-            if (inDeps('completedAttempts')) {
-              if (isDefined(completedAttempts)) {
-                setCompletedAttempts(completedAttempts)
-              }
-            }
-          })
+          if (inDeps('data') && isDefined($data)) {
+            setData($data)
+          }
+          if (inDeps('online') && isDefined(online)) {
+            setOnline(online)
+          }
+          if (inDeps('loading') && isDefined(loading)) {
+            setLoading(loading)
+          }
+          if (inDeps('error') && isDefined($error)) {
+            setError($error)
+          }
+          if (inDeps('completedAttempts') && isDefined(completedAttempts)) {
+            setCompletedAttempts(completedAttempts)
+          }
         }
       }
     }
@@ -1135,18 +1091,19 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     }
   }, [
     thisDeps,
-    JSON.stringify(optionsConfig),
     resolvedKey,
-    resolvedDataKey,
+    idString,
     requestCallId,
-    fetchState,
     forceMutate,
     imperativeFetch,
     setData,
     setOnline,
     setLoading,
     setError,
-    setCompletedAttempts
+    setCompletedAttempts,
+    handleMutate,
+    url,
+    onMutate
   ])
 
   const reValidate = useCallback(
@@ -1184,19 +1141,7 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     return () => {
       requestsProvider.removeListener(idString, forceRefresh)
     }
-  }, [
-    fetchData,
-    id,
-    reqQuery,
-    reqParams,
-    url,
-    loading,
-    suspense,
-    requestCallId,
-    stringDeps,
-    canRevalidate,
-    ctx.auto
-  ])
+  }, [fetchData, id, reqQuery, reqParams, url])
 
   useEffect(() => {
     function backOnline() {
@@ -1374,14 +1319,16 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     error,
     $attempts,
     reValidate,
-    fetchState,
     attemptInterval,
     resolvedKey,
     completedAttempts,
     setCompletedAttempts,
     setOnline,
     resolvedDataKey,
-    requestCallId
+    requestCallId,
+    statusCodes,
+    lastResponses,
+    hasErrors
   ])
 
   useEffect(() => {
@@ -1401,7 +1348,7 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     refresh,
     loading,
     error,
-    rawJSON,
+    serialize(data),
     canRevalidate,
     completedAttempts,
     config,
@@ -1448,9 +1395,6 @@ export function useFetch<FetchDataType = any, TransformData = any>(
           })
         },
     [
-      serialize(optionsConfig),
-      fetchState,
-      thisDeps,
       fetchData,
       canRevalidate,
       url,
@@ -1469,31 +1413,46 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     }
   }
 
+  // @ts-ignore
   useIsomorphicLayoutEffect(() => {
-    const fn = () => {
-      if (url !== '') {
-        if (!jsonCompare(previousProps.get(resolvedKey), optionsConfig)) {
-          abortControllers.get(resolvedKey)?.abort()
-          if (inDeps('data')) {
-            queue(initializeRevalidation)
-          }
-        }
+    const revalidationLogic = () => {
+      const configChanged = !jsonCompare(
+        JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+        optionsConfig
+      )
+
+      if (!configChanged && !revalidateOnMount) {
+        return
+      }
+
+      if (isPending(resolvedKey)) {
+        setLoading(true)
+        setError(false)
+        return
+      }
+
+      if (auto && canRevalidate && url !== '') {
+        initializeRevalidation()
       }
     }
+
     if (debounce) {
-      const tm = setTimeout(fn, debounce)
-      return () => clearTimeout(tm)
+      const handler = setTimeout(revalidationLogic, debounce)
+      return () => clearTimeout(handler)
     }
-    fn()
-    return () => {}
+
+    revalidationLogic()
   }, [
+    resolvedKey,
     serialize(optionsConfig),
-    thisDeps,
-    fetchState,
+    revalidateOnMount,
+    auto,
+    canRevalidate,
     url,
     initializeRevalidation,
-    debounce,
-    resolvedKey
+    setLoading,
+    setError,
+    debounce
   ])
 
   if (suspense) {
@@ -1527,94 +1486,6 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
     }
   }
 
-  useIsomorphicLayoutEffect(() => {
-    const fn = () => {
-      if (!runningRequests.get(resolvedKey) && canRevalidate) {
-        if (windowExists) {
-          if (canRevalidate && url !== '') {
-            if (
-              !jsonCompare(
-                JSON.parse(previousConfig.get(resolvedKey) || '{}'),
-                optionsConfig
-              )
-            ) {
-              if (!isPending(resolvedKey)) {
-                if (inDeps('data')) {
-                  initializeRevalidation()
-                }
-              } else {
-                setLoading(true)
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (debounce) {
-      const tm = setTimeout(fn, debounce)
-      return () => clearTimeout(tm)
-    }
-    fn()
-
-    return () => {}
-  }, [
-    resolvedKey,
-    serialize(optionsConfig),
-    canRevalidate,
-    thisDeps,
-    url,
-    initializeRevalidation,
-    setLoading,
-    debounce
-  ])
-
-  useIsomorphicLayoutEffect(() => {
-    const revalidateAfterUnmount = revalidateOnMount
-      ? true
-      : !jsonCompare(
-          JSON.parse(previousConfig.get(resolvedKey) || '{}'),
-          optionsConfig
-        )
-
-    function revalidate() {
-      if (!debounce && !canDebounce.get(resolvedKey)) {
-        if (inDeps('data')) {
-          initializeRevalidation()
-        }
-      }
-    }
-
-    const fn = () => {
-      if (revalidateAfterUnmount) {
-        if (suspense) {
-          if (suspenseInitialized.get(resolvedKey)) {
-            revalidate()
-          }
-        } else {
-          revalidate()
-        }
-      }
-    }
-
-    if (debounce) {
-      const tm = setTimeout(fn, debounce)
-      return () => clearTimeout(tm)
-    }
-    fn()
-
-    return () => {}
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    serialize(optionsConfig),
-    thisDeps,
-    revalidateOnMount,
-    debounce,
-    suspense,
-    initializeRevalidation
-  ])
-
   useEffect(() => {
     function addFocusListener() {
       if (revalidateOnFocus && windowExists) {
@@ -1633,17 +1504,7 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
         }
       }
     }
-  }, [
-    requestCallId,
-    url,
-    revalidateOnFocus,
-    stringDeps,
-    loading,
-    reValidate,
-    refresh,
-    serialize(config),
-    auto
-  ])
+  }, [revalidateOnFocus, auto, reValidate])
 
   const __config = {
     ...config,
@@ -1690,7 +1551,7 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
     hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey) || error
 
   const dataCandidate =
-    (error && isFailed ? (cacheIfError ? thisCache : null) : thisCache) ?? def
+    (error && isFailed ? (cacheIfError ? data : null) : data) ?? def
 
   const responseData = isDefined(dataCandidate)
     ? transform!(dataCandidate)
@@ -1725,7 +1586,7 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
       )
       reValidate()
     },
-    [resolvedKey, formRef, onSubmit, reValidate]
+    [resolvedKey, onSubmit, reValidate]
   )
 
   function resetError() {
