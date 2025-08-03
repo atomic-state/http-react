@@ -93,7 +93,7 @@ It supports many features that are necessary in modern applications, while givin
 - Local mutation (Optimistic UI)
 - qraphql
 
-and [more](https://http-react.netlify.app/docs/api)!
+and [more](https://httpr.vercel.app/docs/api)!
 
 #### Installation:
 
@@ -107,4 +107,4 @@ Or
 yarn add http-react
 ```
 
-[Getting started](https://http-react.netlify.app/docs)
+[Getting started](https://httpr.vercel.app/docs)
