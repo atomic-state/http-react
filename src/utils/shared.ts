@@ -68,12 +68,14 @@ function canHaveBody(method: keyof typeof METHODS) {
 }
 
 export function queue(callback: any, time: number = 0) {
-  const tm = setTimeout(() => {
-    callback();
-    clearTimeout(tm);
-  }, time);
+  queueMicrotask(callback);
 
-  return tm;
+  // const tm = setTimeout(() => {
+  //   callback();
+  //   clearTimeout(tm);
+  // }, time);
+
+  // return tm;
 }
 
 /**

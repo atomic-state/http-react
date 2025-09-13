@@ -55,6 +55,7 @@ import {
   createImperativeFetch,
   getMiliseconds,
   getTimePassed,
+  mutateData,
   revalidate,
   useIsomorphicLayoutEffect
 } from '../utils'
@@ -1040,45 +1041,8 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     ]
   )
 
-  // At the top of your component, create a ref to hold all dependencies for the listener.
-  const listenerDeps = useRef({
-    thisDeps,
-    idString,
-    requestCallId,
-    forceMutate,
-    imperativeFetch,
-    setData,
-    setOnline,
-    setLoading,
-    setError,
-    setCompletedAttempts,
-    handleMutate,
-    url,
-    onMutate
-  })
-
-  // On every render, update the ref's current value to ensure the listener always has the latest functions and props.
-  // This does not trigger the effect below.
-  listenerDeps.current = {
-    thisDeps,
-    idString,
-    requestCallId,
-    forceMutate,
-    imperativeFetch,
-    setData,
-    setOnline,
-    setLoading,
-    setError,
-    setCompletedAttempts,
-    handleMutate,
-    url,
-    onMutate
-  }
-
   useEffect(() => {
-    function waitFormUpdates(event: any) {
-      // Destructure the latest dependencies from the ref inside the listener
-      const deps = listenerDeps.current
+    function waitFormUpdates(v: any) {
       const {
         isMutating,
         data: $data,
@@ -1086,52 +1050,44 @@ export function useFetch<FetchDataType = any, TransformData = any>(
         online,
         loading,
         completedAttempts
-      } = event || {}
+      } = v || {}
 
-      // 1. Handle mutations with cleaner logic
-      if (
-        isMutating &&
-        serialize($data) !== serialize(cacheForMutation.get(resolvedKey))
-      ) {
-        cacheForMutation.set(deps.idString, $data)
-        deps.forceMutate($data)
+      if (isMutating) {
+        if (!jsonCompare($data, cacheForMutation.get(resolvedKey))) {
+          cacheForMutation.set(idString, $data)
 
-        if (deps.handleMutate) {
-          const canCallOnMutate =
-            deps.url === '' || !runningMutate.get(resolvedKey)
-          if (canCallOnMutate) {
-            if (deps.url !== '') runningMutate.set(resolvedKey, true)
-            ;(deps.onMutate as any)($data, deps.imperativeFetch)
+          if (isMutating) {
+            if (handleMutate) {
+              if (url === '') {
+                ;(onMutate as any)($data, imperativeFetch)
+              } else {
+                if (!runningMutate.get(resolvedKey)) {
+                  runningMutate.set(resolvedKey, true)
+                  ;(onMutate as any)($data, imperativeFetch)
+                }
+              }
+            }
           }
         }
       }
 
-      // 2. Handle state synchronization from other hooks
-      if (
-        event.requestCallId !== deps.requestCallId &&
-        !willSuspend.get(resolvedKey)
-      ) {
-        // Create a map to avoid the long if-chain
-        const stateUpdates = {
-          data: { value: $data, setter: deps.setData },
-          online: { value: online, setter: deps.setOnline },
-          loading: { value: loading, setter: deps.setLoading },
-          error: { value: $error, setter: deps.setError },
-          completedAttempts: {
-            value: completedAttempts,
-            setter: deps.setCompletedAttempts
-          }
-        }
-
-        // Loop through the map to update state concisely using a transition
-        startTransition(() => {
-          for (const key in stateUpdates) {
-            const update = stateUpdates[key as keyof typeof stateUpdates]
-            if (
-              deps.thisDeps[key as keyof typeof stateUpdates] &&
-              isDefined(update.value)
-            ) {
-              update.setter(update.value)
+      if (v.requestCallId !== requestCallId) {
+        queue(() => {
+          if (!willSuspend.get(resolvedKey)) {
+            if (inDeps('data') && isDefined($data)) {
+              setData($data)
+            }
+            if (inDeps('online') && isDefined(online)) {
+              setOnline(online)
+            }
+            if (inDeps('loading') && isDefined(loading)) {
+              setLoading(loading)
+            }
+            if (inDeps('error') && isDefined($error)) {
+              setError($error)
+            }
+            if (inDeps('completedAttempts') && isDefined(completedAttempts)) {
+              setCompletedAttempts(completedAttempts)
             }
           }
         })
@@ -1143,7 +1099,22 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     return () => {
       requestsProvider.removeListener(resolvedKey, waitFormUpdates)
     }
-  }, [resolvedKey])
+  }, [
+    // thisDeps,
+    resolvedKey,
+    idString,
+    requestCallId,
+    forceMutate,
+    imperativeFetch,
+    setData,
+    setOnline,
+    setLoading,
+    setError,
+    setCompletedAttempts,
+    handleMutate,
+    url,
+    onMutate
+  ])
 
   const reValidate = useCallback(
     async function reValidate() {
@@ -1307,6 +1278,7 @@ export function useFetch<FetchDataType = any, TransformData = any>(
 
   useEffect(() => {
     // Attempts will be made after a request fails
+
     const tm = setTimeout(() => {
       if (!gettingAttempts.get(resolvedKey)) {
         gettingAttempts.set(resolvedKey, true)
@@ -1727,6 +1699,7 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
     submit,
     get mutate() {
       thisDeps.data = true
+
       return forceMutate
     },
     get fetcher() {
