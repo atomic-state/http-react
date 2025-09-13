@@ -1,5 +1,12 @@
 'use client'
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  startTransition
+} from 'react'
 
 import {
   abortControllers,
@@ -1033,65 +1040,9 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     ]
   )
 
-  useEffect(() => {
-    function waitFormUpdates(v: any) {
-      const {
-        isMutating,
-        data: $data,
-        error: $error,
-        online,
-        loading,
-        completedAttempts
-      } = v || {}
-
-      if (isMutating) {
-        if (serialize($data) !== serialize(cacheForMutation.get(resolvedKey))) {
-          cacheForMutation.set(idString, $data)
-          if (isMutating) {
-            forceMutate($data)
-            if (handleMutate) {
-              if (url === '') {
-                ;(onMutate as any)($data, imperativeFetch)
-              } else {
-                if (!runningMutate.get(resolvedKey)) {
-                  runningMutate.set(resolvedKey, true)
-                  ;(onMutate as any)($data, imperativeFetch)
-                }
-              }
-            }
-          }
-        }
-      }
-
-      if (v.requestCallId !== requestCallId) {
-        if (!willSuspend.get(resolvedKey)) {
-          if (inDeps('data') && isDefined($data)) {
-            setData($data)
-          }
-          if (inDeps('online') && isDefined(online)) {
-            setOnline(online)
-          }
-          if (inDeps('loading') && isDefined(loading)) {
-            setLoading(loading)
-          }
-          if (inDeps('error') && isDefined($error)) {
-            setError($error)
-          }
-          if (inDeps('completedAttempts') && isDefined(completedAttempts)) {
-            setCompletedAttempts(completedAttempts)
-          }
-        }
-      }
-    }
-
-    requestsProvider.addListener(resolvedKey, waitFormUpdates)
-
-    return () => {
-      requestsProvider.removeListener(resolvedKey, waitFormUpdates)
-    }
-  }, [
+  // At the top of your component, create a ref to hold all dependencies for the listener.
+  const listenerDeps = useRef({
     thisDeps,
-    resolvedKey,
     idString,
     requestCallId,
     forceMutate,
@@ -1104,7 +1055,95 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     handleMutate,
     url,
     onMutate
-  ])
+  })
+
+  // On every render, update the ref's current value to ensure the listener always has the latest functions and props.
+  // This does not trigger the effect below.
+  listenerDeps.current = {
+    thisDeps,
+    idString,
+    requestCallId,
+    forceMutate,
+    imperativeFetch,
+    setData,
+    setOnline,
+    setLoading,
+    setError,
+    setCompletedAttempts,
+    handleMutate,
+    url,
+    onMutate
+  }
+
+  useEffect(() => {
+    function waitFormUpdates(event: any) {
+      // Destructure the latest dependencies from the ref inside the listener
+      const deps = listenerDeps.current
+      const {
+        isMutating,
+        data: $data,
+        error: $error,
+        online,
+        loading,
+        completedAttempts
+      } = event || {}
+
+      // 1. Handle mutations with cleaner logic
+      if (
+        isMutating &&
+        serialize($data) !== serialize(cacheForMutation.get(resolvedKey))
+      ) {
+        cacheForMutation.set(deps.idString, $data)
+        deps.forceMutate($data)
+
+        if (deps.handleMutate) {
+          const canCallOnMutate =
+            deps.url === '' || !runningMutate.get(resolvedKey)
+          if (canCallOnMutate) {
+            if (deps.url !== '') runningMutate.set(resolvedKey, true)
+            ;(deps.onMutate as any)($data, deps.imperativeFetch)
+          }
+        }
+      }
+
+      // 2. Handle state synchronization from other hooks
+      if (
+        event.requestCallId !== deps.requestCallId &&
+        !willSuspend.get(resolvedKey)
+      ) {
+        // Create a map to avoid the long if-chain
+        const stateUpdates = {
+          data: { value: $data, setter: deps.setData },
+          online: { value: online, setter: deps.setOnline },
+          loading: { value: loading, setter: deps.setLoading },
+          error: { value: $error, setter: deps.setError },
+          completedAttempts: {
+            value: completedAttempts,
+            setter: deps.setCompletedAttempts
+          }
+        }
+
+        // Loop through the map to update state concisely using a transition
+        startTransition(() => {
+          for (const key in stateUpdates) {
+            const update = stateUpdates[key as keyof typeof stateUpdates]
+            if (
+              deps.thisDeps[key as keyof typeof stateUpdates] &&
+              isDefined(update.value)
+            ) {
+              update.setter(update.value)
+            }
+          }
+        })
+      }
+    }
+
+    requestsProvider.addListener(resolvedKey, waitFormUpdates)
+
+    return () => {
+      requestsProvider.removeListener(resolvedKey, waitFormUpdates)
+    }
+  }, [resolvedKey])
 
   const reValidate = useCallback(
     async function reValidate() {
@@ -1257,7 +1296,6 @@ export function useFetch<FetchDataType = any, TransformData = any>(
     requestCallId,
     resolvedKey,
     revalidateOnMount,
-    suspense,
     canRevalidate,
     url,
     resolvedDataKey
