@@ -1,12 +1,5 @@
 'use client'
-import {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-  useCallback,
-  startTransition
-} from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import {
   abortControllers,
@@ -55,7 +48,6 @@ import {
   createImperativeFetch,
   getMiliseconds,
   getTimePassed,
-  mutateData,
   revalidate,
   useIsomorphicLayoutEffect
 } from '../utils'
@@ -432,6 +424,10 @@ export function useFetch<FetchDataType = any, TransformData = any>(
   }
 
   const { data, loading, online, error, completedAttempts } = fetchState
+
+  const thisCache = paginationCache ?? normalCache ?? data ?? def ?? null
+
+  const rawJSON = serialize(data)
 
   const isLoading = isExpired ? isPending(resolvedKey) || loading : false
 
@@ -1451,7 +1447,13 @@ export function useFetch<FetchDataType = any, TransformData = any>(
       return () => clearTimeout(handler)
     }
 
-    revalidationLogic()
+    const startRevalidate = setTimeout(() => {
+      revalidationLogic()
+    }, 0)
+
+    return () => {
+      clearTimeout(startRevalidate)
+    }
   }, [
     resolvedKey,
     serialize(optionsConfig),
@@ -1561,7 +1563,7 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
     hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey) || error
 
   const dataCandidate =
-    (error && isFailed ? (cacheIfError ? data : null) : data) ?? def
+    (error && isFailed ? (cacheIfError ? thisCache : null) : thisCache) ?? def
 
   const responseData = isDefined(dataCandidate)
     ? transform!(dataCandidate)
