@@ -57,6 +57,7 @@ export {
 
 export { FetchConfig, SSRSuspense } from './components/server'
 export { SSRSuspense as Suspense } from './components/server'
+export { LocalStorageCacheProvider } from './components/LocalStorageCacheProvider'
 
 export {
   queryProvider,
