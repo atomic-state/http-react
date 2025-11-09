@@ -244,10 +244,6 @@ export function useFetch<FetchDataType = any, TransformData = any>(
 
   const ageKey = ['max-age', resolvedDataKey].join('-')
 
-  const paginationCache = cacheProvider.get(resolvedDataKey)
-
-  const normalCache = cacheProvider.get(resolvedKey)
-
   const maxAge = getMiliseconds(maxCacheAge || '0 ms')
 
   // Revalidates if passed maxCacheAge has changed
@@ -425,9 +421,12 @@ export function useFetch<FetchDataType = any, TransformData = any>(
 
   const { data, loading, online, error, completedAttempts } = fetchState
 
-  const thisCache = paginationCache ?? normalCache ?? data ?? def ?? null
-
-  const rawJSON = serialize(data)
+  const thisCache =
+    cacheProvider.get(resolvedDataKey) ??
+    cacheProvider.get(resolvedKey) ??
+    data ??
+    def ??
+    null
 
   const isLoading = isExpired ? isPending(resolvedKey) || loading : false
 
