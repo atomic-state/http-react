@@ -11,8 +11,6 @@ const loadFromLocalStorage = () => {
       try {
         const currentValue = localStorage.getItem(key)
         if (typeof currentValue !== 'undefined') {
-          console.log({ key, currentValue })
-
           defaultCache.set(key, JSON.parse(currentValue!))
         }
       } catch (error) {
@@ -22,7 +20,6 @@ const loadFromLocalStorage = () => {
     }
 
     isCacheHydrated = true
-    console.log('Cache hydration complete.')
   }
 }
 
