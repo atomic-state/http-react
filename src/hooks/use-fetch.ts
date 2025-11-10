@@ -41,6 +41,8 @@ import {
   FetchContextType,
   HTTP_METHODS,
   ImperativeFetch,
+  StaticFetchConfig,
+  StaticFetchConfigNoUrl,
   TimeSpan
 } from '../types'
 
@@ -82,9 +84,16 @@ const temporaryFormData = new Map()
 /**
  * Fetch hook
  */
-export function useFetch<FetchDataType = any, TransformData = any>(
-  init: FetchConfigType<FetchDataType, TransformData> | string | Request,
-  options?: FetchConfigTypeNoUrl<FetchDataType, TransformData>
+export function useFetch<
+  FetchDataType = any,
+  TransformData = any,
+  UrlType extends string = string
+>(
+  init:
+    | StaticFetchConfig<FetchDataType, TransformData, UrlType>
+    | UrlType
+    | Request,
+  options?: StaticFetchConfigNoUrl<FetchDataType, TransformData, UrlType>
 ) {
   const $ctx = useHRFContext()
 
@@ -129,7 +138,7 @@ export function useFetch<FetchDataType = any, TransformData = any>(
           ...options,
           // @ts-expect-error
           id: init?.id ?? init?.key
-        } as Required<FetchConfigType<FetchDataType, TransformData>>)
+        } as Required<StaticFetchConfig<FetchDataType, TransformData, UrlType>>)
 
   const {
     onOnline = ctx.onOnline,

@@ -11,7 +11,7 @@ import {
   requestInitialTimes,
   requestsProvider,
   runningMutate,
-  valuesMemory,
+  valuesMemory
 } from "../internal";
 
 import { UNITS_MILISECONDS_EQUIVALENTS } from "../internal/constants";
@@ -24,6 +24,8 @@ import {
   TimeSpan,
   FetchConfigTypeNoUrl,
   FetchConfigType,
+  StaticFetchConfig,
+  StaticFetchConfigNoUrl
 } from "../types";
 import {
   gql,
@@ -32,7 +34,7 @@ import {
   isFunction,
   queue,
   serialize,
-  windowExists,
+  windowExists
 } from "./shared";
 
 export function getMiliseconds(v: TimeSpan): number {
@@ -67,7 +69,7 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
     "PATCH",
     "PURGE",
     "LINK",
-    "UNLINK",
+    "UNLINK"
   ];
 
   const { baseUrl } = ctx;
@@ -75,20 +77,20 @@ export const createImperativeFetch = (ctx: FetchContextType) => {
   return {
     ...Object.fromEntries(
       new Map(
-        keys.map((k) => [
+        keys.map(k => [
           k.toLowerCase(),
           (url, config = {}) =>
             (useFetch as any)[k.toLowerCase()](
               hasBaseUrl(url) ? url : baseUrl + url,
               {
                 ...ctx,
-                ...config,
+                ...config
               }
-            ),
+            )
         ])
       )
     ),
-    config: ctx,
+    config: ctx
   } as ImperativeFetch;
 };
 
@@ -101,7 +103,7 @@ export const useIsomorphicLayoutEffect = windowExists
  */
 export function revalidate(id: any | any[], __reval__ = true) {
   if (Array.isArray(id)) {
-    id.map((reqId) => {
+    id.map(reqId => {
       if (isDefined(reqId)) {
         const key = serialize(reqId);
 
@@ -118,7 +120,7 @@ export function revalidate(id: any | any[], __reval__ = true) {
             queue(() => {
               requestsProvider.emit(key, {
                 loading: true,
-                error: false,
+                error: false
               });
             });
           }
@@ -142,7 +144,7 @@ export function revalidate(id: any | any[], __reval__ = true) {
           queue(() => {
             requestsProvider.emit(key, {
               loading: true,
-              error: false,
+              error: false
             });
           });
         }
@@ -157,17 +159,17 @@ export function revalidateKey(key: any) {
 
 export function cancelRequest(id: any | any[]) {
   if (Array.isArray(id)) {
-    id.map((reqId) => {
+    id.map(reqId => {
       if (isDefined(reqId)) {
         const key = serialize({
-          idString: serialize(reqId),
+          idString: serialize(reqId)
         });
         if (isPending(key)) {
           revalidate(reqId, false);
           queue(() => {
             requestsProvider.emit(key, {
               loading: false,
-              error: false,
+              error: false
             });
           });
         }
@@ -176,14 +178,14 @@ export function cancelRequest(id: any | any[]) {
   } else {
     if (isDefined(id)) {
       const key = serialize({
-        idString: serialize(id),
+        idString: serialize(id)
       });
       if (isPending(key)) {
         revalidate(id, false);
         queue(() => {
           requestsProvider.emit(key, {
             loading: false,
-            error: false,
+            error: false
           });
         });
       }
@@ -249,7 +251,7 @@ export function queryProvider<R>(
 
     const queryVariables = {
       ...thisDefaults?.variables,
-      ...(otherConfig as any)?.variables,
+      ...(otherConfig as any)?.variables
     };
 
     const { config = {} } = providerConfig || {};
@@ -276,7 +278,7 @@ export function queryProvider<R>(
       headers: {
         ...others?.headers,
         ...thisDefaults?.headers,
-        ...otherConfig?.headers,
+        ...otherConfig?.headers
       },
       ...{ __fromProvider: true },
       default: {
@@ -287,15 +289,15 @@ export function queryProvider<R>(
              * 'value' property (when using the `gql` function)
              */
             // @ts-ignore
-            otherConfig?.default) as R[P]["value"],
+            otherConfig?.default) as R[P]["value"]
       },
-      variables: queryVariables,
+      variables: queryVariables
     });
 
     const thisData = useMemo(
       () => ({
         ...g?.data,
-        variables: queryVariables,
+        variables: queryVariables
       }),
       [serialize({ data: g?.data, queryVariables })]
     );
@@ -304,9 +306,9 @@ export function queryProvider<R>(
       ...g,
       config: {
         ...g?.config,
-        config: undefined,
+        config: undefined
       },
-      data: thisData,
+      data: thisData
     } as Omit<typeof g, "data"> & {
       data: {
         data: QuerysType[P] extends ReturnType<typeof gql>
@@ -338,7 +340,7 @@ export function mutateData(
         requestsProvider.emit(key, {
           data: newVal,
           isMutating: true,
-          requestCallId,
+          requestCallId
         });
         if (_revalidate) {
           previousConfig.set(key, undefined);
@@ -353,7 +355,7 @@ export function mutateData(
         requestsProvider.emit(key, {
           requestCallId,
           isMutating: true,
-          data: v,
+          data: v
         });
         if (_revalidate) {
           previousConfig.set(key, undefined);
@@ -368,11 +370,16 @@ export function mutateData(
   }
 }
 
-export function fetchOptions<T = any, TransformData = any>(
-  init: string | FetchConfigType<T, TransformData>,
-  options?: FetchConfigTypeNoUrl<T, TransformData>
-) {
+export function fetchOptions<
+  T = any,
+  TransformData = any,
+  UrlType extends string = string
+>(
+  init: UrlType | StaticFetchConfig<T, TransformData, UrlType>,
+  options?: Partial<StaticFetchConfigNoUrl<T, TransformData, UrlType>>
+): StaticFetchConfig<T, TransformData, UrlType> {
+  // Changed return type
   return (
     typeof init === "string" ? { url: init, ...options } : init
-  ) as FetchConfigType<T, TransformData>;
+  ) as StaticFetchConfig<T, TransformData, UrlType>; // Changed cast
 }

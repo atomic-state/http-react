@@ -371,3 +371,53 @@ export type FetchInit<FDT = any, TransformData = any> = FetchConfigType<
   FDT,
   TransformData
 >;
+
+// types related to params parsing
+
+/** Helper type to extract the parameter name from a segment like :id or {id} or [id] */
+export type ExtractParam<Segment extends string> =
+  Segment extends `[${infer Name}]`
+    ? Name // [name]
+    : Segment extends `:${infer Name}`
+    ? Name // :name
+    : Segment extends `{${infer Name}}`
+    ? Name // {name}
+    : never;
+
+type CleanPath<Path extends string> = Path extends `/${infer Rest}`
+  ? CleanPath<Rest>
+  : Path extends `${infer Rest}/`
+  ? CleanPath<Rest>
+  : Path extends `${infer Base}?${any}`
+  ? CleanPath<Base>
+  : Path;
+
+type ParsePathParams<Path extends string> =
+  Path extends `${infer Segment}/${infer Rest}`
+    ? (ExtractParam<Segment> extends never
+        ? {}
+        : { [K in ExtractParam<Segment>]: string | number }) &
+        ParsePathParams<Rest>
+    : ExtractParam<Path> extends never
+    ? {}
+    : { [K in ExtractParam<Path>]: string | number };
+
+export type PathParams<Path extends string> = ParsePathParams<CleanPath<Path>>;
+
+export type StaticParams<UrlType extends string> =
+  PathParams<UrlType> extends Record<string, never>
+    ? { params?: any }
+    : { params: PathParams<UrlType> };
+
+export type StaticFetchConfig<D, T, U extends string> = Omit<
+  FetchConfigType<D, T>,
+  "url" | "params"
+> & {
+  url?: U;
+} & StaticParams<U>;
+
+export type StaticFetchConfigNoUrl<D, T, U extends string> = Omit<
+  FetchConfigTypeNoUrl<D, T>,
+  "params"
+> &
+  StaticParams<U>;
