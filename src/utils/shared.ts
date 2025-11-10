@@ -1,6 +1,11 @@
 import { DEFAULT_RESOLVER, METHODS } from "../internal/constants";
 
-import { FetchContextType, ImperativeFetch, RequestWithBody } from "../types";
+import {
+  FetchContextType,
+  ImperativeFetch,
+  PathParams,
+  RequestWithBody,
+} from "../types";
 
 export const windowExists = typeof window !== "undefined";
 
@@ -87,45 +92,53 @@ export function queue(callback: any, time: number = 0) {
  *
  * URL search params will not be affected
  */
+export function setURLParams<UrlType extends string>(
+  str: UrlType,
+  $params: PathParams<UrlType> extends Record<string, never>
+    ? any
+    : PathParams<UrlType>
+): string;
+
 export function setURLParams(str: string = "", $params: any = {}) {
   const hasQuery = str.includes("?");
 
-  const queryString =
-    "?" +
-    str
-      .split("?")
-      .filter((_, i) => i > 0)
-      .join("?");
+  const queryString = hasQuery ? "?" + str.split("?").slice(1).join("?") : "";
 
   return (
     str
       .split("/")
       .map(($segment) => {
-        const [segment] = $segment.split("?");
-        if (segment.startsWith("[") && segment.endsWith("]")) {
-          const paramName = segment.replace(/\[|\]/g, "");
+        const [segmentPath] = $segment.split("?");
+
+        let paramName = null;
+        let isParam = false;
+
+        if (segmentPath.startsWith("[") && segmentPath.endsWith("]")) {
+          paramName = segmentPath.slice(1, -1);
+          isParam = true;
+        } else if (segmentPath.startsWith(":")) {
+          paramName = segmentPath.slice(1);
+          isParam = true;
+        } else if (segmentPath.startsWith("{") && segmentPath.endsWith("}")) {
+          paramName = segmentPath.slice(1, -1);
+          isParam = true;
+        }
+
+        if (isParam && paramName) {
           if (!(paramName in $params)) {
             console.warn(
-              `Param '${paramName}' does not exist in params configuration for '${str}'`
+              `Param '${paramName}' does not exist in params configuration for URL '${str}'`
             );
-            return paramName;
+
+            return segmentPath;
           }
 
-          return $params[segment.replace(/\[|\]/g, "")];
-        } else if (segment.startsWith(":")) {
-          const paramName = segment.split("").slice(1).join("");
-          if (!(paramName in $params)) {
-            console.warn(
-              `Param '${paramName}' does not exist in params configuration for '${str}'`
-            );
-            return paramName;
-          }
           return $params[paramName];
-        } else {
-          return segment;
         }
+
+        return $segment;
       })
-      .join("/") + (hasQuery ? queryString : "")
+      .join("/") + queryString
   );
 }
 
