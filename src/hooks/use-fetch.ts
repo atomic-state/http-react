@@ -64,6 +64,7 @@ import {
   notNull,
   queue,
   serialize,
+  setQueryParams,
   setURLParams,
   windowExists
 } from '../utils/shared'
@@ -325,61 +326,6 @@ export function useFetch<
     )
   )
 
-  const setData = useCallback((v: any) => {
-    setFetchState(p => {
-      if (isFunction(v)) {
-        const newVal = v(p.data)
-        if (!jsonCompare(p.data, newVal)) {
-          return {
-            ...p,
-            data: newVal
-          }
-        }
-      } else {
-        if (!jsonCompare(p.data, v)) {
-          return {
-            ...p,
-            data: v
-          }
-        }
-      }
-      return p
-    })
-  }, [])
-
-  // This helps pass default values to other useFetch calls using the same id
-  useEffect(() => {
-    if (isDefined(optionsConfig.default)) {
-      if (!fetcherDefaults.has(resolvedKey)) {
-        if (url !== '') {
-          if (!isDefined(cacheProvider.get(resolvedDataKey))) {
-            fetcherDefaults.set(resolvedKey, optionsConfig.default)
-          }
-        } else {
-          if (!isDefined(cacheProvider.get(resolvedDataKey))) {
-            requestsProvider.emit(resolvedKey, {
-              requestCallId,
-              data: optionsConfig.default
-            })
-          }
-        }
-      }
-    } else {
-      if (fetcherDefaults.has(resolvedKey)) {
-        if (!isDefined(cacheProvider.get(resolvedDataKey))) {
-          setData(fetcherDefaults.get(resolvedKey))
-        }
-      }
-    }
-  }, [
-    resolvedKey,
-    resolvedDataKey,
-    optionsConfig.default,
-    url,
-    requestCallId,
-    setData
-  ])
-
   const def = optionsConfig?.default ?? fetcherDefaults.get(resolvedKey)
 
   useEffect(() => {
@@ -397,24 +343,28 @@ export function useFetch<
 
   const hasInitialOrFallbackData = isDefined(initialDataValue)
 
-  const [fetchState, setFetchState] = useState({
-    data: initialDataValue,
-    online: true,
-    loading: auto
+  const [data, setData] = useState(initialDataValue)
+  const [online, setOnline] = useState(true)
+  const [loading, setLoading] = useState(
+    auto
       ? isPending(resolvedKey) ||
-        (revalidateOnMount
-          ? !jsonCompare(
-              JSON.parse(previousConfig.get(resolvedKey) || '{}'),
-              optionsConfig
-            )
-          : !jsonCompare(
-              JSON.parse(previousConfig.get(resolvedKey) || '{}'),
-              optionsConfig
-            ))
-      : false,
-    error: (hasErrors.get(resolvedDataKey) || false) as boolean,
-    completedAttempts: 0
-  })
+          (revalidateOnMount
+            ? !jsonCompare(
+                JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+                optionsConfig
+              )
+            : !jsonCompare(
+                JSON.parse(previousConfig.get(resolvedKey) || '{}'),
+                optionsConfig
+              ))
+      : false
+  )
+
+  const [error, setError] = useState(
+    (hasErrors.get(resolvedDataKey) || false) as boolean
+  )
+
+  const [completedAttempts, setCompletedAttempts] = useState(0)
 
   const thisDeps = useRef({
     data: false,
@@ -428,8 +378,6 @@ export function useFetch<
     return thisDeps[k]
   }
 
-  const { data, loading, online, error, completedAttempts } = fetchState
-
   const thisCache =
     cacheProvider.get(resolvedDataKey) ??
     cacheProvider.get(resolvedKey) ??
@@ -442,92 +390,10 @@ export function useFetch<
   const loadingFirst =
     !(hasData.get(resolvedDataKey) || hasData.get(resolvedKey)) && isLoading
 
-  const setOnline = useCallback((v: any) => {
-    setFetchState(p => {
-      if (isFunction(v)) {
-        const newVal = v(p.online)
-        if (newVal !== p.online) {
-          return { ...p, online: newVal }
-        }
-      } else {
-        if (v !== p.online) {
-          return { ...p, online: v }
-        }
-      }
-      return p
-    })
-  }, [])
-
   const requestHeaders = {
     ...ctx.headers,
     ...config.headers
   }
-
-  const setError = useCallback((v: any) => {
-    setFetchState(p => {
-      if (isFunction(v)) {
-        const newErroValue = v(p.error)
-        if (newErroValue !== p.error) {
-          return {
-            ...p,
-            error: newErroValue
-          }
-        }
-      } else {
-        if (v !== p.error) {
-          return {
-            ...p,
-            error: v
-          }
-        }
-      }
-      return p
-    })
-  }, [])
-
-  const setLoading = useCallback((v: any) => {
-    setFetchState(p => {
-      if (isFunction(v)) {
-        const newLoadingValue = v(p.loading)
-        if (newLoadingValue !== p.loading) {
-          return {
-            ...p,
-            loading: newLoadingValue
-          }
-        }
-      } else {
-        if (v !== p.loading) {
-          return {
-            ...p,
-            loading: v
-          }
-        }
-      }
-      return p
-    })
-  }, [])
-
-  const setCompletedAttempts = useCallback((v: any) => {
-    setFetchState(p => {
-      if (isFunction(v)) {
-        const newCompletedAttempts = v(p.completedAttempts)
-        if (newCompletedAttempts !== p.completedAttempts) {
-          return {
-            ...p,
-            completedAttempts: newCompletedAttempts
-          }
-        }
-      } else {
-        if (v !== p.completedAttempts) {
-          return {
-            ...p,
-            completedAttempts: v
-          }
-        }
-      }
-      return p
-    })
-  }, [])
 
   const requestAbortController: AbortController =
     abortControllers.get(resolvedKey) ?? new AbortController()
@@ -795,7 +661,8 @@ export function useFetch<
                   hasData.set(resolvedDataKey, false)
                   hasData.set(resolvedKey, false)
                 }
-                setFetchState(previous => {
+
+                setData((previous: any) => {
                   const newData = {
                     ...previous,
                     variables: (optionsConfig as any)?.variables,
@@ -817,6 +684,7 @@ export function useFetch<
 
                   return previous
                 })
+
                 if (handleError) {
                   if (!resolvedOnErrorCalls.get(resolvedKey)) {
                     resolvedOnErrorCalls.set(resolvedKey, actionError ?? true)
@@ -947,7 +815,8 @@ export function useFetch<
       }
     },
     [
-      // No longer depends on data
+      data,
+      error,
       canRevalidate,
       ctx.auto,
       stringDeps,
@@ -959,10 +828,44 @@ export function useFetch<
       memory,
       def,
       loadingFirst,
+      loading,
       setError,
       setLoading
     ]
   )
+
+  // This helps pass default values to other useFetch calls using the same id
+  useEffect(() => {
+    if (isDefined(optionsConfig.default)) {
+      if (!fetcherDefaults.has(resolvedKey)) {
+        if (url !== '') {
+          if (!isDefined(cacheProvider.get(resolvedDataKey))) {
+            fetcherDefaults.set(resolvedKey, optionsConfig.default)
+          }
+        } else {
+          if (!isDefined(cacheProvider.get(resolvedDataKey))) {
+            requestsProvider.emit(resolvedKey, {
+              requestCallId,
+              data: optionsConfig.default
+            })
+          }
+        }
+      }
+    } else {
+      if (fetcherDefaults.has(resolvedKey)) {
+        if (!isDefined(cacheProvider.get(resolvedDataKey))) {
+          setData(fetcherDefaults.get(resolvedKey))
+        }
+      }
+    }
+  }, [
+    resolvedKey,
+    resolvedDataKey,
+    optionsConfig.default,
+    url,
+    requestCallId,
+    setData
+  ])
 
   useEffect(() => {
     const { signal } = requestAbortController || {}
@@ -1059,6 +962,7 @@ export function useFetch<
       if (isMutating) {
         if (!jsonCompare($data, cacheForMutation.get(resolvedKey))) {
           cacheForMutation.set(idString, $data)
+          forceMutate($data)
 
           if (isMutating) {
             if (handleMutate) {
@@ -1390,13 +1294,11 @@ export function useFetch<
             } else {
               d = def
               // It means a url is not passed
-              setFetchState(prev => ({
-                ...prev,
-                loading: false,
-                error:
-                  hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey),
-                completedAttempts: prev.completedAttempts
-              }))
+
+              setLoading(false)
+              setError(
+                hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey)
+              )
             }
           } else {
             d = def
@@ -1409,6 +1311,7 @@ export function useFetch<
           })
         },
     [
+      data,
       fetchData,
       canRevalidate,
       url,
@@ -1540,7 +1443,7 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
     },
     body: config.body,
     baseUrl: ctx.baseUrl || config.baseUrl,
-    url: configUrl?.realUrl?.replace('?', ''),
+    url: setQueryParams(configUrl?.realUrl?.replace('?', ''), query),
     rawUrl: configUrl?.rawUrl,
     query: {
       ...reqQuery,
