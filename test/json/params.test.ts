@@ -2,11 +2,21 @@ import { jsonCompare, setURLParams } from '../../'
 import mocks from '../mocks'
 
 test('Sets URL params in a string', async () => {
-  global.fetch = jest.fn().mockImplementation((url, config) =>
+  // 1. Define the mock fetch function
+  const mockFetch = jest.fn().mockImplementation((url, config) =>
     Promise.resolve({
       json: () => mocks[config.method]
     })
   )
+
+  // 2. Define a simple mock function for 'preconnect'
+  const mockPreconnect = jest.fn()
+
+  // 3. Attach the 'preconnect' mock to the mock fetch function
+  //    The 'as typeof fetch' assertion is crucial for satisfying TypeScript
+  global.fetch = Object.assign(mockFetch, {
+    preconnect: mockPreconnect
+  }) as typeof fetch
 
   const parsedUrl = setURLParams('/api/[resource]/:id', {
     resource: 'info',
