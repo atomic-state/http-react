@@ -49,7 +49,7 @@ export function FetchConfig(props: FetchContextType) {
 
   const $values = new Map()
 
-  for (let valueKey in value) {
+  for (const valueKey in value) {
     const resolvedKey = serialize({
       idString: serialize(valueKey)
     })
@@ -66,7 +66,9 @@ export function FetchConfig(props: FetchContextType) {
 
     if (dataChunk instanceof Promise) {
       try {
-        const parsedChunkValue = JSON.parse((dataChunk as any).value)
+        const parsedChunkValue = JSON.parse(
+          (dataChunk as unknown as { value: string }).value
+        )
         parsedChunk = parsedChunkValue?.data ?? parsedChunkValue
       } catch {
         parsedChunk = dataChunk
@@ -86,7 +88,7 @@ export function FetchConfig(props: FetchContextType) {
     }
   }
 
-  for (let defaultKey in defaults) {
+  for (const defaultKey in defaults) {
     const { id = defaultKey } = defaults[defaultKey]
     const resolvedKey = serialize({
       idString: serialize(id)
@@ -102,14 +104,14 @@ export function FetchConfig(props: FetchContextType) {
     }
   }
 
-  for (let suspenseKey of suspense) {
+  for (const suspenseKey of suspense) {
     const key = serialize({
       idString: serialize(suspenseKey)
     })
     willSuspend.set(key, true)
   }
 
-  let mergedConfig: FetchContextType = {
+  const mergedConfig: FetchContextType = {
     ...previousConfig,
     ...props,
     headers: {

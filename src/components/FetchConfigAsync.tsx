@@ -6,11 +6,11 @@ import { FetchConfigSync } from './server'
 export async function FetchConfigAsync(props: FetchContextType) {
   const { children, defaults = {}, value = {} } = props
 
-  let $values = new Map()
+  const $values = new Map()
 
-  const previousConfig = $context.value as any
+  const previousConfig = $context.value as typeof $context.value
 
-  for (let valueKey in value) {
+  for (const valueKey in value) {
     const $value = await value[valueKey]
 
     const $data = $value.data ?? $value
@@ -22,7 +22,7 @@ export async function FetchConfigAsync(props: FetchContextType) {
     // cacheProvider.set(resolvedKey, $data)
   }
 
-  for (let defaultKey in defaults) {
+  for (const defaultKey in defaults) {
     const { id = defaultKey } = defaults[defaultKey]
 
     if (isDefined(id)) {
@@ -32,7 +32,7 @@ export async function FetchConfigAsync(props: FetchContextType) {
     }
   }
 
-  let mergedConfig = {
+  const mergedConfig = {
     ...previousConfig,
     ...props,
     headers: {
