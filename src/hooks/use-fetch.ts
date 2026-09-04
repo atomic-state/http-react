@@ -127,19 +127,21 @@ export function useFetch<
           id: options?.id ?? options?.key
         }
       : isRequest
-      ? {
-          url: init.url,
-          method: init.method,
-          init,
-          ...options,
-          id: options?.id ?? options?.key
-        }
-      : ({
-          ...init,
-          ...options,
-          // @ts-expect-error
-          id: init?.id ?? init?.key
-        } as Required<StaticFetchConfig<FetchDataType, TransformData, UrlType>>)
+        ? {
+            url: init.url,
+            method: init.method,
+            init,
+            ...options,
+            id: options?.id ?? options?.key
+          }
+        : ({
+            ...init,
+            ...options,
+            // @ts-expect-error
+            id: init?.id ?? init?.key
+          } as Required<
+            StaticFetchConfig<FetchDataType, TransformData, UrlType>
+          >)
 
   const {
     onOnline = ctx.onOnline,
@@ -166,6 +168,21 @@ export function useFetch<
     attemptInterval = ctx.attemptInterval,
     revalidateOnFocus = ctx.revalidateOnFocus,
     suspense: $suspense,
+    streaming = ctx.streaming ??
+      !isDefined(
+        optionsConfig?.default ??
+          fetcherDefaults.get(
+            serialize({
+              idString: serialize(
+                optionsConfig.key ??
+                  [
+                    optionsConfig.method ?? (METHODS.GET as HTTP_METHODS),
+                    optionsConfig.url ?? ' '
+                  ].join(' ')
+              )
+            })
+          )
+      ),
     onFetchStart = ctx.onFetchStart,
     onFetchEnd = ctx.onFetchEnd,
     cacheIfError = ctx.cacheIfError,
@@ -177,9 +194,9 @@ export function useFetch<
 
   const $fetch = isFunction(fetcher)
     ? fetcher
-    : windowExists
-    ? fetch
-    : () => new Response(serialize(initialDataValue))
+    : windowExists || streaming
+      ? fetch
+      : () => new Response(serialize(initialDataValue))
 
   const config = {
     query,
@@ -211,8 +228,8 @@ export function useFetch<
     optionsConfig.auto === false
       ? false
       : isDefined(optionsConfig.retryOnReconnect)
-      ? optionsConfig.retryOnReconnect
-      : ctx.retryOnReconnect
+        ? optionsConfig.retryOnReconnect
+        : ctx.retryOnReconnect
 
   const reqQuery = {
     ...ctx.query,
@@ -228,10 +245,10 @@ export function useFetch<
     (hasBaseUrl(url)
       ? ''
       : !isDefined(config.baseUrl!)
-      ? !isDefined(ctx.baseUrl!)
-        ? ''
-        : ctx.baseUrl!
-      : config.baseUrl!) + url
+        ? !isDefined(ctx.baseUrl!)
+          ? ''
+          : ctx.baseUrl!
+        : config.baseUrl!) + url
 
   const defaultId = optionsConfig.key ?? [method, url].join(' ')
 
@@ -286,7 +303,9 @@ export function useFetch<
 
   if (!suspense) {
     if (url !== '') {
-      suspenseInitialized.set(resolvedKey, true)
+      if (windowExists) {
+        suspenseInitialized.set(resolvedKey, true)
+      }
     }
   }
 
@@ -385,7 +404,11 @@ export function useFetch<
     def ??
     null
 
-  const isLoading = isExpired ? isPending(resolvedKey) || loading : false
+  const isLoading = suspense
+    ? false
+    : isExpired
+      ? isPending(resolvedKey) || loading
+      : false
 
   const loadingFirst =
     !(hasData.get(resolvedDataKey) || hasData.get(resolvedKey)) && isLoading
@@ -408,10 +431,10 @@ export function useFetch<
         (hasBaseUrl(url)
           ? ''
           : !isDefined(config.baseUrl!)
-          ? !isDefined(ctx.baseUrl!)
-            ? ''
-            : ctx.baseUrl!
-          : config.baseUrl!) + url
+            ? !isDefined(ctx.baseUrl!)
+              ? ''
+              : ctx.baseUrl!
+            : config.baseUrl!) + url
 
       const urlWithParams = setURLParams(rawUrl, c.params)
 
@@ -519,8 +542,8 @@ export function useFetch<
                 (realUrl.includes('?')
                   ? c.query
                   : c.query
-                  ? '?' + c.query
-                  : c.query)
+                    ? '?' + c.query
+                    : c.query)
               ).replace('?&', '?'),
               newRequestConfig
             )
@@ -1187,48 +1210,51 @@ export function useFetch<
   useEffect(() => {
     // Attempts will be made after a request fails
 
-    const tm = setTimeout(() => {
-      if (!gettingAttempts.get(resolvedKey)) {
-        gettingAttempts.set(resolvedKey, true)
-        const attempts =
-          typeof $attempts === 'function'
-            ? $attempts({
-                status:
-                  statusCodes.get(resolvedKey) ||
-                  statusCodes.get(resolvedDataKey),
-                res: lastResponses.get(resolvedKey),
-                error:
-                  hasErrors.get(resolvedKey) ||
-                  hasErrors.get(resolvedDataKey) ||
-                  (error as any),
-                completedAttempts
+    const tm = setTimeout(
+      () => {
+        if (!gettingAttempts.get(resolvedKey)) {
+          gettingAttempts.set(resolvedKey, true)
+          const attempts =
+            typeof $attempts === 'function'
+              ? $attempts({
+                  status:
+                    statusCodes.get(resolvedKey) ||
+                    statusCodes.get(resolvedDataKey),
+                  res: lastResponses.get(resolvedKey),
+                  error:
+                    hasErrors.get(resolvedKey) ||
+                    hasErrors.get(resolvedDataKey) ||
+                    (error as any),
+                  completedAttempts
+                })
+              : $attempts
+
+          if ((attempts as number) > 0) {
+            if (completedAttempts < (attempts as number)) {
+              reValidate()
+              setCompletedAttempts((previousAttempts: number) => {
+                let newAttemptsValue = previousAttempts + 1
+
+                requestsProvider.emit(resolvedKey, {
+                  requestCallId,
+                  completedAttempts: newAttemptsValue
+                })
+
+                return newAttemptsValue
               })
-            : $attempts
-
-        if ((attempts as number) > 0) {
-          if (completedAttempts < (attempts as number)) {
-            reValidate()
-            setCompletedAttempts((previousAttempts: number) => {
-              let newAttemptsValue = previousAttempts + 1
-
+            } else if (completedAttempts === attempts) {
               requestsProvider.emit(resolvedKey, {
                 requestCallId,
-                completedAttempts: newAttemptsValue
+                online: false,
+                error: true
               })
-
-              return newAttemptsValue
-            })
-          } else if (completedAttempts === attempts) {
-            requestsProvider.emit(resolvedKey, {
-              requestCallId,
-              online: false,
-              error: true
-            })
-            if (inDeps('online')) setOnline(false)
+              if (inDeps('online')) setOnline(false)
+            }
           }
         }
-      }
-    }, getMiliseconds(attemptInterval as TimeSpan))
+      },
+      getMiliseconds(attemptInterval as TimeSpan)
+    )
 
     return () => {
       clearTimeout(tm)
@@ -1274,7 +1300,7 @@ export function useFetch<
   ])
 
   const initializeRevalidation = useCallback(
-    windowExists
+    windowExists || streaming
       ? async function initializeRevalidation() {
           let d = undefined
           if (canRevalidate) {
@@ -1320,7 +1346,8 @@ export function useFetch<
       def,
       resolvedDataKey,
       resolvedKey,
-      initialDataValue
+      initialDataValue,
+      streaming
     ]
   )
 
@@ -1349,7 +1376,9 @@ export function useFetch<
       }
 
       if (auto && canRevalidate && url !== '') {
-        initializeRevalidation()
+        if (!suspense) {
+          initializeRevalidation()
+        }
       }
     }
 
@@ -1391,20 +1420,18 @@ export function useFetch<
 
           throw suspenseRevalidationStarted.get(resolvedKey)
         }
-      }
-
-      if (!hasInitialOrFallbackData) {
-        throw new Error(
-          `Request with id "${id}" uses suspense but no fallback data was provided for SSR. See https://httpr.vercel.app/docs/fetch_config/defaults.
-
-If you want to use suspense without fallback data, wrap with the <Suspense> component from 'http-react', which renders <React.Suspense> client-side and the fallback ui server-side:
-
-import { Suspense } from "http-react"
-
-Learn more: https://httpr.vercel.app/docs/api#suspense
-
-          `
-        )
+      } else {
+        if (streaming) {
+          if (!suspenseInitialized.get(resolvedKey)) {
+            if (!suspenseRevalidationStarted.get(resolvedKey)) {
+              suspenseRevalidationStarted.set(
+                resolvedKey,
+                initializeRevalidation()
+              )
+            }
+            throw suspenseRevalidationStarted.get(resolvedKey)
+          }
+        }
       }
     }
   }
@@ -1465,10 +1492,10 @@ Learn more: https://httpr.vercel.app/docs/api#suspense
       ? $requestEnd
       : null
     : maxAge === 0
-    ? null
-    : notNull(cacheProvider.get('expiration' + resolvedDataKey))
-    ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
-    : null
+      ? null
+      : notNull(cacheProvider.get('expiration' + resolvedDataKey))
+        ? new Date(cacheProvider.get('expiration' + resolvedDataKey))
+        : null
 
   const isFailed =
     hasErrors.get(resolvedDataKey) || hasErrors.get(resolvedKey) || error

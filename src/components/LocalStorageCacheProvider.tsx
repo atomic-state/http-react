@@ -7,13 +7,13 @@ let isCacheHydrated = false
 
 const loadFromLocalStorage = () => {
   if (typeof localStorage !== 'undefined') {
-    for (let key in localStorage) {
+    for (const key in localStorage) {
       try {
         const currentValue = localStorage.getItem(key)
         if (typeof currentValue !== 'undefined') {
           defaultCache.set(key, JSON.parse(currentValue!))
         }
-      } catch (error) {
+      } catch {
         // Remove cache key if parsing fails
         localStorage.removeItem(key)
       }
@@ -51,7 +51,7 @@ export function LocalStorageCacheProvider({
   useCacheHydration({ instant })
 
   return (
-    // @ts-expect-error
+    //@ts-expect-error
     <FetchConfig
       cacheProvider={{
         get(k) {
